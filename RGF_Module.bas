@@ -1199,6 +1199,8 @@ Private Sub GetPhoneticMode(ByRef modeLabel As String, ByRef modeInstruction As 
             modeInstruction = raw & " delivery. Keep lyrics in English."
             styleTag = "accent: " & LCase$(raw)
     End Select
+End Sub
+
 
 Private Sub ApplyPhoneticSpelling(ByRef lines As Variant, ByVal phonLabel As String)
     If Not ArrAllocated(lines) Then Exit Sub
