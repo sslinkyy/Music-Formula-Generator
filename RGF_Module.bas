@@ -491,7 +491,12 @@ Public Sub GenerateSunoFromSheet()
     AppendBlockOrGenerated L, ws, "Bridge", BuildBridgeDeterministic(StyleSig, GroupF)
     AppendBlockOrGenerated L, ws, "Outro", BuildOutroDeterministic()
 
-    If ArrAllocated(L) Then For k = LBound(L) To UBound(L): L(k) = NormalizeMetaTag(L(k)): Next k
+    If ArrAllocated(L) Then
+        For k = LBound(L) To UBound(L)
+            L(k) = NormalizeMetaTag(L(k))
+        Next k
+        ApplyPhoneticSpelling L, phonLabel
+    End If
 
     s.Cells(1, 1).Value = "```": s.Cells(2, 1).Value = title: s.Cells(3, 1).Value = "```"
     s.Cells(5, 1).Value = "```": s.Cells(6, 1).Value = styleLine: s.Cells(7, 1).Value = "```"
@@ -1194,6 +1199,257 @@ Private Sub GetPhoneticMode(ByRef modeLabel As String, ByRef modeInstruction As 
             modeInstruction = raw & " delivery. Keep lyrics in English."
             styleTag = "accent: " & LCase$(raw)
     End Select
+
+Private Sub ApplyPhoneticSpelling(ByRef lines As Variant, ByVal phonLabel As String)
+    If Not ArrAllocated(lines) Then Exit Sub
+    If Len(Trim$(phonLabel)) = 0 Then Exit Sub
+    If LCase$(phonLabel) = "neutral / standard" Then Exit Sub
+
+    Dim i As Long
+    For i = LBound(lines) To UBound(lines)
+        lines(i) = PhoneticTransformLine(CStr(lines(i)), phonLabel)
+    Next i
+End Sub
+
+Private Function PhoneticTransformLine(ByVal line As String, ByVal phonLabel As String) As String
+    Dim trimmed As String: trimmed = Trim$(line)
+    If Len(trimmed) = 0 Then
+        PhoneticTransformLine = line
+        Exit Function
+    End If
+
+    If InStr(1, line, "[Producer Tag]", vbTextCompare) > 0 Then
+        PhoneticTransformLine = line
+        Exit Function
+    End If
+
+    If Left$(trimmed, 1) = "[" Then
+        Dim closingPos As Long
+        closingPos = InStr(1, line, "]")
+        If closingPos > 0 And closingPos < Len(line) Then
+            Dim head As String, tail As String
+            head = Left$(line, closingPos)
+            tail = Mid$(line, closingPos + 1)
+            tail = PhoneticTransformText(tail, phonLabel)
+            PhoneticTransformLine = head & tail
+        Else
+            PhoneticTransformLine = line
+        End If
+    Else
+        PhoneticTransformLine = PhoneticTransformText(line, phonLabel)
+    End If
+End Function
+
+Private Function PhoneticTransformText(ByVal text As String, ByVal phonLabel As String) As String
+    If Len(text) = 0 Then
+        PhoneticTransformText = text
+        Exit Function
+    End If
+
+    Dim parts() As String, i As Long
+    parts = Split(text, " ")
+    For i = LBound(parts) To UBound(parts)
+        If Len(parts(i)) > 0 Then parts(i) = ApplyPhoneticToToken(parts(i), phonLabel)
+    Next i
+    PhoneticTransformText = Join(parts, " ")
+End Function
+
+Private Function ApplyPhoneticToToken(ByVal token As String, ByVal phonLabel As String) As String
+    Dim leading As String, trailing As String, core As String
+    Dim ch As String
+    core = token
+    Do While Len(core) > 0 And Not IsLetterCharacter(Mid$(core, 1, 1))
+        leading = leading & Left$(core, 1)
+        core = Mid$(core, 2)
+    Loop
+    Do While Len(core) > 0 And Not IsLetterCharacter(Mid$(core, Len(core), 1))
+        trailing = Right$(core, 1) & trailing
+        core = Left$(core, Len(core) - 1)
+    Loop
+    If Len(core) = 0 Then
+        ApplyPhoneticToToken = token
+        Exit Function
+    End If
+
+    ApplyPhoneticToToken = leading & TransformWordByPhonetic(core, phonLabel) & trailing
+End Function
+
+Private Function IsLetterCharacter(ByVal ch As String) As Boolean
+    Dim code As Integer
+    If Len(ch) = 0 Then Exit Function
+    code = Asc(UCase$(ch))
+    IsLetterCharacter = (code >= 65 And code <= 90)
+End Function
+
+Private Function TransformWordByPhonetic(ByVal word As String, ByVal phonLabel As String) As String
+    Dim lower As String
+    lower = LCase$(word)
+    Dim replacement As String
+
+    Select Case phonLabel
+        Case "Neutral / Standard"
+            replacement = lower
+        Case "American English (General)"
+            replacement = AccentGeneral(lower)
+        Case "American English (Southern)"
+            replacement = AccentSouthern(lower)
+        Case "American English (New York)"
+            replacement = AccentNewYork(lower)
+        Case "American English (Midwest)"
+            replacement = AccentMidwest(lower)
+        Case "Spanish-Influenced English"
+            replacement = AccentSpanishInfluenced(lower)
+        Case "Indian English Accent"
+            replacement = AccentIndian(lower)
+        Case "Somali English Accent"
+            replacement = AccentSomali(lower)
+        Case Else
+            replacement = lower
+    End Select
+
+    TransformWordByPhonetic = MatchWordCase(word, replacement)
+End Function
+
+Private Function MatchWordCase(ByVal source As String, ByVal replacementLower As String) As String
+    If Len(source) = 0 Then
+        MatchWordCase = replacementLower
+    ElseIf Len(source) = 1 And source = UCase$(source) Then
+        MatchWordCase = UCase$(Left$(replacementLower, 1)) & Mid$(replacementLower, 2)
+    ElseIf source = UCase$(source) Then
+        MatchWordCase = UCase$(replacementLower)
+    ElseIf source = LCase$(source) Then
+        MatchWordCase = replacementLower
+    ElseIf Left$(source, 1) = UCase$(Left$(source, 1)) And Mid$(source, 2) = LCase$(Mid$(source, 2)) Then
+        MatchWordCase = UCase$(Left$(replacementLower, 1)) & Mid$(replacementLower, 2)
+    Else
+        MatchWordCase = replacementLower
+    End If
+End Function
+
+Private Function AccentGeneral(ByVal lower As String) As String
+    Dim result As String
+    result = lower
+    If Len(result) > 3 And Right$(result, 3) = "ing" Then
+        result = Left$(result, Len(result) - 3) & "in'"
+    End If
+    Select Case result
+        Case "and": result = "an'"
+        Case "them": result = "'em"
+        Case "because": result = "'cause"
+        Case "about": result = "'bout"
+        Case "around": result = "'round"
+        Case "of": result = "uhv"
+        Case "to": result = "ta"
+        Case "you": result = "ya"
+        Case "your": result = "yer"
+        Case "just": result = "jus'"
+        Case "nothing": result = "nothin'"
+        Case "going": result = "goin'"
+        Case "give": result = "giv'"
+    End Select
+    AccentGeneral = result
+End Function
+
+Private Function AccentSouthern(ByVal lower As String) As String
+    Dim result As String
+    result = AccentGeneral(lower)
+    Select Case lower
+        Case "my": result = "mah"
+        Case "mine": result = "mahn"
+        Case "i": result = "ah"
+        Case "i'm": result = "ah'm"
+        Case "your": result = "yo'"
+        Case "you're": result = "yo're"
+        Case "with": result = "wit"
+        Case "there": result = "theyah"
+        Case "here": result = "heah"
+        Case "time": result = "tahm"
+        Case "kind": result = "kahnd"
+        Case "down": result = "dahn"
+        Case "out": result = "owt"
+        Case "right": result = "raht"
+        Case "friend": result = "frien'"
+    End Select
+    If Len(result) > 2 And Right$(result, 2) = "er" Then
+        result = Left$(result, Len(result) - 2) & "ah"
+    ElseIf Len(result) > 1 And Right$(result, 1) = "r" Then
+        result = Left$(result, Len(result) - 1) & "h"
+    End If
+    AccentSouthern = result
+End Function
+
+Private Function AccentNewYork(ByVal lower As String) As String
+    Dim result As String
+    result = AccentGeneral(lower)
+    Select Case lower
+        Case "the": result = "da"
+        Case "this": result = "dis"
+        Case "that": result = "dat"
+        Case "these": result = "dese"
+        Case "those": result = "dose"
+    End Select
+    If Len(result) > 2 And Right$(result, 2) = "er" Then
+        result = Left$(result, Len(result) - 2) & "uh"
+    End If
+    Select Case lower
+        Case "coffee": result = "caw-fee"
+        Case "talk": result = "tawk"
+        Case "walk": result = "wawk"
+        Case "girl": result = "goil"
+        Case "world": result = "woild"
+        Case "car": result = "caw"
+    End Select
+    AccentNewYork = result
+End Function
+
+Private Function AccentMidwest(ByVal lower As String) As String
+    Dim result As String
+    result = AccentGeneral(lower)
+    Select Case lower
+        Case "about": result = "uh-bowt"
+        Case "sorry": result = "sore-ee"
+        Case "tomorrow": result = "tuh-mar-oh"
+        Case "bag": result = "bayg"
+        Case "flag": result = "flayg"
+        Case "dragon": result = "dray-gun"
+        Case "milk": result = "melk"
+    End Select
+    AccentMidwest = result
+End Function
+
+Private Function AccentSpanishInfluenced(ByVal lower As String) As String
+    Dim result As String
+    result = lower
+    If Left$(result, 1) = "v" Then result = "b" & Mid$(result, 2)
+    If Left$(result, 1) = "j" Then result = "y" & Mid$(result, 2)
+    result = Replace(result, "ll", "y")
+    result = Replace(result, "th", "t")
+    result = Replace(result, "r", "rr")
+    AccentSpanishInfluenced = result
+End Function
+
+Private Function AccentIndian(ByVal lower As String) As String
+    Dim result As String
+    result = lower
+    If Left$(result, 1) = "w" Then result = "v" & Mid$(result, 2)
+    result = Replace(result, "th", "t")
+    result = Replace(result, "z", "j")
+    result = Replace(result, "tion", "shun")
+    result = Replace(result, "ble", "buhl")
+    AccentIndian = result
+End Function
+
+Private Function AccentSomali(ByVal lower As String) As String
+    Dim result As String
+    result = lower
+    result = Replace(result, "th", "t")
+    result = Replace(result, "p", "b")
+    result = Replace(result, "sh", "s")
+    result = Replace(result, "ch", "sh")
+    If Left$(result, 1) = "q" Then result = "k" & Mid$(result, 2)
+    AccentSomali = result
+End Function
+
 End Sub
 
 '========================

@@ -139,6 +139,7 @@ When you select a non-neutral mode:
 - The creative brief displays the phonetic instruction line.
 - The AI prompt includes a `Phonetics` guidance section and updates the style block instruction with the accent tag.
 - The Suno export inserts `[Pronunciation] ...` above the producer tag and ensures the style block carries the accent tag.
+- Lyric lines in the Suno block are respelled phonetically to mirror the selected accent, so the text reads the way it should sound.
 - The genre preview on the sheet shows the accent tag so you know what style will flow downstream.
 
 ## Suno Export Blocks
