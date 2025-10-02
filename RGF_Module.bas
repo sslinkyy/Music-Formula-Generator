@@ -1328,133 +1328,298 @@ Private Function MatchWordCase(ByVal source As String, ByVal replacementLower As
     End If
 End Function
 
+Private Function ApplyWordMap(ByVal word As String, ByVal mapping As Variant) As String
+    Dim i As Long
+    For i = LBound(mapping) To UBound(mapping)
+        If word = mapping(i)(0) Then
+            ApplyWordMap = mapping(i)(1)
+            Exit Function
+        End If
+    Next i
+    ApplyWordMap = word
+End Function
+
+Private Function ApplyPatternMap(ByVal text As String, ByVal mapping As Variant) As String
+    Dim i As Long
+    For i = LBound(mapping) To UBound(mapping)
+        text = Replace(text, mapping(i)(0), mapping(i)(1))
+    Next i
+    ApplyPatternMap = text
+End Function
+
 Private Function AccentGeneral(ByVal lower As String) As String
     Dim result As String
-    result = lower
+    Dim wordMap As Variant
+
+    wordMap = Array( _
+        Array("and", "an'"), _
+        Array("them", "'em"), _
+        Array("because", "'cause"), _
+        Array("about", "'bout"), _
+        Array("around", "'round"), _
+        Array("nothing", "nothin'"), _
+        Array("something", "somethin'"), _
+        Array("everything", "ev'rything"), _
+        Array("going", "goin'"), _
+        Array("doing", "doin'"), _
+        Array("coming", "comin'"), _
+        Array("your", "yer"), _
+        Array("you", "ya"), _
+        Array("you're", "yer"), _
+        Array("for", "fer"), _
+        Array("with", "wit"), _
+        Array("just", "jus'"), _
+        Array("really", "rilly"), _
+        Array("of", "uhv"), _
+        Array("to", "ta") _
+    )
+
+    result = ApplyWordMap(lower, wordMap)
+
     If Len(result) > 3 And Right$(result, 3) = "ing" Then
         result = Left$(result, Len(result) - 3) & "in'"
     End If
-    Select Case result
-        Case "and": result = "an'"
-        Case "them": result = "'em"
-        Case "because": result = "'cause"
-        Case "about": result = "'bout"
-        Case "around": result = "'round"
-        Case "of": result = "uhv"
-        Case "to": result = "ta"
-        Case "you": result = "ya"
-        Case "your": result = "yer"
-        Case "just": result = "jus'"
-        Case "nothing": result = "nothin'"
-        Case "going": result = "goin'"
-        Case "give": result = "giv'"
-    End Select
+
+    result = ApplyPatternMap(result, Array( _
+        Array("tion", "shun"), _
+        Array("ture", "cher"), _
+        Array("air", "ehr"), _
+        Array("ear", "eer") _
+    ))
+
     AccentGeneral = result
 End Function
 
 Private Function AccentSouthern(ByVal lower As String) As String
     Dim result As String
+    Dim wordMap As Variant
+
     result = AccentGeneral(lower)
-    Select Case lower
-        Case "my": result = "mah"
-        Case "mine": result = "mahn"
-        Case "i": result = "ah"
-        Case "i'm": result = "ah'm"
-        Case "your": result = "yo'"
-        Case "you're": result = "yo're"
-        Case "with": result = "wit"
-        Case "there": result = "theyah"
-        Case "here": result = "heah"
-        Case "time": result = "tahm"
-        Case "kind": result = "kahnd"
-        Case "down": result = "dahn"
-        Case "out": result = "owt"
-        Case "right": result = "raht"
-        Case "friend": result = "frien'"
-    End Select
+
+    wordMap = Array( _
+        Array("my", "mah"), _
+        Array("mine", "mahn"), _
+        Array("i", "ah"), _
+        Array("i'm", "ah'm"), _
+        Array("i'll", "ah'll"), _
+        Array("i've", "ah've"), _
+        Array("your", "yo'"), _
+        Array("you're", "yo're"), _
+        Array("are", "ahr"), _
+        Array("our", "ahr"), _
+        Array("fire", "fahr"), _
+        Array("time", "tahm"), _
+        Array("kind", "kahnd"), _
+        Array("friend", "frien'"), _
+        Array("friends", "frien's"), _
+        Array("there", "theyah"), _
+        Array("here", "heah"), _
+        Array("right", "raht"), _
+        Array("down", "dahn"), _
+        Array("out", "owt") _
+    )
+
+    result = ApplyWordMap(result, wordMap)
+
     If Len(result) > 2 And Right$(result, 2) = "er" Then
         result = Left$(result, Len(result) - 2) & "ah"
     ElseIf Len(result) > 1 And Right$(result, 1) = "r" Then
         result = Left$(result, Len(result) - 1) & "h"
     End If
+
+    result = ApplyPatternMap(result, Array( _
+        Array("ight", "aht"), _
+        Array("own", "ahn"), _
+        Array("oil", "awl") _
+    ))
+
     AccentSouthern = result
 End Function
 
 Private Function AccentNewYork(ByVal lower As String) As String
     Dim result As String
+    Dim wordMap As Variant
+
     result = AccentGeneral(lower)
-    Select Case lower
-        Case "the": result = "da"
-        Case "this": result = "dis"
-        Case "that": result = "dat"
-        Case "these": result = "dese"
-        Case "those": result = "dose"
-    End Select
+
+    wordMap = Array( _
+        Array("the", "da"), _
+        Array("this", "dis"), _
+        Array("that", "dat"), _
+        Array("these", "dese"), _
+        Array("those", "dose"), _
+        Array("coffee", "caw-fee"), _
+        Array("talk", "tawk"), _
+        Array("walk", "wawk"), _
+        Array("girl", "goil"), _
+        Array("world", "woild"), _
+        Array("car", "caw"), _
+        Array("far", "faw"), _
+        Array("hard", "hawd"), _
+        Array("party", "pah-tee"), _
+        Array("park", "pawk"), _
+        Array("water", "waw-tuh") _
+    )
+
+    result = ApplyWordMap(result, wordMap)
+
     If Len(result) > 2 And Right$(result, 2) = "er" Then
         result = Left$(result, Len(result) - 2) & "uh"
     End If
-    Select Case lower
-        Case "coffee": result = "caw-fee"
-        Case "talk": result = "tawk"
-        Case "walk": result = "wawk"
-        Case "girl": result = "goil"
-        Case "world": result = "woild"
-        Case "car": result = "caw"
-    End Select
+    If Len(result) > 2 And Right$(result, 2) = "ar" Then
+        result = Left$(result, Len(result) - 2) & "aw"
+    End If
+    If Len(result) > 3 And Right$(result, 3) = "ark" Then
+        result = Left$(result, Len(result) - 3) & "awk"
+    ElseIf Len(result) > 3 And Right$(result, 3) = "art" Then
+        result = Left$(result, Len(result) - 3) & "awt"
+    End If
+
     AccentNewYork = result
 End Function
 
 Private Function AccentMidwest(ByVal lower As String) As String
     Dim result As String
+    Dim wordMap As Variant
+
     result = AccentGeneral(lower)
-    Select Case lower
-        Case "about": result = "uh-bowt"
-        Case "sorry": result = "sore-ee"
-        Case "tomorrow": result = "tuh-mar-oh"
-        Case "bag": result = "bayg"
-        Case "flag": result = "flayg"
-        Case "dragon": result = "dray-gun"
-        Case "milk": result = "melk"
-    End Select
+
+    wordMap = Array( _
+        Array("about", "uh-bowt"), _
+        Array("out", "owt"), _
+        Array("sorry", "sore-ee"), _
+        Array("tomorrow", "tuh-mar-oh"), _
+        Array("bag", "bayg"), _
+        Array("flag", "flayg"), _
+        Array("dragon", "dray-gun"), _
+        Array("milk", "melk"), _
+        Array("pillow", "pill-oh"), _
+        Array("again", "uh-gen") _
+    )
+
+    result = ApplyWordMap(result, wordMap)
+
+    result = ApplyPatternMap(result, Array( _
+        Array("eg", "ayg"), _
+        Array("ag", "ayg"), _
+        Array("oo", "ew") _
+    ))
+
     AccentMidwest = result
 End Function
 
 Private Function AccentSpanishInfluenced(ByVal lower As String) As String
     Dim result As String
-    result = lower
+    Dim wordMap As Variant
+
+    wordMap = Array( _
+        Array("people", "peepul"), _
+        Array("music", "moo-seek"), _
+        Array("party", "par-tee"), _
+        Array("very", "bery"), _
+        Array("brother", "brodder"), _
+        Array("another", "anodder") _
+    )
+
+    result = ApplyWordMap(lower, wordMap)
+
     If Left$(result, 1) = "v" Then result = "b" & Mid$(result, 2)
     If Left$(result, 1) = "j" Then result = "y" & Mid$(result, 2)
-    result = Replace(result, "ll", "y")
-    result = Replace(result, "th", "t")
+
+    result = ApplyPatternMap(result, Array( _
+        Array("ce", "se"), _
+        Array("ci", "si"), _
+        Array("ge", "he"), _
+        Array("gi", "hi"), _
+        Array("ll", "y"), _
+        Array("qu", "k"), _
+        Array("th", "t"), _
+        Array("ph", "f") _
+    ))
+
+    result = Replace(result, "v", "b")
+    result = Replace(result, "z", "s")
     result = Replace(result, "r", "rr")
+    result = Replace(result, "rrrr", "rr")
+
     AccentSpanishInfluenced = result
 End Function
 
 Private Function AccentIndian(ByVal lower As String) As String
     Dim result As String
-    result = lower
-    If Left$(result, 1) = "w" Then result = "v" & Mid$(result, 2)
+    Dim wordMap As Variant
+
+    wordMap = Array( _
+        Array("water", "vaw-tuh"), _
+        Array("party", "pahr-tee"), _
+        Array("people", "pee-pul"), _
+        Array("power", "pah-wer"), _
+        Array("please", "pleez") _
+    )
+
+    result = ApplyWordMap(lower, wordMap)
     result = Replace(result, "th", "t")
-    result = Replace(result, "z", "j")
+    result = Replace(result, "ph", "f")
     result = Replace(result, "tion", "shun")
-    result = Replace(result, "ble", "buhl")
+    result = Replace(result, "sion", "zhun")
+    result = Replace(result, "z", "j")
+    result = Replace(result, "w", "v")
+    result = Replace(result, "vv", "v")
+
     AccentIndian = result
 End Function
 
 Private Function AccentSomali(ByVal lower As String) As String
     Dim result As String
-    result = lower
-    result = Replace(result, "th", "t")
-    result = Replace(result, "p", "b")
-    result = Replace(result, "sh", "s")
-    result = Replace(result, "ch", "sh")
-    If Left$(result, 1) = "q" Then result = "k" & Mid$(result, 2)
+    Dim wordMap As Variant
+    Dim patternMap As Variant
+
+    result = AccentGeneral(lower)
+
+    wordMap = Array( _
+        Array("my", "ma'"), _
+        Array("mine", "mahn"), _
+        Array("i", "ay"), _
+        Array("i'm", "ay'm"), _
+        Array("i'll", "ay'll"), _
+        Array("i've", "ay've"), _
+        Array("voice", "voyss"), _
+        Array("block", "bloock"), _
+        Array("sun", "saawn"), _
+        Array("crown", "craawn"), _
+        Array("from", "frum"), _
+        Array("coast", "coost"), _
+        Array("worldwide", "worrldwyyyd"), _
+        Array("city", "siti"), _
+        Array("never", "nevvah"), _
+        Array("ground", "graawnd"), _
+        Array("down", "daawn"), _
+        Array("now", "naaw"), _
+        Array("people", "peepul"), _
+        Array("brother", "bruddah") _
+    )
+
+    result = ApplyWordMap(result, wordMap)
+
+    patternMap = Array( _
+        Array("tion", "shun"), _
+        Array("ough", "oof"), _
+        Array("igh", "ay"), _
+        Array("oo", "uu"), _
+        Array("ow", "aaw"), _
+        Array("ou", "oo"), _
+        Array("ea", "ee"), _
+        Array("ai", "ay"), _
+        Array("ck", "kk"), _
+        Array("ph", "f"), _
+        Array("th", "t") _
+    )
+
+    result = ApplyPatternMap(result, patternMap)
+    result = Replace(result, "q", "k")
+
     AccentSomali = result
-End Function
-
-End Sub
-
-'========================
+End Function\r\n'========================
 ' DETERMINISTIC FALLBACKS (PREMISE-DRIVEN)
 '========================
 Private Function ResolvePremise() As String
@@ -2104,3 +2269,7 @@ Public Sub RGF_RebuildPreservingGenres()
         MsgBox "Genres restored. (Backup sheet left in workbook: Genre_Library_BACKUP)", vbInformation
     End If
 End Sub
+
+
+
+
