@@ -1359,96 +1359,15 @@ Private Function BuildOutroDeterministic() As String()
     BuildOutroDeterministic = a
 End Function
 
-Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
-    Dim ws As Worksheet, target As Range, raw As Variant
-    If Not SheetExistsRGF("AI_Settings") Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-        Exit Function
-    End If
 
-    Set ws = Worksheets("AI_Settings")
-    Set target = ResolveLabelRange(ws, labelText)
-    If target Is Nothing Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-        Exit Function
-    End If
 
-    raw = target.Value
-    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-    Else
-        GetSettingValue = raw
-    End If
-End Function
 
-Private Function CsvToArray(ByVal csv As String) As Variant
-    Dim parts() As String, cleaned() As String, value As String
-    Dim i As Long, count As Long
-    If Len(Trim$(csv)) = 0 Then Exit Function
 
-    parts = Split(csv, ",")
-    For i = LBound(parts) To UBound(parts)
-        value = Trim$(CStr(parts(i)))
-        If Len(value) > 0 Then
-            ReDim Preserve cleaned(count)
-            cleaned(count) = value
-            count = count + 1
-        End If
-    Next i
 
-    If count > 0 Then CsvToArray = cleaned
-End Function
 
-Private Function BuildJsonArray(items As Variant) As String
-    Dim pieces() As String, i As Long, n As Long, entry As String
-    If Not ArrAllocated(items) Then
-        BuildJsonArray = "[]"
-        Exit Function
-    End If
 
-    For i = LBound(items) To UBound(items)
-        entry = Trim$(CStr(items(i)))
-        If Len(entry) > 0 Then
-            ReDim Preserve pieces(n)
-            pieces(n) = """" & JsonEscape(entry) & """"
-            n = n + 1
-        End If
-    Next i
 
-    If n = 0 Then
-        BuildJsonArray = "[]"
-    Else
-        BuildJsonArray = "[" & Join(pieces, ",") & "]"
-    End If
-End Function
 
-Private Function JsonNumber(ByVal value As Double) As String
-    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
-End Function
-
-Private Function NormalizeResponseFormat(ByVal formatText As String) As String
-    Dim trimmed As String
-    trimmed = Trim$(formatText)
-    If Len(trimmed) = 0 Then
-        NormalizeResponseFormat = "{""type"":""text""}"
-    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
-        NormalizeResponseFormat = trimmed
-    Else
-        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
-    End If
-End Function
 
 '========================
 ' UTILITIES
@@ -1559,96 +1478,15 @@ Private Function ResolveLabelRange(ws As Worksheet, ByVal labelText As String) A
     End If
 End Function
 
-Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
-    Dim ws As Worksheet, target As Range, raw As Variant
-    If Not SheetExistsRGF("AI_Settings") Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-        Exit Function
-    End If
 
-    Set ws = Worksheets("AI_Settings")
-    Set target = ResolveLabelRange(ws, labelText)
-    If target Is Nothing Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-        Exit Function
-    End If
 
-    raw = target.Value
-    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-    Else
-        GetSettingValue = raw
-    End If
-End Function
 
-Private Function CsvToArray(ByVal csv As String) As Variant
-    Dim parts() As String, cleaned() As String, value As String
-    Dim i As Long, count As Long
-    If Len(Trim$(csv)) = 0 Then Exit Function
 
-    parts = Split(csv, ",")
-    For i = LBound(parts) To UBound(parts)
-        value = Trim$(CStr(parts(i)))
-        If Len(value) > 0 Then
-            ReDim Preserve cleaned(count)
-            cleaned(count) = value
-            count = count + 1
-        End If
-    Next i
 
-    If count > 0 Then CsvToArray = cleaned
-End Function
 
-Private Function BuildJsonArray(items As Variant) As String
-    Dim pieces() As String, i As Long, n As Long, entry As String
-    If Not ArrAllocated(items) Then
-        BuildJsonArray = "[]"
-        Exit Function
-    End If
 
-    For i = LBound(items) To UBound(items)
-        entry = Trim$(CStr(items(i)))
-        If Len(entry) > 0 Then
-            ReDim Preserve pieces(n)
-            pieces(n) = """" & JsonEscape(entry) & """"
-            n = n + 1
-        End If
-    Next i
 
-    If n = 0 Then
-        BuildJsonArray = "[]"
-    Else
-        BuildJsonArray = "[" & Join(pieces, ",") & "]"
-    End If
-End Function
 
-Private Function JsonNumber(ByVal value As Double) As String
-    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
-End Function
-
-Private Function NormalizeResponseFormat(ByVal formatText As String) As String
-    Dim trimmed As String
-    trimmed = Trim$(formatText)
-    If Len(trimmed) = 0 Then
-        NormalizeResponseFormat = "{""type"":""text""}"
-    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
-        NormalizeResponseFormat = trimmed
-    Else
-        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
-    End If
-End Function
 
 '========================
 Private Function SheetExistsRGF(Name As String) As Boolean
@@ -1935,96 +1773,15 @@ Private Function AppendStyleAccent(styleBlock As String, accentTag As String) As
     End If
 End Function
 
-Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
-    Dim ws As Worksheet, target As Range, raw As Variant
-    If Not SheetExistsRGF("AI_Settings") Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-        Exit Function
-    End If
 
-    Set ws = Worksheets("AI_Settings")
-    Set target = ResolveLabelRange(ws, labelText)
-    If target Is Nothing Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-        Exit Function
-    End If
 
-    raw = target.Value
-    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
-        If IsMissing(defaultValue) Then
-            GetSettingValue = ""
-        Else
-            GetSettingValue = defaultValue
-        End If
-    Else
-        GetSettingValue = raw
-    End If
-End Function
 
-Private Function CsvToArray(ByVal csv As String) As Variant
-    Dim parts() As String, cleaned() As String, value As String
-    Dim i As Long, count As Long
-    If Len(Trim$(csv)) = 0 Then Exit Function
 
-    parts = Split(csv, ",")
-    For i = LBound(parts) To UBound(parts)
-        value = Trim$(CStr(parts(i)))
-        If Len(value) > 0 Then
-            ReDim Preserve cleaned(count)
-            cleaned(count) = value
-            count = count + 1
-        End If
-    Next i
 
-    If count > 0 Then CsvToArray = cleaned
-End Function
 
-Private Function BuildJsonArray(items As Variant) As String
-    Dim pieces() As String, i As Long, n As Long, entry As String
-    If Not ArrAllocated(items) Then
-        BuildJsonArray = "[]"
-        Exit Function
-    End If
 
-    For i = LBound(items) To UBound(items)
-        entry = Trim$(CStr(items(i)))
-        If Len(entry) > 0 Then
-            ReDim Preserve pieces(n)
-            pieces(n) = """" & JsonEscape(entry) & """"
-            n = n + 1
-        End If
-    Next i
 
-    If n = 0 Then
-        BuildJsonArray = "[]"
-    Else
-        BuildJsonArray = "[" & Join(pieces, ",") & "]"
-    End If
-End Function
 
-Private Function JsonNumber(ByVal value As Double) As String
-    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
-End Function
-
-Private Function NormalizeResponseFormat(ByVal formatText As String) As String
-    Dim trimmed As String
-    trimmed = Trim$(formatText)
-    If Len(trimmed) = 0 Then
-        NormalizeResponseFormat = "{""type"":""text""}"
-    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
-        NormalizeResponseFormat = trimmed
-    Else
-        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
-    End If
-End Function
 
 '========================
 ' ONE-CLICK SETUP
