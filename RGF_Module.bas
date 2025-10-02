@@ -1,10 +1,10 @@
 Option Explicit
 ' =============================================================================
-' RGF f·p·e — COMPLETE MASTER MODULE (ONE FILE)
+' RGF f.p.e -- COMPLETE MASTER MODULE (ONE FILE)
 ' iMob Worldwide x Suno v5
 '
 ' WHAT'S INSIDE
-' - RGF_Sheet builder (φ, π, e math; weights; inputs)
+' - RGF_Sheet builder (phi, pi, e math; weights; inputs)
 ' - User Sections (Title/Intro/Hook/Verse1/Verse2/Bridge/Outro/Notes)
 ' - Premise dropdown (human topics) + auto premise resolver
 ' - Preset buttons (Street/Club/Backpack/Streaming/Defaults)
@@ -21,7 +21,7 @@ Option Explicit
 ' 2) Pick a Genre in E2 (optional) and a Premise in E10 (optional).
 ' 3) Adjust Base/Derived inputs + Weights or use presets.
 ' 4) Click Make Brief / Make Suno.
-' 5) Build Prompt → (optional) Call AI (requires API key).
+' 5) Build Prompt -> (optional) Call AI (requires API key).
 ' =============================================================================
 
 
@@ -51,17 +51,17 @@ Public Sub BuildRGFSheet()
     End With
 
     r = 2
-    AddRow ws, r, "TITLE", "RGF f·p·e Scoring Sheet", ""
+    AddRow ws, r, "TITLE", "RGF f.p.e Scoring Sheet", ""
 
     ' Constants
-    AddRow ws, r, "Constants", "phi (φ)", "=(1+SQRT(5))/2"
-    AddRow ws, r, "Constants", "pi (π)", "=PI()"
+    AddRow ws, r, "Constants", "phi (phi)", "=(1+SQRT(5))/2"
+    AddRow ws, r, "Constants", "pi (pi)", "=PI()"
     AddRow ws, r, "Constants", "e", "=EXP(1)"
 
     ' Controls
-    AddRow ws, r, "Controls", "kappa (κ)", "0.5"
-    AddRow ws, r, "Controls", "mu (µ)", "0.6"
-    AddRow ws, r, "Controls", "lambda (λ)", "1.0"
+    AddRow ws, r, "Controls", "kappa (kappa)", "0.5"
+    AddRow ws, r, "Controls", "mu (mu)", "0.6"
+    AddRow ws, r, "Controls", "lambda (lambda)", "1.0"
 
     ' Weights
     AddRow ws, r, "Weights", "w_c (Core)", "0.24"
@@ -72,20 +72,20 @@ Public Sub BuildRGFSheet()
     AddRow ws, r, "Weights", "w_p (Perf)", "0.12"
     AddRow ws, r, "Weights", "Weights Sum", "=SUM(C9:C14)"
 
-    ' Base Inputs (0–10)
-    AddRow ws, r, "Base Inputs (0–10)", "Cadence (C)", "9"
-    AddRow ws, r, "Base Inputs (0–10)", "Feel (F)", "8"
-    AddRow ws, r, "Base Inputs (0–10)", "Wordplay (W)", "8.5"
-    AddRow ws, r, "Base Inputs (0–10)", "Lyrical Depth (L)", "7"
-    AddRow ws, r, "Base Inputs (0–10)", "Beat Fit (B)", "9"
-    AddRow ws, r, "Base Inputs (0–10)", "Performance (P)", "8"
-    AddRow ws, r, "Base Inputs (0–10)", "Structure (S)", "7.5"
-    AddRow ws, r, "Base Inputs (0–10)", "Versatility (V)", "6"
-    AddRow ws, r, "Base Inputs (0–10)", "Anthemic (A)", "8.8"
-    AddRow ws, r, "Base Inputs (0–10)", "Complexity (X)", "7"
-    AddRow ws, r, "Base Inputs (0–10)", "Style (Y)", "8.2"
+    ' Base Inputs (0-10)
+    AddRow ws, r, "Base Inputs (0-10)", "Cadence (C)", "9"
+    AddRow ws, r, "Base Inputs (0-10)", "Feel (F)", "8"
+    AddRow ws, r, "Base Inputs (0-10)", "Wordplay (W)", "8.5"
+    AddRow ws, r, "Base Inputs (0-10)", "Lyrical Depth (L)", "7"
+    AddRow ws, r, "Base Inputs (0-10)", "Beat Fit (B)", "9"
+    AddRow ws, r, "Base Inputs (0-10)", "Performance (P)", "8"
+    AddRow ws, r, "Base Inputs (0-10)", "Structure (S)", "7.5"
+    AddRow ws, r, "Base Inputs (0-10)", "Versatility (V)", "6"
+    AddRow ws, r, "Base Inputs (0-10)", "Anthemic (A)", "8.8"
+    AddRow ws, r, "Base Inputs (0-10)", "Complexity (X)", "7"
+    AddRow ws, r, "Base Inputs (0-10)", "Style (Y)", "8.2"
 
-    ' Derived Inputs (0–1)
+    ' Derived Inputs (0-1)
     AddRow ws, r, "Derived Inputs", "Rhyme Entropy H_rhyme", "0.65"
     AddRow ws, r, "Derived Inputs", "Multis per bar M_multi", "0.70"
     AddRow ws, r, "Derived Inputs", "Flow Variance Var_flow", "0.50"
@@ -93,10 +93,10 @@ Public Sub BuildRGFSheet()
     AddRow ws, r, "Derived Inputs", "Crowd Response R_crowd", "0.65"
     AddRow ws, r, "Derived Inputs", "Originality U", "0.70"
     AddRow ws, r, "Derived Inputs", "Timbre Cohesion S_tone", "0.80"
-    AddRow ws, r, "Derived Inputs", "Swagger Phase φ (0–1)", "0.60"
+    AddRow ws, r, "Derived Inputs", "Swagger Phase phi (0-1)", "0.60"
     AddRow ws, r, "Derived Inputs", "Dynamic Range D", "0.70"
     AddRow ws, r, "Derived Inputs", "Cosine Match cosa (-1..1)", "0.75"
-    AddRow ws, r, "Derived Inputs", "Phase Drift φf (fraction of π)", "0.30"
+    AddRow ws, r, "Derived Inputs", "Phase Drift phi_f (fraction of pi)", "0.30"
     AddRow ws, r, "Derived Inputs", "Group Manual Fit G", "0.75"
 
     ' Normalized helpers
@@ -111,7 +111,7 @@ Public Sub BuildRGFSheet()
     AddRow ws, r, "Normalized", "A_norm", "=C24/10"
     AddRow ws, r, "Normalized", "X_norm", "=C25/10"
     AddRow ws, r, "Normalized", "Y_norm", "=C26/10"
-    AddRow ws, r, "Helper", "φf_rad", "=C37*C4"
+    AddRow ws, r, "Helper", "phi_f_rad", "=C37*C4"
 
     ' BLOCKS
     AddRow ws, r, "BLOCKS", "Core", "=POWER(C39^C3*C41^SQRT(C4)*C43^C5*C45^LN(C4)*C40^SQRT(C3),1/(C3+SQRT(C4)+C5+LN(C4)+SQRT(C3)))"
@@ -148,15 +148,29 @@ Public Sub BuildRGFSheet()
     End With
     If Len(Trim$(ws.Range("E10").Value)) = 0 Then ws.Range("E10").Value = "(auto)"
 
+    ws.Range("E12").Value = "Phonetic Mode": ws.Range("E12").Font.Bold = True
+    ws.Range("E13").ClearContents
+    With ws.Range("E13").Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, _
+             Formula1:="Neutral / Standard,American English (General),American English (Southern),American English (New York),American English (Midwest),Spanish-Influenced English,Indian English Accent,Somali English Accent"
+        .IgnoreBlank = True: .InCellDropdown = True
+        .InputTitle = "Select a phonetic mode"
+        .InputMessage = "Pick an accent reference. Lyrics stay English; this only guides pronunciation."
+    End With
+    If Len(Trim$(ws.Range("E13").Value)) = 0 Then ws.Range("E13").Value = "Neutral / Standard"
+    ws.Range("E13").Interior.Color = RGB(255, 250, 240)
+    AssignRangeName ws, ws.Range("E13"), "PhoneticMode"
+
     ws.Columns("A:C").AutoFit
     ActiveWindow.SplitRow = 1
     ActiveWindow.FreezePanes = True
     ColorBySection ws
     AddScoreBands ws
 
-    AddDV ws.Range("C16:C26"), "Base Inputs 0–10", "Enter 0–10. Sheet normalizes to 0–1.", 0, 10
-    AddDV ws.Range("C27:C38"), "Derived Inputs 0–1", "Enter 0–1. Q_chant≈0.7–0.9; R_crowd≈0.5–0.8; cosa∈[-1,1].", 0, 1
-    AddDV ws.Range("C9:C14"), "Weights", "Weights should sum ≈1. Use preset buttons or edit directly.", 0, 1
+    AddDV ws.Range("C16:C26"), "Base Inputs 0-10", "Enter 0-10. Sheet normalizes to 0-1.", 0, 10
+    AddDV ws.Range("C27:C38"), "Derived Inputs 0-1", "Enter 0-1. Q_chanta per mille ^0.7-0.9; R_crowda per mille ^0.5-0.8; cosaa^^[-1,1].", 0, 1
+    AddDV ws.Range("C9:C14"), "Weights", "Weights should sum a per mille ^1. Use preset buttons or edit directly.", 0, 1
 
     AddPresetButtons ws
     AddBriefAndSunoButtons
@@ -167,16 +181,19 @@ End Sub
 ' USER SECTIONS
 '========================
 Private Sub AddUserSectionsBlock(ws As Worksheet)
-    Dim startRow As Long, labels As Variant, i As Long
+    Dim startRow As Long, labels As Variant, nameSuffix As Variant, i As Long
     startRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row + 2
-    ws.Cells(startRow, 1).Value = "USER SECTIONS (optional — used verbatim if filled)"
+    ws.Cells(startRow, 1).Value = "USER SECTIONS (optional - used verbatim if filled)"
     ws.Cells(startRow, 1).Font.Bold = True
 
     labels = Array("Title idea", "Intro", "Hook / Chorus", "Verse 1", "Verse 2", "Bridge", "Outro", "Notes")
+    nameSuffix = Array("User_TitleIdea", "User_Intro", "User_Hook", "User_Verse1", "User_Verse2", "User_Bridge", "User_Outro", "User_Notes")
+
     For i = 0 To UBound(labels)
         ws.Cells(startRow + 1 + i, 1).Value = labels(i)
         ws.Cells(startRow + 1 + i, 3).Value = ""
         ws.Rows(startRow + 1 + i).RowHeight = 42
+        AssignRangeName ws, ws.Cells(startRow + 1 + i, 3), CStr(nameSuffix(i))
     Next i
 
     With ws.Range(ws.Cells(startRow, 1), ws.Cells(startRow + UBound(labels) + 1, 3))
@@ -201,7 +218,7 @@ Public Sub BuildHelpSheet()
     End If
 
     row = 1
-    sh.Cells(row, 1).Value = "RGF f·p·e — How to Use": sh.Cells(row, 1).Font.Bold = True: row = row + 2
+    sh.Cells(row, 1).Value = "RGF f.p.e -- How to Use": sh.Cells(row, 1).Font.Bold = True: row = row + 2
     lines = BuildHelpLines()
     For i = LBound(lines) To UBound(lines)
         sh.Cells(row, 1).Value = lines(i)
@@ -215,15 +232,16 @@ Private Function BuildHelpLines() As String()
     ReDim tmp(1 To 24)
     n = 0
     n = n + 1: tmp(n) = "1) Choose a preset or set C9:C14 (weights)."
-    n = n + 1: tmp(n) = "2) Score Base Inputs 0–10 (C16:C26) and Derived 0–1 (C27:C38)."
+    n = n + 1: tmp(n) = "2) Score Base Inputs 0-10 (C16:C26) and Derived 0-1 (C27:C38)."
     n = n + 1: tmp(n) = "3) (Optional) Fill USER SECTIONS (verbatim lock for Suno)."
-    n = n + 1: tmp(n) = "4) Pick Genre (E2) and Premise (E10) — Premise steers story."
+    n = n + 1: tmp(n) = "4) Pick Genre (E2), Premise (E10), and (optional) Phonetic Mode (E13)."
     n = n + 1: tmp(n) = "5) Click Make Brief / Make Suno."
-    n = n + 1: tmp(n) = "6) Setup AI → Build Prompt → (optional) Call AI with API key."
-    n = n + 1: tmp(n) = "Formatting: [Meta Tags], (other voices), [* noises *]. Style block uses [tag | tag | …]."
+    n = n + 1: tmp(n) = "6) Setup AI -> Build Prompt -> (optional) Call AI with API key."
+    n = n + 1: tmp(n) = "Formatting: [Meta Tags], (other voices), [* noises *]. Style block uses [tag | tag | ...]."
     ReDim Preserve tmp(1 To n)
     BuildHelpLines = tmp
 End Function
+
 
 '========================
 ' PRESET BUTTONS
@@ -327,6 +345,7 @@ Public Sub GenerateCreativeBrief()
     Dim Sn#, Vn#: Sn = NzD(ws.Range("C22").Value) / 10: Vn = NzD(ws.Range("C23").Value) / 10
 
     Dim tempo$, structure$, hookPlan$, flowPlan$, rhymePlan$, adlibs$, audience$, vibe$
+    Dim phonLabel$, phonInstruction$, phonTag$
     If Anthem >= 0.8 And Core >= 0.8 Then
         tempo = "energetic, anthemic pocket"
     ElseIf Tech >= 0.7 And Core >= 0.75 Then
@@ -336,36 +355,36 @@ Public Sub GenerateCreativeBrief()
     End If
 
     If Sn >= 0.75 And Vn >= 0.6 Then
-        structure = "Intro 4 → Hook 8 → Verse1 16 → Hook 8 → Verse2 16 → Bridge 4–8 → Hook 8 → Outro 4"
+        structure = "Intro 4 a-' Hook 8 a-' Verse1 16 a-' Hook 8 a-' Verse2 16 a-' Bridge 4-8 a-' Hook 8 a-' Outro 4"
     ElseIf Sn >= 0.6 Then
-        structure = "Intro 4 → Hook 8 → Verse 16 → Hook 8 → Verse 16 → Hook 8"
+        structure = "Intro 4 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8"
     Else
-        structure = "Intro 2 → Hook 8 → Verse 12 → Hook 8 → Verse 12 → Hook 8"
+        structure = "Intro 2 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8"
     End If
 
     If Anthem >= 0.8 Then
-        hookPlan = "Chantable 4–6 words; 2-bar call/response; gang vox last 2 bars"
+        hookPlan = "Chantable 4-6 words; 2-bar call/response; gang vox last 2 bars"
     ElseIf Anthem >= 0.65 Then
-        hookPlan = "Memorable phrase + micro-melody; doubles on bars 5–8"
+        hookPlan = "Memorable phrase + micro-melody; doubles on bars 5-8"
     Else
         hookPlan = "Understated hook; verse motif leads; optional post-hook ad-lib"
     End If
-    If SyncV < 0.7 Then hookPlan = hookPlan & " • Re-cut for pocket (φf high)."
+    If SyncV < 0.7 Then hookPlan = hookPlan & " - Re-cut for pocket (phi_f high)."
 
     If Tech >= 0.75 And Reg >= 0.95 Then
         flowPlan = "Two switch-ups per 16; brief double-time burst."
-        rhymePlan = "2–4 internal multis/line; end-rhyme chain every 2 bars."
+        rhymePlan = "2-4 internal multis/line; end-rhyme chain every 2 bars."
     ElseIf Tech >= 0.6 Then
         flowPlan = "One switch-up per 16; pocket-first."
-        rhymePlan = "1–2 internal multis/line; consistent end-rhyme."
+        rhymePlan = "1-2 internal multis/line; consistent end-rhyme."
     Else
         flowPlan = "Single flow per verse; diction-forward."
         rhymePlan = "End-rhyme only; occasional internal."
     End If
-    If Reg < 0.9 Then rhymePlan = rhymePlan & " • R low: simplify one scheme/verse."
+    If Reg < 0.9 Then rhymePlan = rhymePlan & " - R low: simplify one scheme/verse."
 
     If Perf >= 0.7 Then
-        adlibs = "Hook: main + double + L/R backs; Verses: backs on bars 13–16; hype ad-libs on punchlines (±30% pan)."
+        adlibs = "Hook: main + double + L/R backs; Verses: backs on bars 13-16; hype ad-libs on punchlines (+/-30% pan)."
     Else
         adlibs = "Hook: single double; Verses: sparse ad-libs on key punchlines."
     End If
@@ -386,6 +405,8 @@ Public Sub GenerateCreativeBrief()
         vibe = "Cohesive tone; one tasteful delay throw"
     End If
 
+    GetPhoneticMode phonLabel, phonInstruction, phonTag
+
     b.Range("A1").Value = "Creative Brief (Auto-generated)"
     b.Range("A1").Font.Bold = True
     b.Range("A3").Value = "Final Score":       b.Range("B3").Value = Format(FinalScore, "0.0")
@@ -397,6 +418,7 @@ Public Sub GenerateCreativeBrief()
     b.Range("A9").Value = "Ad-libs":           b.Range("B9").Value = adlibs
     b.Range("A10").Value = "Audience":         b.Range("B10").Value = audience
     b.Range("A11").Value = "Style/Vibe":       b.Range("B11").Value = vibe
+    b.Range("A12").Value = "Phonetic Mode":    b.Range("B12").Value = phonInstruction
     b.Range("A13").Value = "Note":             b.Range("B13").Value = "Tweak inputs or weights; regenerate as needed."
     b.Columns("A:B").EntireColumn.AutoFit
 End Sub
@@ -420,7 +442,8 @@ Public Sub GenerateSunoFromSheet()
     GroupF = NzD(ws.Range("C56").Value): FinalScore = NzD(ws.Range("C60").Value)
 
     Dim tempoHint$, structureHint$, excludeCsv$, styleLine$
-    tempoHint = IIf(Anthem >= 0.75, "100–110 bpm feel", IIf(Tech >= 0.7, "84–96 bpm feel", "92–104 bpm feel"))
+    Dim phonLabel$, phonInstruction$, phonTag$
+    tempoHint = IIf(Anthem >= 0.75, "100-110 bpm feel", IIf(Tech >= 0.7, "84-96 bpm feel", "92-104 bpm feel"))
     styleLine = NormalizeStyleTagsFromList("anthemic rap", "chant hook", "pocket-tight flow", "minor-key trap", tempoHint, "warm 808s", "internal rhymes", "evolving chorus", "call-and-response", "ad-lib stacks")
 
     Dim gOK As Boolean, gStyle$, gTempo$, gStruct$, gExclude$
@@ -432,9 +455,15 @@ Public Sub GenerateSunoFromSheet()
         excludeCsv = gExclude
     End If
 
+    GetPhoneticMode phonLabel, phonInstruction, phonTag
+    styleLine = AppendStyleAccent(styleLine, phonTag)
+
     Dim title$: title = FirstNonEmpty(SectionText(ws, "Title idea"), IIf(FinalScore >= 90, "Prime Cosine (RGF Run-Up)", IIf(FinalScore >= 80, "Phi In The Pocket (RGF Anthem)", "Function on Fire (RGF Build)")))
 
     Dim L() As String, k As Long
+    If LCase$(phonLabel) <> "neutral / standard" Then
+        AppendLine L, "[Pronunciation] " & phonInstruction
+    End If
     AppendLine L, "[Producer Tag] iMob Worldwide!"
     AppendLine L, ""
 
@@ -450,7 +479,7 @@ Public Sub GenerateSunoFromSheet()
         AppendBlock L, BuildVerseDeterministic(Tech, StyleSig, 1)
     End If
     If Len(Trim$(SectionText(ws, "Hook / Chorus"))) > 0 Then
-        AppendLine L, "[HOOK – reprise]": AppendLinesFromCell L, SectionText(ws, "Hook / Chorus")
+        AppendLine L, "[HOOK - reprise]": AppendLinesFromCell L, SectionText(ws, "Hook / Chorus")
     Else
         AppendBlock L, BuildHookEvolve(Anthem, GroupF)
     End If
@@ -504,6 +533,14 @@ Private Sub AddKeywordFields(ws As Worksheet)
     ws.Cells(startRow + 6, 3).Value = 3
     ws.Cells(startRow + 7, 3).Value = ""
 
+    AssignRangeName ws, ws.Cells(startRow + 1, 3), "Theme"
+    AssignRangeName ws, ws.Cells(startRow + 2, 3), "Keywords"
+    AssignRangeName ws, ws.Cells(startRow + 3, 3), "MustInclude"
+    AssignRangeName ws, ws.Cells(startRow + 4, 3), "Forbidden"
+    AssignRangeName ws, ws.Cells(startRow + 5, 3), "StyleTags"
+    AssignRangeName ws, ws.Cells(startRow + 6, 3), "LengthTarget"
+    AssignRangeName ws, ws.Cells(startRow + 7, 3), "AudienceNotes"
+
     With ws.Range(ws.Cells(startRow, 1), ws.Cells(startRow + 7, 3)).Interior
         .Color = RGB(240, 248, 255)
     End With
@@ -553,6 +590,7 @@ Public Sub BuildPromptFromSheet()
     aud = Trim$(CStr(src.Cells(FindLabelRow(src, "Audience notes"), "C").Value))
 
     Dim tempo$, structure$, hookPlan$, flowPlan$, rhymePlan$, audience$, vibe$, premise$
+    Dim phonLabel$, phonInstruction$, phonTag$
     If Anthem >= 0.8 And NzD(src.Range("C50").Value) >= 0.8 Then
         tempo = "energetic, anthemic pocket"
     ElseIf Tech >= 0.7 And NzD(src.Range("C50").Value) >= 0.75 Then
@@ -562,27 +600,27 @@ Public Sub BuildPromptFromSheet()
     End If
 
     If Sn >= 0.75 And Vn >= 0.6 Then
-        structure = "Intro 4 → Hook 8 → Verse1 16 → Hook 8 → Verse2 16 → Bridge 4–8 → Hook 8 → Outro 4"
+        structure = "Intro 4 a-' Hook 8 a-' Verse1 16 a-' Hook 8 a-' Verse2 16 a-' Bridge 4-8 a-' Hook 8 a-' Outro 4"
     ElseIf Sn >= 0.6 Then
-        structure = "Intro 4 → Hook 8 → Verse 16 → Hook 8 → Verse 16 → Hook 8"
+        structure = "Intro 4 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8"
     Else
-        structure = "Hook 8 → Verse 12 → Hook 8 → Verse 12 → Hook 8"
+        structure = "Hook 8 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8"
     End If
 
     If Anthem >= 0.8 Then
         hookPlan = "Chantable phrase; 2-bar call/response; gang vox last 2 bars"
     ElseIf Anthem >= 0.65 Then
-        hookPlan = "Memorable phrase + micro-melody; doubles on bars 5–8"
+        hookPlan = "Memorable phrase + micro-melody; doubles on bars 5-8"
     Else
         hookPlan = "Understated hook; verse motif drives; optional post-hook ad-lib"
     End If
 
     If Tech >= 0.75 And Reg >= 0.95 Then
         flowPlan = "Two switch-ups per 16; brief double-time burst"
-        rhymePlan = "2–4 internal multis/line; end-rhyme chain every 2 bars"
+        rhymePlan = "2-4 internal multis/line; end-rhyme chain every 2 bars"
     ElseIf Tech >= 0.6 Then
         flowPlan = "One switch-up per 16; pocket-first"
-        rhymePlan = "1–2 internal multis/line; consistent end-rhyme"
+        rhymePlan = "1-2 internal multis/line; consistent end-rhyme"
     Else
         flowPlan = "Single flow per verse; diction-forward"
         rhymePlan = "End-rhyme only; occasional internal"
@@ -606,33 +644,38 @@ Public Sub BuildPromptFromSheet()
 
     premise = ResolvePremise()
 
+    GetPhoneticMode phonLabel, phonInstruction, phonTag
+
     ' ===== GENRE OVERRIDES =====
-    Dim gStyle$, gTempo$, gStruct$, gExclude$, hasW As Boolean, wc#, wt#, wa#, ws_#, wg#, wp#, gName$
+    Dim gStyle$, gTempo$, gStruct$, gExclude$, hasW As Boolean, wc#, wt#, wa#, ws_#, wg#, wp#, gName$, accentStyleBlock$
     gName = Trim$(CStr(src.Range("E2").Value))
     If ReadCurrentGenre(gStyle, gTempo, gStruct, gExclude, hasW, wc, wt, wa, ws_, wg, wp) Then
         If Len(Trim$(gTempo)) > 0 Then tempo = gTempo
         If Len(Trim$(gStruct)) > 0 Then structure = gStruct
     End If
 
+    accentStyleBlock = gStyle
+    If Len(phonTag) > 0 Then accentStyleBlock = AppendStyleAccent(accentStyleBlock, phonTag)
+
     Dim P() As String
-    AppendLine P, "You are Suno v5 Lyrical Expert – iMob Worldwide. Generate a completely original song."
+    AppendLine P, "You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song."
     AppendLine P, "Output exactly four code blocks, in this order: 1) title 2) style 3) exclude 4) lyrics."
     AppendLine P, "Formatting rules (MANDATORY):"
-    AppendLine P, "• All meta tags/directives must be in [square brackets]. Examples: [HOOK], [Verse 1], [Bridge], [Outro], [Chant], [Gang Vox], [delay hits hard]."
-    AppendLine P, "• Any words by another voice / echo / ad-lib go in (parentheses): (yeah), (echo), (crowd: ay!)."
-    AppendLine P, "• Any noises/SFX go in bracketed asterisks: [* cheer *], [* breath *], [* bass drop *]."
-    AppendLine P, "• The Style block is a single bracketed list of tags separated by pipes, e.g.: [anthemic rap | chant hook | evolving chorus | confident bounce]."
-    AppendLine P, "• Exclude block is lowercase nouns, comma-separated."
-    AppendLine P, "• Begin lyrics with: [Producer Tag] iMob Worldwide!"
-    AppendLine P, "• 3+ minutes; evolving choruses; dense internals; stage cues in [brackets]; call-and-response via (parentheses)."
-    AppendLine P, "• DO NOT reference instruments, production gear, BPM, 'two and four', mix/FX terms, or arrangement jargon unless explicitly asked."
-    AppendLine P, "• Focus on human-centered premises and emotions (love/loyalty, heartbreak/healing, hustle/ambition, betrayal/trust, triumph/celebration, redemption/growth, city pride/belonging, struggle/perseverance)."
-    AppendLine P, "• Keep phrasing conversational; avoid obscure slang unless requested."
-    AppendLine P, "• Sanity-check: coherent POV/tense, plausible imagery, strong rhyme chains, natural idioms, on-beat phrasing."
+    AppendLine P, "- All meta tags/directives must be in [square brackets]. Examples: [HOOK], [Verse 1], [Bridge], [Outro], [Chant], [Gang Vox], [delay hits hard]."
+    AppendLine P, "- Any words by another voice / echo / ad-lib go in (parentheses): (yeah), (echo), (crowd: ay!)."
+    AppendLine P, "- Any noises/SFX go in bracketed asterisks: [* cheer *], [* breath *], [* bass drop *]."
+    AppendLine P, "- The Style block is a single bracketed list of tags separated by pipes, e.g.: [anthemic rap | chant hook | evolving chorus | confident bounce]."
+    AppendLine P, "- Exclude block is lowercase nouns, comma-separated."
+    AppendLine P, "- Begin lyrics with: [Producer Tag] iMob Worldwide!"
+    AppendLine P, "- 3+ minutes; evolving choruses; dense internals; stage cues in [brackets]; call-and-response via (parentheses)."
+    AppendLine P, "- DO NOT reference instruments, production gear, BPM, 'two and four', mix/FX terms, or arrangement jargon unless explicitly asked."
+    AppendLine P, "- Focus on human-centered premises and emotions (love/loyalty, heartbreak/healing, hustle/ambition, betrayal/trust, triumph/celebration, redemption/growth, city pride/belonging, struggle/perseverance)."
+    AppendLine P, "- Keep phrasing conversational; avoid obscure slang unless requested."
+    AppendLine P, "- Sanity-check: coherent POV/tense, plausible imagery, strong rhyme chains, natural idioms, on-beat phrasing."
     AppendLine P, ""
 
     If Len(gName) > 0 Then AppendLine P, "Chosen Genre (for feel only): " & gName
-    If Len(gStyle) > 0 Then AppendLine P, "Use this exact Style block for Block 2: " & gStyle
+    If Len(accentStyleBlock) > 0 Then AppendLine P, "Use this exact Style block for Block 2: " & accentStyleBlock
     If Len(gExclude) > 0 Then AppendLine P, "Use this Exclude list for Block 3: " & LCase$(gExclude)
     AppendLine P, ""
 
@@ -643,9 +686,10 @@ Public Sub BuildPromptFromSheet()
     AppendLine P, "Flow Plan: " & flowPlan
     AppendLine P, "Rhyme Plan: " & rhymePlan
     AppendLine P, "Style/Vibe: " & vibe
+    AppendLine P, "Phonetics: " & phonInstruction
     AppendLine P, "Audience: " & audience
     AppendLine P, "Core Premise: " & premise
-    AppendLine P, "Length target: " & IIf(Len(mins) > 0, mins & " minutes", "3–3.5 minutes")
+    AppendLine P, "Length target: " & IIf(Len(mins) > 0, mins & " minutes", "3-3.5 minutes")
     AppendLine P, ""
     AppendLine P, "Theme: " & IIf(Len(theme) > 0, theme, "(model pick)")
     AppendLine P, "Keywords to weave in: " & IIf(Len(keywords) > 0, keywords, "(model pick)")
@@ -807,26 +851,26 @@ Public Sub BuildGenreLibrary()
     ws.Rows(1).Interior.Color = RGB(225, 235, 245)
     r = 2
 
-    AddGenreRow ws, r, "Street Rap", "92–104 bpm feel", "anthemic rap, street imagery, internal rhymes, heavy 808s, chant hook, swagger", "Intro 2 → Hook 8 → Verse 16 → Hook 8 → Verse 16 → Hook 8", "edm, hyperpop, house", "crowd stomp, ad-lib yeah, tape stop", 0.27, 0.21, 0.16, 0.14, 0.14, 0.08
-    AddGenreRow ws, r, "Drill", "138–146 bpm feel", "drill bounce, sliding 808s, triplet hats, gritty tone, call-and-response, dark minor", "Hook 8 → Verse 16 → Hook 8 → Verse 16 → Hook 8", "pop, country", "gun click, siren whoop, sub drop", 0.2, 0.24, 0.14, 0.12, 0.12, 0.18
-    AddGenreRow ws, r, "Boom Bap", "86–94 bpm feel", "dusty drums, chopped samples, multis, punchlines, head-nod, swing", "Intro 4 → Verse 16 → Hook 8 → Verse 16 → Hook 8 → Outro 4", "edm, hyperpop", "vinyl crackle, dj scratch, crowd murmur", 0.22, 0.23, 0.14, 0.17, 0.14, 0.1
-    AddGenreRow ws, r, "Club Rap", "100–110 bpm feel", "party chant, big claps, simple phrasing, catchy refrains, hyped ad-libs", "Intro 4 → Hook 8 → Verse 12 → Hook 8 → Verse 12 → Hook 8", "ballad, folk", "air horn, riser, whoosh", 0.21, 0.1, 0.28, 0.12, 0.12, 0.17
-    AddGenreRow ws, r, "Trap Pop", "92–104 bpm feel", "melodic hook, modern trap kit, glossy synths, catchy top line, layered backs", "Intro 4 → Hook 8 → Verse 16 → Hook 8 → Verse 12 → Bridge 4 → Hook 8", "metal, punk", "riser, clap snare, vocal chop", 0.25, 0.14, 0.26, 0.12, 0.11, 0.12
-    AddGenreRow ws, r, "R&B", "68–84 bpm feel", "silky vocals, harmonies, melisma hints, warm keys, intimate tone, late-night vibe", "Intro 2 → Verse 12 → Pre 4 → Hook 8 → Verse 12 → Pre 4 → Hook 8 → Outro 4", "metal, dnb", "breath, soft snap, reverse swell", 0.18, 0.1, 0.22, 0.16, 0.18, 0.16
-    AddGenreRow ws, r, "Afrobeats", "98–108 bpm feel", "syncopated percussion, log drums, sunny melody, chantable hook, call-and-response", "Intro 4 → Hook 8 → Verse 16 → Hook 8 → Bridge 4 → Hook 8", "drill, metal", "shaker roll, crowd chant, whistle", 0.2, 0.11, 0.27, 0.12, 0.18, 0.12
-    AddGenreRow ws, r, "Reggaeton", "88–100 bpm feel", "dembow groove, perreo energy, minor-key phrases, catchy refrains", "Intro 2 → Hook 8 → Verse 12 → Hook 8 → Verse 12 → Hook 8", "drill, metal", "air horn, riser, clap delay", 0.19, 0.14, 0.26, 0.12, 0.15, 0.14
-    AddGenreRow ws, r, "House", "122–128 bpm feel", "four-on-the-floor, piano stabs, soulful hook, filter sweeps, long builds", "Intro 8 → Hook 16 → Break 8 → Hook 16 → Outro 8", "boom bap, country", "filter sweep, clap build, white noise", 0.16, 0.12, 0.26, 0.14, 0.12, 0.2
-    AddGenreRow ws, r, "EDM (Big Room)", "126–130 bpm feel", "festival lead, huge drop, anthem chant, snares build, sidechain pump", "Intro 8 → Build 8 → Drop 16 → Break 8 → Build 8 → Drop 16", "boom bap, jazz", "snare roll, sweep up, sub impact", 0.14, 0.12, 0.3, 0.12, 0.1, 0.22
-    AddGenreRow ws, r, "DnB", "170–176 bpm feel", "amen breaks, reese bass, fast top-lines, tension-release, rave stabs", "Intro 8 → Drop 16 → Breakdown 8 → Drop 16", "country, ballad", "risers, laser zap, whoosh", 0.18, 0.22, 0.16, 0.14, 0.12, 0.18
-    AddGenreRow ws, r, "Pop", "100–120 bpm feel", "radio-friendly hook, concise imagery, memorable phrasing, clean stacks", "Verse 8 → Pre 4 → Hook 8 → Verse 8 → Pre 4 → Hook 8 → Bridge 4 → Hook 8", "metal, drill", "clap, riser, breath pop", 0.2, 0.1, 0.26, 0.16, 0.13, 0.15
-    AddGenreRow ws, r, "Indie Pop", "98–112 bpm feel", "jangly guitars, airy synths, conversational tone, quirky images", "Intro 2 → Verse 12 → Hook 8 → Verse 12 → Hook 8 → Bridge 4 → Hook 8", "trap, drill", "tape hiss, tambourine, breath", 0.19, 0.14, 0.23, 0.18, 0.12, 0.14
-    AddGenreRow ws, r, "Rock", "120–150 bpm feel", "driven guitars, shout-along hook, live kit energy, power chords", "Intro 4 → Verse 12 → Hook 8 → Verse 12 → Hook 8 → Bridge 8 → Hook 8", "edm, trap", "pick scrape, crowd whoa, cymbal swell", 0.24, 0.16, 0.18, 0.12, 0.12, 0.18
-    AddGenreRow ws, r, "Metal", "140–190 bpm feel", "down-tuned riffs, double-kick, aggressive delivery, gang shouts", "Intro 4 → Verse 16 → Hook 8 → Verse 16 → Hook 8 → Breakdown 8 → Hook 8", "r&b, afrobeats", "china crash, pick scrape, growl", 0.2, 0.24, 0.12, 0.12, 0.12, 0.2
-    AddGenreRow ws, r, "Country", "88–108 bpm feel", "story-first lyrics, twang, acoustic layers, big choruses", "Verse 12 → Pre 4 → Hook 8 → Verse 12 → Pre 4 → Hook 8 → Bridge 4 → Hook 8", "drill, edm", "slide guitar, crowd hey, clap", 0.18, 0.14, 0.22, 0.16, 0.18, 0.12
-    AddGenreRow ws, r, "Folk", "70–95 bpm feel", "narrative lines, intimate vocal, acoustic textures, communal chorus", "Verse 16 → Hook 8 → Verse 16 → Hook 8 → Outro 4", "edm, drill", "breath, foot stomp, shaker", 0.18, 0.12, 0.2, 0.18, 0.2, 0.12
-    AddGenreRow ws, r, "Jazz-Hop", "80–92 bpm feel", "jazz chords, swing pocket, soft kit, poetic bars, smoky mood", "Intro 4 → Verse 16 → Hook 8 → Verse 16 → Hook 8", "edm, metal", "sax lick, vinyl crackle, brush snare", 0.2, 0.18, 0.14, 0.2, 0.14, 0.14
-    AddGenreRow ws, r, "Gospel Choir", "72–96 bpm feel", "uplift harmonies, call-and-response, claps, swell to big hook", "Verse 12 → Pre 4 → Hook 8 → Verse 12 → Pre 4 → Hook 8 → Modulate → Hook 8", "drill, metal", "choir swell, handclap, organ swell", 0.16, 0.1, 0.28, 0.12, 0.2, 0.14
-    AddGenreRow ws, r, "Hyperpop", "140–170 bpm feel", "pitch play, glitchy chops, maximalist energy, bright hooks", "Hook 8 → Verse 8 → Hook 8 → Verse 8 → Hook 8", "boom bap, folk", "glitch zap, riser, vox chop", 0.12, 0.16, 0.26, 0.18, 0.12, 0.16
+    AddGenreRow ws, r, "Street Rap", "92-104 bpm feel", "anthemic rap, street imagery, internal rhymes, heavy 808s, chant hook, swagger", "Intro 2 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8", "edm, hyperpop, house", "crowd stomp, ad-lib yeah, tape stop", 0.27, 0.21, 0.16, 0.14, 0.14, 0.08
+    AddGenreRow ws, r, "Drill", "138-146 bpm feel", "drill bounce, sliding 808s, triplet hats, gritty tone, call-and-response, dark minor", "Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8", "pop, country", "gun click, siren whoop, sub drop", 0.2, 0.24, 0.14, 0.12, 0.12, 0.18
+    AddGenreRow ws, r, "Boom Bap", "86-94 bpm feel", "dusty drums, chopped samples, multis, punchlines, head-nod, swing", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4", "edm, hyperpop", "vinyl crackle, dj scratch, crowd murmur", 0.22, 0.23, 0.14, 0.17, 0.14, 0.1
+    AddGenreRow ws, r, "Club Rap", "100-110 bpm feel", "party chant, big claps, simple phrasing, catchy refrains, hyped ad-libs", "Intro 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8", "ballad, folk", "air horn, riser, whoosh", 0.21, 0.1, 0.28, 0.12, 0.12, 0.17
+    AddGenreRow ws, r, "Trap Pop", "92-104 bpm feel", "melodic hook, modern trap kit, glossy synths, catchy top line, layered backs", "Intro 4 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 12 a-' Bridge 4 a-' Hook 8", "metal, punk", "riser, clap snare, vocal chop", 0.25, 0.14, 0.26, 0.12, 0.11, 0.12
+    AddGenreRow ws, r, "R&B", "68-84 bpm feel", "silky vocals, harmonies, melisma hints, warm keys, intimate tone, late-night vibe", "Intro 2 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Outro 4", "metal, dnb", "breath, soft snap, reverse swell", 0.18, 0.1, 0.22, 0.16, 0.18, 0.16
+    AddGenreRow ws, r, "Afrobeats", "98-108 bpm feel", "syncopated percussion, log drums, sunny melody, chantable hook, call-and-response", "Intro 4 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "drill, metal", "shaker roll, crowd chant, whistle", 0.2, 0.11, 0.27, 0.12, 0.18, 0.12
+    AddGenreRow ws, r, "Reggaeton", "88-100 bpm feel", "dembow groove, perreo energy, minor-key phrases, catchy refrains", "Intro 2 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8", "drill, metal", "air horn, riser, clap delay", 0.19, 0.14, 0.26, 0.12, 0.15, 0.14
+    AddGenreRow ws, r, "House", "122-128 bpm feel", "four-on-the-floor, piano stabs, soulful hook, filter sweeps, long builds", "Intro 8 a-' Hook 16 a-' Break 8 a-' Hook 16 a-' Outro 8", "boom bap, country", "filter sweep, clap build, white noise", 0.16, 0.12, 0.26, 0.14, 0.12, 0.2
+    AddGenreRow ws, r, "EDM (Big Room)", "126-130 bpm feel", "festival lead, huge drop, anthem chant, snares build, sidechain pump", "Intro 8 a-' Build 8 a-' Drop 16 a-' Break 8 a-' Build 8 a-' Drop 16", "boom bap, jazz", "snare roll, sweep up, sub impact", 0.14, 0.12, 0.3, 0.12, 0.1, 0.22
+    AddGenreRow ws, r, "DnB", "170-176 bpm feel", "amen breaks, reese bass, fast top-lines, tension-release, rave stabs", "Intro 8 a-' Drop 16 a-' Breakdown 8 a-' Drop 16", "country, ballad", "risers, laser zap, whoosh", 0.18, 0.22, 0.16, 0.14, 0.12, 0.18
+    AddGenreRow ws, r, "Pop", "100-120 bpm feel", "radio-friendly hook, concise imagery, memorable phrasing, clean stacks", "Verse 8 a-' Pre 4 a-' Hook 8 a-' Verse 8 a-' Pre 4 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "metal, drill", "clap, riser, breath pop", 0.2, 0.1, 0.26, 0.16, 0.13, 0.15
+    AddGenreRow ws, r, "Indie Pop", "98-112 bpm feel", "jangly guitars, airy synths, conversational tone, quirky images", "Intro 2 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "trap, drill", "tape hiss, tambourine, breath", 0.19, 0.14, 0.23, 0.18, 0.12, 0.14
+    AddGenreRow ws, r, "Rock", "120-150 bpm feel", "driven guitars, shout-along hook, live kit energy, power chords", "Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "edm, trap", "pick scrape, crowd whoa, cymbal swell", 0.24, 0.16, 0.18, 0.12, 0.12, 0.18
+    AddGenreRow ws, r, "Metal", "140-190 bpm feel", "down-tuned riffs, double-kick, aggressive delivery, gang shouts", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Breakdown 8 a-' Hook 8", "r&b, afrobeats", "china crash, pick scrape, growl", 0.2, 0.24, 0.12, 0.12, 0.12, 0.2
+    AddGenreRow ws, r, "Country", "88-108 bpm feel", "story-first lyrics, twang, acoustic layers, big choruses", "Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "drill, edm", "slide guitar, crowd hey, clap", 0.18, 0.14, 0.22, 0.16, 0.18, 0.12
+    AddGenreRow ws, r, "Folk", "70-95 bpm feel", "narrative lines, intimate vocal, acoustic textures, communal chorus", "Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4", "edm, drill", "breath, foot stomp, shaker", 0.18, 0.12, 0.2, 0.18, 0.2, 0.12
+    AddGenreRow ws, r, "Jazz-Hop", "80-92 bpm feel", "jazz chords, swing pocket, soft kit, poetic bars, smoky mood", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8", "edm, metal", "sax lick, vinyl crackle, brush snare", 0.2, 0.18, 0.14, 0.2, 0.14, 0.14
+    AddGenreRow ws, r, "Gospel Choir", "72-96 bpm feel", "uplift harmonies, call-and-response, claps, swell to big hook", "Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Modulate a-' Hook 8", "drill, metal", "choir swell, handclap, organ swell", 0.16, 0.1, 0.28, 0.12, 0.2, 0.14
+    AddGenreRow ws, r, "Hyperpop", "140-170 bpm feel", "pitch play, glitchy chops, maximalist energy, bright hooks", "Hook 8 a-' Verse 8 a-' Hook 8 a-' Verse 8 a-' Hook 8", "boom bap, folk", "glitch zap, riser, vox chop", 0.12, 0.16, 0.26, 0.18, 0.12, 0.16
 
     ws.Columns("A:L").AutoFit
     ws.Columns("A:L").HorizontalAlignment = xlLeft
@@ -886,9 +930,13 @@ Public Sub ApplySelectedGenre()
 
     Dim tempoHint$, structHint$, exclCsv$, styleBlock$
     Dim hasW As Boolean, wc#, wt#, wa#, ws_#, wg#, wp#
+    Dim phonLabel$, phonInstruction$, phonTag$
     If Not ReadCurrentGenre(styleBlock, tempoHint, structHint, exclCsv, hasW, wc, wt, wa, ws_, wg, wp) Then
         MsgBox "Genre '" & g & "' not found.", vbExclamation: Exit Sub
     End If
+
+    GetPhoneticMode phonLabel, phonInstruction, phonTag
+    styleBlock = AppendStyleAccent(styleBlock, phonTag)
 
     main.Range("F1").Value = "Genre Applied": main.Range("F2").Value = g
     main.Range("E4").Value = "Style Block (preview)": main.Range("F4").Value = styleBlock
@@ -962,6 +1010,69 @@ Private Function ReadGenreField(row As Long, col As Long) As String
 End Function
 
 '========================
+' PHONETIC MODE
+'========================
+Private Sub GetPhoneticMode(ByRef modeLabel As String, ByRef modeInstruction As String, ByRef styleTag As String)
+    Dim ws As Worksheet, target As Range, raw As String
+    modeLabel = "Neutral / Standard"
+    modeInstruction = "Neutral studio pronunciation; keep English lyrics natural."
+    styleTag = ""
+
+    On Error Resume Next
+    Set ws = Worksheets("RGF_Sheet")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
+
+    Set target = ResolveLabelRange(ws, "Phonetic Mode")
+    If target Is Nothing Then
+        raw = Trim$(CStr(ws.Range("E13").Value))
+        AssignRangeName ws, ws.Range("E13"), "PhoneticMode"
+    Else
+        raw = Trim$(CStr(target.Value))
+    End If
+    If Len(raw) = 0 Then raw = "Neutral / Standard"
+
+    Select Case LCase$(raw)
+        Case "neutral / standard"
+            modeLabel = "Neutral / Standard"
+            modeInstruction = "Neutral studio pronunciation; keep English lyrics natural."
+            styleTag = ""
+        Case "american english (general)"
+            modeLabel = "American English (General)"
+            modeInstruction = "General American accent: balanced vowels, crisp consonants, modern radio tone. Keep lyrics in English."
+            styleTag = "accent: general american"
+        Case "american english (southern)"
+            modeLabel = "American English (Southern)"
+            modeInstruction = "Southern U.S. accent: relaxed drawl, softened r's, warm vowels. Keep lyrics in English."
+            styleTag = "accent: southern american"
+        Case "american english (new york)"
+            modeLabel = "American English (New York)"
+            modeInstruction = "New York accent: quick cadence, clipped r's, assertive delivery. Keep lyrics in English."
+            styleTag = "accent: new york american"
+        Case "american english (midwest)"
+            modeLabel = "American English (Midwest)"
+            modeInstruction = "Midwest accent: clean vowels, light r's, friendly tone. Keep lyrics in English."
+            styleTag = "accent: midwest american"
+        Case "spanish-influenced english"
+            modeLabel = "Spanish-Influenced English"
+            modeInstruction = "Spanish-influenced English: open vowels, rolled or tapped r's, melodic inflection. Keep lyrics in English."
+            styleTag = "accent: spanish-influenced english"
+        Case "indian english accent"
+            modeLabel = "Indian English Accent"
+            modeInstruction = "Indian English accent: precise diction, light retroflex consonants, rhythmic syllable stress. Keep lyrics in English."
+            styleTag = "accent: indian english"
+        Case "somali english accent"
+            modeLabel = "Somali English Accent"
+            modeInstruction = "Somali-accented English: percussive consonants, clipped vowels, lifted sentence endings. Keep lyrics in English."
+            styleTag = "accent: somali english"
+        Case Else
+            modeLabel = raw
+            modeInstruction = raw & " delivery. Keep lyrics in English."
+            styleTag = "accent: " & LCase$(raw)
+    End Select
+End Sub
+
+'========================
 ' DETERMINISTIC FALLBACKS (PREMISE-DRIVEN)
 '========================
 Private Function ResolvePremise() As String
@@ -995,14 +1106,14 @@ Private Function BuildIntro() As String()
     Dim a() As String, prem$: prem = ResolvePremise()
     AppendLine a, "[Intro]"
     Select Case prem
-        Case "love & loyalty":            AppendLine a, "Kept it close when the world felt cold (you know).": AppendLine a, "(we still here) — what we hold, we won’t fold."
-        Case "heartbreak & healing":      AppendLine a, "Took a hit to the heart, learned to breathe through the ache.": AppendLine a, "(slow deep breaths) — healing don’t rush, but it stays."
-        Case "hustle & ambition":         AppendLine a, "Early light on my face, same promise I made.": AppendLine a, "(no days off) — what I said, I became."
-        Case "betrayal & trust":          AppendLine a, "Saw the cracks in the circle, learned the names in the dust.": AppendLine a, "(lesson learned) — now the line is a must."
-        Case "triumph & celebration":     AppendLine a, "Hands high for the wins we bled for.": AppendLine a, "(say it loud) — we ain’t going back poor."
-        Case "redemption & growth":       AppendLine a, "Wrote wrongs into rights with a calm in my chest.": AppendLine a, "(step by step) — I’m answering my own test."
-        Case "city pride & belonging":    AppendLine a, "Block by block, wrote my name in the cracks.": AppendLine a, "(we from here) — and we ain’t turning our backs."
-        Case Else:                        AppendLine a, "Storm after storm, I learned how to stand.": AppendLine a, "(hold tight) — turn the weight into plans."
+        Case "love & loyalty":            AppendLine a, "Kept it close when the world felt cold (you know).": AppendLine a, "(we still here) -- what we hold, we won't fold."
+        Case "heartbreak & healing":      AppendLine a, "Took a hit to the heart, learned to breathe through the ache.": AppendLine a, "(slow deep breaths) -- healing don't rush, but it stays."
+        Case "hustle & ambition":         AppendLine a, "Early light on my face, same promise I made.": AppendLine a, "(no days off) -- what I said, I became."
+        Case "betrayal & trust":          AppendLine a, "Saw the cracks in the circle, learned the names in the dust.": AppendLine a, "(lesson learned) -- now the line is a must."
+        Case "triumph & celebration":     AppendLine a, "Hands high for the wins we bled for.": AppendLine a, "(say it loud) -- we ain't going back poor."
+        Case "redemption & growth":       AppendLine a, "Wrote wrongs into rights with a calm in my chest.": AppendLine a, "(step by step) -- I'm answering my own test."
+        Case "city pride & belonging":    AppendLine a, "Block by block, wrote my name in the cracks.": AppendLine a, "(we from here) -- and we ain't turning our backs."
+        Case Else:                        AppendLine a, "Storm after storm, I learned how to stand.": AppendLine a, "(hold tight) -- turn the weight into plans."
     End Select
     BuildIntro = a
 End Function
@@ -1012,44 +1123,44 @@ Private Function BuildHook(SyncV As Double, GroupF As Double, Anthem As Double) 
     AppendLine a, "[HOOK]"
     Select Case prem
         Case "love & loyalty"
-            AppendLine a, "If I’m down, you lift — that’s us, no myth (yeah)."
-            AppendLine a, "When the dark talk big, our bond don’t shift (nope)."
-            AppendLine a, "(right now) say it — we don’t quit."
+            AppendLine a, "If I'm down, you lift -- that's us, no myth (yeah)."
+            AppendLine a, "When the dark talk big, our bond don't shift (nope)."
+            AppendLine a, "(right now) say it -- we don't quit."
             AppendLine a, "Run it back, two hearts, one script."
         Case "heartbreak & healing"
             AppendLine a, "I broke, then I learned how to carry my name (carry my name)."
             AppendLine a, "Scars talk low but they point to the change (point to the change)."
-            AppendLine a, "If pain call back, I don’t answer the same (nope)."
-            AppendLine a, "I love me more — that’s the lane."
+            AppendLine a, "If pain call back, I don't answer the same (nope)."
+            AppendLine a, "I love me more -- that's the lane."
         Case "hustle & ambition"
-            AppendLine a, "Clock say go, I’m already gone (already gone)."
+            AppendLine a, "Clock say go, I'm already gone (already gone)."
             AppendLine a, "Talk stay cheap, my work is the song (work is the song)."
-            AppendLine a, "Dreams got legs — watch how they run (watch how they run)."
-            AppendLine a, "Bet on myself — that’s how it’s won."
+            AppendLine a, "Dreams got legs -- watch how they run (watch how they run)."
+            AppendLine a, "Bet on myself -- that's how it's won."
         Case "betrayal & trust"
             AppendLine a, "Said you were here but you bent that truth (bent that truth)."
-            AppendLine a, "Cut that cord — kept my roots (kept my roots)."
-            AppendLine a, "Circle got small — that’s proof (that’s proof)."
+            AppendLine a, "Cut that cord -- kept my roots (kept my roots)."
+            AppendLine a, "Circle got small -- that's proof (that's proof)."
             AppendLine a, "Trust gets earned, not couped."
         Case "triumph & celebration"
-            AppendLine a, "Whole squad up — say cheers to the grind (cheers!)."
+            AppendLine a, "Whole squad up -- say cheers to the grind (cheers!)."
             AppendLine a, "Turn that doubt to a toast every time (clink)."
-            AppendLine a, "Made that climb — now the view is the sign (look)."
-            AppendLine a, "We the headline — underline."
+            AppendLine a, "Made that climb -- now the view is the sign (look)."
+            AppendLine a, "We the headline -- underline."
         Case "redemption & growth"
             AppendLine a, "I forgave what I carried too long (too long)."
             AppendLine a, "Cut the chain, now I walk like a song (like a song)."
-            AppendLine a, "New day, same me — more strong (more strong)."
-            AppendLine a, "What I owe to my past — paid off."
+            AppendLine a, "New day, same me -- more strong (more strong)."
+            AppendLine a, "What I owe to my past -- paid off."
         Case "city pride & belonging"
             AppendLine a, "Wave that flag where we claim our block (our block)."
-            AppendLine a, "Every step say we can’t be stopped (can’t stop)."
-            AppendLine a, "Name in the stone — set in the rock (in stone)."
+            AppendLine a, "Every step say we can't be stopped (can't stop)."
+            AppendLine a, "Name in the stone -- set in the rock (in stone)."
             AppendLine a, "Home in my voice when I talk."
         Case Else
-            AppendLine a, "Rain kept falling — I learned how to move (keep going)."
-            AppendLine a, "Doubt kept calling — I hit reject, too (no thanks)."
-            AppendLine a, "Road got rough — I made it a groove (bounce back)."
+            AppendLine a, "Rain kept falling -- I learned how to move (keep going)."
+            AppendLine a, "Doubt kept calling -- I hit reject, too (no thanks)."
+            AppendLine a, "Road got rough -- I made it a groove (bounce back)."
             AppendLine a, "Now every bruise is proof."
     End Select
     BuildHook = a
@@ -1057,16 +1168,16 @@ End Function
 
 Private Function BuildHookEvolve(Anthem As Double, GroupF As Double) As String()
     Dim a() As String, prem$: prem = ResolvePremise()
-    AppendLine a, "[HOOK – evolve]"
+    AppendLine a, "[HOOK - evolve]"
     Select Case prem
-        Case "love & loyalty":            AppendLine a, "We hold this line when the world says fade (we don’t).": AppendLine a, "Promise on promise — all paid."
-        Case "heartbreak & healing":      AppendLine a, "If tears come back, they just rinse the frame.": AppendLine a, "I see me clear — I keep that same."
-        Case "hustle & ambition":         AppendLine a, "From plan to proof — that’s page by page.": AppendLine a, "My name on the door — not staged."
-        Case "betrayal & trust":          AppendLine a, "I lock that gate for the peace I need.": AppendLine a, "The ones who stayed — that’s family."
-        Case "triumph & celebration":     AppendLine a, "Another win, another lesson inside.": AppendLine a, "We don’t just rise — we rise with pride."
-        Case "redemption & growth":       AppendLine a, "I own my story — chapters turn.": AppendLine a, "From ashes to bloom — let it burn."
-        Case "city pride & belonging":    AppendLine a, "From streetlight glow to the porch I know.": AppendLine a, "My roots say stay — my dreams say go."
-        Case Else:                        AppendLine a, "The heavy became the handle I hold.": AppendLine a, "I carry the weight like it’s gold."
+        Case "love & loyalty":            AppendLine a, "We hold this line when the world says fade (we don't).": AppendLine a, "Promise on promise -- all paid."
+        Case "heartbreak & healing":      AppendLine a, "If tears come back, they just rinse the frame.": AppendLine a, "I see me clear -- I keep that same."
+        Case "hustle & ambition":         AppendLine a, "From plan to proof -- that's page by page.": AppendLine a, "My name on the door -- not staged."
+        Case "betrayal & trust":          AppendLine a, "I lock that gate for the peace I need.": AppendLine a, "The ones who stayed -- that's family."
+        Case "triumph & celebration":     AppendLine a, "Another win, another lesson inside.": AppendLine a, "We don't just rise -- we rise with pride."
+        Case "redemption & growth":       AppendLine a, "I own my story -- chapters turn.": AppendLine a, "From ashes to bloom -- let it burn."
+        Case "city pride & belonging":    AppendLine a, "From streetlight glow to the porch I know.": AppendLine a, "My roots say stay -- my dreams say go."
+        Case Else:                        AppendLine a, "The heavy became the handle I hold.": AppendLine a, "I carry the weight like it's gold."
     End Select
     BuildHookEvolve = a
 End Function
@@ -1077,16 +1188,16 @@ Private Function BuildVerseDeterministic(Tech As Double, StyleSig As Double, vNu
     AppendLine l, "[Verse " & vNum & "]"
     For i = 1 To bars
         Select Case prem
-            Case "love & loyalty":            AppendLine l, IIf(i Mod 2 = 1, "You held me down when the rumor got loud — I remember that.", "Every vow wasn’t typed, but we live it — that’s the better pact.")
-            Case "heartbreak & healing":      AppendLine l, IIf(i Mod 2 = 1, "I kept a mirror I avoided — now I face it calm.", "I let the darkness write a verse — then I took the psalm.")
-            Case "hustle & ambition":         AppendLine l, IIf(i Mod 2 = 1, "Made a list, crossed it out — now the list got long.", "I don’t chase what ain’t mine — I build my own.")
-            Case "betrayal & trust":          AppendLine l, IIf(i Mod 2 = 1, "Close range cuts hurt deeper — I learned the cost.", "Trust is a gate with a code — some people lost.")
-            Case "triumph & celebration":     AppendLine l, IIf(i Mod 2 = 1, "We made a toast to the nights that could’ve broke us quick.", "Now every step is a gift — we don’t trip on rich.")
-            Case "redemption & growth":       AppendLine l, IIf(i Mod 2 = 1, "I wore my flaws like armor — then I learned to shed.", "Growth ain’t loud — it’s the quiet I kept instead.")
+            Case "love & loyalty":            AppendLine l, IIf(i Mod 2 = 1, "You held me down when the rumor got loud -- I remember that.", "Every vow wasn't typed, but we live it -- that's the better pact.")
+            Case "heartbreak & healing":      AppendLine l, IIf(i Mod 2 = 1, "I kept a mirror I avoided -- now I face it calm.", "I let the darkness write a verse -- then I took the psalm.")
+            Case "hustle & ambition":         AppendLine l, IIf(i Mod 2 = 1, "Made a list, crossed it out -- now the list got long.", "I don't chase what ain't mine -- I build my own.")
+            Case "betrayal & trust":          AppendLine l, IIf(i Mod 2 = 1, "Close range cuts hurt deeper -- I learned the cost.", "Trust is a gate with a code -- some people lost.")
+            Case "triumph & celebration":     AppendLine l, IIf(i Mod 2 = 1, "We made a toast to the nights that could've broke us quick.", "Now every step is a gift -- we don't trip on rich.")
+            Case "redemption & growth":       AppendLine l, IIf(i Mod 2 = 1, "I wore my flaws like armor -- then I learned to shed.", "Growth ain't loud -- it's the quiet I kept instead.")
             Case "city pride & belonging":    AppendLine l, IIf(i Mod 2 = 1, "Corner store stories and names on the mail.", "Dreams fit better when they come with the trail.")
-            Case Else:                        AppendLine l, IIf(i Mod 2 = 1, "Pressure made diamonds — it also made peace I earn.", "Every closed door was a hinge for a turn.")
+            Case Else:                        AppendLine l, IIf(i Mod 2 = 1, "Pressure made diamonds -- it also made peace I earn.", "Every closed door was a hinge for a turn.")
         End Select
-        If StyleSig >= 0.7 And (i Mod 3 = 0) Then AppendLine l, "(say it back) — we live what we learn."
+        If StyleSig >= 0.7 And (i Mod 3 = 0) Then AppendLine l, "(say it back) -- we live what we learn."
     Next i
     BuildVerseDeterministic = l
 End Function
@@ -1096,14 +1207,14 @@ Private Function BuildBridgeDeterministic(StyleSig As Double, GroupF As Double) 
     If StyleSig < 0.55 Then Exit Function
     AppendLine a, "[Bridge]"
     Select Case prem
-        Case "love & loyalty":            AppendLine a, "If the crowd goes quiet — you can hear our proof.": AppendLine a, "(it’s us) — no need for the boost."
-        Case "heartbreak & healing":      AppendLine a, "I stitched what tore — not to hide the seam.": AppendLine a, "(look close) — those lines still gleam."
-        Case "hustle & ambition":         AppendLine a, "Tomorrow don’t start if I’m stuck on last.": AppendLine a, "(move now) — make the future fast."
-        Case "betrayal & trust":          AppendLine a, "Kept my circle honest, let the edges fade.": AppendLine a, "(stand close) — trust is made."
-        Case "triumph & celebration":     AppendLine a, "We don’t just dance — we remember why.": AppendLine a, "(hands up) — we survived."
-        Case "redemption & growth":       AppendLine a, "I forgave my old self, let a new one rise.": AppendLine a, "(breathe in) — open skies."
-        Case "city pride & belonging":    AppendLine a, "Street names hum like a family hymn.": AppendLine a, "(sing back) — that’s our kin."
-        Case Else:                        AppendLine a, "If pain is a teacher, I’m ahead in class.": AppendLine a, "(eyes up) — I will pass."
+        Case "love & loyalty":            AppendLine a, "If the crowd goes quiet -- you can hear our proof.": AppendLine a, "(it's us) -- no need for the boost."
+        Case "heartbreak & healing":      AppendLine a, "I stitched what tore -- not to hide the seam.": AppendLine a, "(look close) -- those lines still gleam."
+        Case "hustle & ambition":         AppendLine a, "Tomorrow don't start if I'm stuck on last.": AppendLine a, "(move now) -- make the future fast."
+        Case "betrayal & trust":          AppendLine a, "Kept my circle honest, let the edges fade.": AppendLine a, "(stand close) -- trust is made."
+        Case "triumph & celebration":     AppendLine a, "We don't just dance -- we remember why.": AppendLine a, "(hands up) -- we survived."
+        Case "redemption & growth":       AppendLine a, "I forgave my old self, let a new one rise.": AppendLine a, "(breathe in) -- open skies."
+        Case "city pride & belonging":    AppendLine a, "Street names hum like a family hymn.": AppendLine a, "(sing back) -- that's our kin."
+        Case Else:                        AppendLine a, "If pain is a teacher, I'm ahead in class.": AppendLine a, "(eyes up) -- I will pass."
     End Select
     BuildBridgeDeterministic = a
 End Function
@@ -1112,20 +1223,97 @@ Private Function BuildOutroDeterministic() As String()
     Dim a() As String, prem$: prem = ResolvePremise()
     AppendLine a, "[Outro]"
     Select Case prem
-        Case "love & loyalty":            AppendLine a, "When the lights cut low, we still glow — that’s trust.": AppendLine a, "(til the end) — it’s us."
-        Case "heartbreak & healing":      AppendLine a, "What was heavy ain’t gone — it just don’t own me.": AppendLine a, "(I’m whole) — let it be."
-        Case "hustle & ambition":         AppendLine a, "Day done, but the proof stays loud in the book.": AppendLine a, "(sign it) — take a look."
-        Case "betrayal & trust":          AppendLine a, "I keep my peace where the true ones meet.": AppendLine a, "(head high) — steady feet."
-        Case "triumph & celebration":     AppendLine a, "Write our names where the victory lives.": AppendLine a, "(one more time) — we did."
-        Case "redemption & growth":       AppendLine a, "I’m not who I was — and that’s the art.": AppendLine a, "(breathe out) — brand new start."
-        Case "city pride & belonging":    AppendLine a, "Home ain’t a place — it’s the echo we keep.": AppendLine a, "(good night) — sleep deep."
-        Case Else:                        AppendLine a, "If tomorrow’s a hill — I’m already mid-climb.": AppendLine a, "(no fear) — I got time."
+        Case "love & loyalty":            AppendLine a, "When the lights cut low, we still glow -- that's trust.": AppendLine a, "(til the end) -- it's us."
+        Case "heartbreak & healing":      AppendLine a, "What was heavy ain't gone -- it just don't own me.": AppendLine a, "(I'm whole) -- let it be."
+        Case "hustle & ambition":         AppendLine a, "Day done, but the proof stays loud in the book.": AppendLine a, "(sign it) -- take a look."
+        Case "betrayal & trust":          AppendLine a, "I keep my peace where the true ones meet.": AppendLine a, "(head high) -- steady feet."
+        Case "triumph & celebration":     AppendLine a, "Write our names where the victory lives.": AppendLine a, "(one more time) -- we did."
+        Case "redemption & growth":       AppendLine a, "I'm not who I was -- and that's the art.": AppendLine a, "(breathe out) -- brand new start."
+        Case "city pride & belonging":    AppendLine a, "Home ain't a place -- it's the echo we keep.": AppendLine a, "(good night) -- sleep deep."
+        Case Else:                        AppendLine a, "If tomorrow's a hill -- I'm already mid-climb.": AppendLine a, "(no fear) -- I got time."
     End Select
     BuildOutroDeterministic = a
 End Function
 
 '========================
 ' UTILITIES
+Private Sub AssignRangeName(ws As Worksheet, target As Range, nameSuffix As String)
+    Dim fullName As String, wb As Workbook, safeSheetName As String
+    fullName = "RGF_" & nameSuffix
+    safeSheetName = Replace(ws.Name, "'", "''")
+    Set wb = ws.Parent
+    On Error Resume Next
+    wb.Names(fullName).Delete
+    On Error GoTo 0
+    wb.Names.Add Name:=fullName, RefersTo:="='" & safeSheetName & "'!" & target.Address(True, True)
+End Sub
+
+Private Function LabelToName(ByVal labelText As String) As String
+    Dim key As String
+    key = LCase$(Trim$(labelText))
+    key = Replace(key, ChrW$(8212), "-")
+    key = Replace(key, ChrW$(8211), "-")
+    If Right$(key, 1) = ":" Then key = Left$(key, Len(key) - 1)
+
+    Select Case key
+        Case "title idea", "title"
+            LabelToName = "User_TitleIdea"
+        Case "intro"
+            LabelToName = "User_Intro"
+        Case "hook / chorus", "hook-chorus", "hook chorus", "hook"
+            LabelToName = "User_Hook"
+        Case "verse 1"
+            LabelToName = "User_Verse1"
+        Case "verse 2"
+            LabelToName = "User_Verse2"
+        Case "bridge"
+            LabelToName = "User_Bridge"
+        Case "outro"
+            LabelToName = "User_Outro"
+        Case "notes"
+            LabelToName = "User_Notes"
+        Case "theme"
+            LabelToName = "Theme"
+        Case "keywords (comma-separated)", "keywords"
+            LabelToName = "Keywords"
+        Case "must-include words/phrases", "must include words/phrases"
+            LabelToName = "MustInclude"
+        Case "forbidden words/phrases", "forbidden words"
+            LabelToName = "Forbidden"
+        Case "phonetic mode"
+            LabelToName = "PhoneticMode"
+        Case "style/mood tags (comma-separated)", "style/mood tags"
+            LabelToName = "StyleTags"
+        Case "length target (min)", "length target"
+            LabelToName = "LengthTarget"
+        Case "audience notes"
+            LabelToName = "AudienceNotes"
+    End Select
+End Function
+
+Private Function ResolveLabelRange(ws As Worksheet, ByVal labelText As String) As Range
+    Dim nameKey As String, fullName As String, candidate As Range, f As Range
+    nameKey = LabelToName(labelText)
+    If Len(nameKey) > 0 Then
+        fullName = "RGF_" & nameKey
+        On Error Resume Next
+        Set candidate = ws.Parent.Names(fullName).RefersToRange
+        On Error GoTo 0
+        If Not candidate Is Nothing Then
+            If candidate.Parent.Name = ws.Name Then
+                Set ResolveLabelRange = candidate
+                Exit Function
+            End If
+        End If
+    End If
+
+    Set f = ws.Columns(1).Find(What:=labelText, LookAt:=xlWhole, LookIn:=xlValues, MatchCase:=False)
+    If Not f Is Nothing Then
+        Set ResolveLabelRange = ws.Cells(f.Row, "C")
+        If Len(nameKey) > 0 Then AssignRangeName ws, ResolveLabelRange, nameKey
+    End If
+End Function
+
 '========================
 Private Function SheetExistsRGF(Name As String) As Boolean
     On Error Resume Next
@@ -1151,7 +1339,7 @@ Private Sub ColorBySection(ws As Worksheet)
         With ws.Range(ws.Cells(i, 1), ws.Cells(i, 3)).Interior
             Select Case ws.Cells(i, 1).Value
                 Case "Constants", "Controls", "Weights": .Color = RGB(230, 242, 255)
-                Case "Base Inputs (0–10)": .Color = RGB(226, 239, 218)
+                Case "Base Inputs (0-10)": .Color = RGB(226, 239, 218)
                 Case "Derived Inputs": .Color = RGB(255, 242, 204)
                 Case "Normalized", "Helper", "BLOCKS": .Color = RGB(248, 229, 214)
                 Case "FINAL": .Color = RGB(255, 204, 204)
@@ -1244,14 +1432,23 @@ End Function
 
 
 Private Function FindLabelRow(ws As Worksheet, ByVal labelText As String) As Long
-    Dim f As Range
-    Set f = ws.Columns(1).Find(What:=labelText, LookAt:=xlWhole, LookIn:=xlValues, MatchCase:=False)
-    If Not f Is Nothing Then FindLabelRow = f.Row Else FindLabelRow = ws.Range("A1").Row
+    Dim target As Range
+    Set target = ResolveLabelRange(ws, labelText)
+    If Not target Is Nothing Then
+        FindLabelRow = target.Row
+    Else
+        FindLabelRow = ws.Range("A1").Row
+    End If
 End Function
 
 Private Function SectionText(ws As Worksheet, ByVal labelText As String) As String
-    Dim r As Long: r = FindLabelRow(ws, labelText)
-    SectionText = CStr(ws.Cells(r, "C").Value)
+    Dim target As Range
+    Set target = ResolveLabelRange(ws, labelText)
+    If target Is Nothing Then
+        SectionText = ""
+    Else
+        SectionText = CStr(target.Value)
+    End If
 End Function
 
 Private Sub AppendLinesFromCell(ByRef acc() As String, ByVal cellText As String)
@@ -1342,7 +1539,7 @@ Private Function NormalizeMetaTag(ByVal line As String) As String
 
     ' Naked headers
     Dim hdrs As Variant, i As Long
-    hdrs = Array("intro", "hook – reprise", "hook - reprise", "hook", "verse 1", "verse 2", "bridge", "outro")
+    hdrs = Array("intro", "hook - reprise", "hook - reprise", "hook", "verse 1", "verse 2", "bridge", "outro")
     For i = LBound(hdrs) To UBound(hdrs)
         If LCase$(Left$(s, Len(hdrs(i)))) = LCase$(hdrs(i)) Then
             s = "[" & Application.WorksheetFunction.Proper(hdrs(i)) & "]" & Mid$(s, Len(hdrs(i)) + 1)
@@ -1371,6 +1568,37 @@ Private Function NormalizeStyleTagsFromList(ParamArray items() As Variant) As St
     NormalizeStyleTagsFromList = "[" & flat & "]"
 End Function
 
+Private Function AppendStyleAccent(styleBlock As String, accentTag As String) As String
+    Dim trimmed As String, body As String, tag As String
+    tag = Trim$(accentTag)
+    If Len(tag) = 0 Then
+        AppendStyleAccent = styleBlock
+        Exit Function
+    End If
+
+    trimmed = Trim$(styleBlock)
+    If Len(trimmed) = 0 Then
+        AppendStyleAccent = "[" & tag & "]"
+        Exit Function
+    End If
+
+    If Left$(trimmed, 1) = "[" And Right$(trimmed, 1) = "]" Then
+        body = Trim$(Mid$(trimmed, 2, Len(trimmed) - 2))
+        If Len(body) = 0 Then
+            body = tag
+        ElseIf InStr(1, body, tag, vbTextCompare) = 0 Then
+            body = body & " | " & tag
+        End If
+        AppendStyleAccent = "[" & body & "]"
+    Else
+        If InStr(1, trimmed, tag, vbTextCompare) = 0 Then
+            If Len(trimmed) > 0 Then trimmed = trimmed & " | "
+            trimmed = trimmed & tag
+        End If
+        AppendStyleAccent = "[" & trimmed & "]"
+    End If
+End Function
+
 '========================
 ' ONE-CLICK SETUP
 '========================
@@ -1379,19 +1607,19 @@ Public Sub RGF_OneClickSetup()
     Application.ScreenUpdating = False
     Application.EnableEvents = False
     Application.DisplayStatusBar = True
-    Application.StatusBar = "RGF: building main sheet…"
+    Application.StatusBar = "RGF: building main sheet..."
 
     BuildRGFSheet
 
-    Application.StatusBar = "RGF: building genre library…"
+    Application.StatusBar = "RGF: building genre library..."
     BuildGenreLibrary
     AddGenreControls
 
-    Application.StatusBar = "RGF: help + action buttons…"
+    Application.StatusBar = "RGF: help + action buttons..."
     BuildHelpSheet
     AddBriefAndSunoButtons
 
-    Application.StatusBar = "RGF: AI prompt workspace…"
+    Application.StatusBar = "RGF: AI prompt workspace..."
     SetupAIPrompting
 
     Worksheets("RGF_Sheet").Activate
