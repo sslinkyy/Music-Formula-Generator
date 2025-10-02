@@ -740,16 +740,20 @@ Private Sub BuildAISettingsSheet()
     End If
 
     s.Range("A1").Value = "AI Settings": s.Range("A1").Font.Bold = True
-    s.Range("A3").Resize(8, 2).Value = Array( _
-        Array("Provider", "OpenAI-compatible"), _
-        Array("Endpoint URL", "https://api.openai.com/v1/chat/completions"), _
-        Array("Model", "gpt-4o-mini"), _
-        Array("API Key (Bearer)", "sk-PASTE_YOUR_KEY_HERE"), _
-        Array("Temperature (0-1.4)", 0.9), _
-        Array("Max Tokens", 1200), _
-        Array("System Prompt", "You are a lyrical assistant. Output only valid Suno blocks as instructed."), _
-        Array("Safety Note", "Store keys securely. This sheet is not encrypted.") _
-    )
+
+    Dim labels As Variant, defaults As Variant, names As Variant
+    labels = Array("Provider", "Endpoint URL", "Model", "API Key (Bearer)", "Organization (optional)", "Temperature (0-2)", "Top P (0-1)", "Frequency Penalty (-2..2)", "Presence Penalty (-2..2)", "Max Tokens", "Request Timeout (ms)", "System Prompt", "Stop Sequences (comma)", "User Label (optional)", "Response Format (json)")
+    defaults = Array("OpenAI-compatible", "https://api.openai.com/v1/chat/completions", "gpt-4o-mini", "sk-PASTE_YOUR_KEY_HERE", "", 0.9, 1, 0, 0, 1200, 60000, "You are a lyrical assistant. Output only valid Suno blocks as instructed.", "", "", "{""type"":""text""}")
+    names = Array("AI_Provider", "AI_Endpoint", "AI_Model", "AI_APIKey", "AI_Organization", "AI_Temperature", "AI_TopP", "AI_FrequencyPenalty", "AI_PresencePenalty", "AI_MaxTokens", "AI_Timeout", "AI_SystemPrompt", "AI_StopSequences", "AI_UserLabel", "AI_ResponseFormat")
+
+    Dim i As Long, row As Long
+    row = 3
+    For i = 0 To UBound(labels)
+        s.Cells(row + i, 1).Value = labels(i)
+        s.Cells(row + i, 2).Value = defaults(i)
+        AssignRangeName s, s.Cells(row + i, 2), CStr(names(i))
+    Next i
+
     s.Columns("A:B").AutoFit
 End Sub
 
@@ -761,18 +765,26 @@ Public Sub CallAIFromSheet()
         BuildPromptFromSheet
     End If
 
-    Dim setWS As Worksheet: Set setWS = Worksheets("AI_Settings")
-    Dim endpoint$, model$, apiKey$, systemP$
-    Dim temp As Double, maxTok As Long
-    endpoint = Trim$(CStr(setWS.Range("B4").Value))
-    model = Trim$(CStr(setWS.Range("B5").Value))
-    apiKey = Trim$(CStr(setWS.Range("B6").Value))
-    temp = CDbl(Val(setWS.Range("B7").Value))
-    maxTok = CLng(Val(setWS.Range("B8").Value))
-    systemP = CStr(setWS.Range("B9").Value)
+    Dim endpoint$, model$, apiKey$, systemP$, orgHeader$, stopCsv$, userLabel$, responseFormat$
+    Dim temp As Double, maxTok As Long, topP As Double, freqPen As Double, presPen As Double, timeoutMs As Long
+
+    endpoint = Trim$(CStr(GetSettingValue("Endpoint URL", "https://api.openai.com/v1/chat/completions")))
+    model = Trim$(CStr(GetSettingValue("Model", "gpt-4o-mini")))
+    apiKey = Trim$(CStr(GetSettingValue("API Key (Bearer)", "")))
+    orgHeader = Trim$(CStr(GetSettingValue("Organization (optional)", "")))
+    temp = CDbl(Val(CStr(GetSettingValue("Temperature (0-2)", 0.9))))
+    topP = CDbl(Val(CStr(GetSettingValue("Top P (0-1)", 1))))
+    freqPen = CDbl(Val(CStr(GetSettingValue("Frequency Penalty (-2..2)", 0))))
+    presPen = CDbl(Val(CStr(GetSettingValue("Presence Penalty (-2..2)", 0))))
+    maxTok = CLng(Val(GetSettingValue("Max Tokens", 1200)))
+    timeoutMs = CLng(Val(GetSettingValue("Request Timeout (ms)", 60000)))
+    systemP = CStr(GetSettingValue("System Prompt", "You are a lyrical assistant. Output only valid Suno blocks as instructed."))
+    stopCsv = Trim$(CStr(GetSettingValue("Stop Sequences (comma)", "")))
+    userLabel = Trim$(CStr(GetSettingValue("User Label (optional)", "")))
+    responseFormat = Trim$(CStr(GetSettingValue("Response Format (json)", "{""type"":""text""}")))
 
     If Len(apiKey) < 10 Then
-        MsgBox "Missing API key in AI_Settings (B6).", vbExclamation: Exit Sub
+        MsgBox "Missing API key in AI_Settings (API Key (Bearer)).", vbExclamation: Exit Sub
     End If
 
     Dim prompt$: prompt = Worksheets("AI_Prompt").Range("A3").Value
@@ -780,14 +792,30 @@ Public Sub CallAIFromSheet()
         MsgBox "Prompt empty. Click 'Build Prompt' first.", vbExclamation: Exit Sub
     End If
 
+    If temp < 0 Then temp = 0
+    If temp > 2 Then temp = 2
+    If topP < 0 Then topP = 0
+    If topP > 1 Then topP = 1
+    If freqPen < -2 Then freqPen = -2
+    If freqPen > 2 Then freqPen = 2
+    If presPen < -2 Then presPen = -2
+    If presPen > 2 Then presPen = 2
+    If maxTok < 1 Then maxTok = 1
+    If timeoutMs < 0 Then timeoutMs = 0
+
+    Dim stopList As Variant
+    stopList = CsvToArray(stopCsv)
+
     Dim req As Object, url$: url = endpoint
     On Error GoTo httpErr
-    Set req = CreateObject("MSXML2.XMLHTTP")
-
-    Dim body$: body = BuildChatJSON(model, systemP, prompt, temp, maxTok)
+    Set req = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    If timeoutMs > 0 Then req.setTimeouts timeoutMs, timeoutMs, timeoutMs, timeoutMs
     req.Open "POST", url, False
     req.setRequestHeader "Content-Type", "application/json"
     req.setRequestHeader "Authorization", "Bearer " & apiKey
+    If Len(orgHeader) > 0 Then req.setRequestHeader "OpenAI-Organization", orgHeader
+
+    Dim body$: body = BuildChatJSON(model, systemP, prompt, temp, maxTok, topP, freqPen, presPen, stopList, userLabel, responseFormat)
     req.Send body
 
     If req.Status < 200 Or req.Status >= 300 Then
@@ -811,13 +839,18 @@ httpErr:
     MsgBox "HTTP error: " & Err.Description, vbCritical
 End Sub
 
-Private Function BuildChatJSON(model As String, systemP As String, userPrompt As String, temp As Double, maxTok As Long) As String
-    Dim j() As String
-    AppendLine j, "{""model"":""" & JsonEscape(model) & """,""temperature"":" & CStr(temp) & ",""max_tokens"":" & CStr(maxTok) & ",""messages"":["
-    AppendLine j, " {""role"":""system"",""content"":""" & JsonEscape(systemP) & """},"
-    AppendLine j, " {""role"":""user"",""content"":""" & JsonEscape(userPrompt) & """}"
-    AppendLine j, "]}"
-    BuildChatJSON = Join(j, vbCrLf)
+Private Function BuildChatJSON(model As String, systemP As String, userPrompt As String, temp As Double, maxTok As Long, topP As Double, freqPen As Double, presPen As Double, stopList As Variant, userLabel As String, responseFormat As String) As String
+    Dim json As String
+    json = "{""model"":""" & JsonEscape(model) & """,""temperature"":" & JsonNumber(temp) & ",""top_p"":" & JsonNumber(topP) & ",""frequency_penalty"":" & JsonNumber(freqPen) & ",""presence_penalty"":" & JsonNumber(presPen) & ",""max_tokens"":" & CStr(maxTok) & ",""messages"":[{""role"":""system"",""content"":""" & JsonEscape(systemP) & """},{""role"":""user"",""content"":""" & JsonEscape(userPrompt) & """}]"
+    If ArrAllocated(stopList) Then
+        json = json & ",""stop"":" & BuildJsonArray(stopList)
+    End If
+    If Len(userLabel) > 0 Then
+        json = json & ",""user"":""" & JsonEscape(userLabel) & """"
+    End If
+    json = json & ",""response_format"": " & NormalizeResponseFormat(responseFormat)
+    json = json & "}"
+    BuildChatJSON = json
 End Function
 
 Private Function ParseChatReply(res As String) As String
@@ -1007,6 +1040,97 @@ End Function
 
 Private Function ReadGenreField(row As Long, col As Long) As String
     ReadGenreField = CStr(Worksheets("Genre_Library").Cells(row, col).Value)
+End Function
+
+Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
+    Dim ws As Worksheet, target As Range, raw As Variant
+    If Not SheetExistsRGF("AI_Settings") Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    Set ws = Worksheets("AI_Settings")
+    Set target = ResolveLabelRange(ws, labelText)
+    If target Is Nothing Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    raw = target.Value
+    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+    Else
+        GetSettingValue = raw
+    End If
+End Function
+
+Private Function CsvToArray(ByVal csv As String) As Variant
+    Dim parts() As String, cleaned() As String, value As String
+    Dim i As Long, count As Long
+    If Len(Trim$(csv)) = 0 Then Exit Function
+
+    parts = Split(csv, ",")
+    For i = LBound(parts) To UBound(parts)
+        value = Trim$(CStr(parts(i)))
+        If Len(value) > 0 Then
+            ReDim Preserve cleaned(count)
+            cleaned(count) = value
+            count = count + 1
+        End If
+    Next i
+
+    If count > 0 Then CsvToArray = cleaned
+End Function
+
+Private Function BuildJsonArray(items As Variant) As String
+    Dim pieces() As String, i As Long, n As Long, entry As String
+    If Not ArrAllocated(items) Then
+        BuildJsonArray = "[]"
+        Exit Function
+    End If
+
+    For i = LBound(items) To UBound(items)
+        entry = Trim$(CStr(items(i)))
+        If Len(entry) > 0 Then
+            ReDim Preserve pieces(n)
+            pieces(n) = """" & JsonEscape(entry) & """"
+            n = n + 1
+        End If
+    Next i
+
+    If n = 0 Then
+        BuildJsonArray = "[]"
+    Else
+        BuildJsonArray = "[" & Join(pieces, ",") & "]"
+    End If
+End Function
+
+Private Function JsonNumber(ByVal value As Double) As String
+    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
+End Function
+
+Private Function NormalizeResponseFormat(ByVal formatText As String) As String
+    Dim trimmed As String
+    trimmed = Trim$(formatText)
+    If Len(trimmed) = 0 Then
+        NormalizeResponseFormat = "{""type"":""text""}"
+    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
+        NormalizeResponseFormat = trimmed
+    Else
+        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
+    End If
 End Function
 
 '========================
@@ -1235,6 +1359,97 @@ Private Function BuildOutroDeterministic() As String()
     BuildOutroDeterministic = a
 End Function
 
+Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
+    Dim ws As Worksheet, target As Range, raw As Variant
+    If Not SheetExistsRGF("AI_Settings") Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    Set ws = Worksheets("AI_Settings")
+    Set target = ResolveLabelRange(ws, labelText)
+    If target Is Nothing Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    raw = target.Value
+    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+    Else
+        GetSettingValue = raw
+    End If
+End Function
+
+Private Function CsvToArray(ByVal csv As String) As Variant
+    Dim parts() As String, cleaned() As String, value As String
+    Dim i As Long, count As Long
+    If Len(Trim$(csv)) = 0 Then Exit Function
+
+    parts = Split(csv, ",")
+    For i = LBound(parts) To UBound(parts)
+        value = Trim$(CStr(parts(i)))
+        If Len(value) > 0 Then
+            ReDim Preserve cleaned(count)
+            cleaned(count) = value
+            count = count + 1
+        End If
+    Next i
+
+    If count > 0 Then CsvToArray = cleaned
+End Function
+
+Private Function BuildJsonArray(items As Variant) As String
+    Dim pieces() As String, i As Long, n As Long, entry As String
+    If Not ArrAllocated(items) Then
+        BuildJsonArray = "[]"
+        Exit Function
+    End If
+
+    For i = LBound(items) To UBound(items)
+        entry = Trim$(CStr(items(i)))
+        If Len(entry) > 0 Then
+            ReDim Preserve pieces(n)
+            pieces(n) = """" & JsonEscape(entry) & """"
+            n = n + 1
+        End If
+    Next i
+
+    If n = 0 Then
+        BuildJsonArray = "[]"
+    Else
+        BuildJsonArray = "[" & Join(pieces, ",") & "]"
+    End If
+End Function
+
+Private Function JsonNumber(ByVal value As Double) As String
+    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
+End Function
+
+Private Function NormalizeResponseFormat(ByVal formatText As String) As String
+    Dim trimmed As String
+    trimmed = Trim$(formatText)
+    If Len(trimmed) = 0 Then
+        NormalizeResponseFormat = "{""type"":""text""}"
+    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
+        NormalizeResponseFormat = trimmed
+    Else
+        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
+    End If
+End Function
+
 '========================
 ' UTILITIES
 Private Sub AssignRangeName(ws As Worksheet, target As Range, nameSuffix As String)
@@ -1288,6 +1503,36 @@ Private Function LabelToName(ByVal labelText As String) As String
             LabelToName = "LengthTarget"
         Case "audience notes"
             LabelToName = "AudienceNotes"
+        Case "provider"
+            LabelToName = "AI_Provider"
+        Case "endpoint url"
+            LabelToName = "AI_Endpoint"
+        Case "model"
+            LabelToName = "AI_Model"
+        Case "api key (bearer)"
+            LabelToName = "AI_APIKey"
+        Case "organization (optional)"
+            LabelToName = "AI_Organization"
+        Case "temperature (0-2)"
+            LabelToName = "AI_Temperature"
+        Case "top p (0-1)"
+            LabelToName = "AI_TopP"
+        Case "frequency penalty (-2..2)"
+            LabelToName = "AI_FrequencyPenalty"
+        Case "presence penalty (-2..2)"
+            LabelToName = "AI_PresencePenalty"
+        Case "max tokens"
+            LabelToName = "AI_MaxTokens"
+        Case "request timeout (ms)"
+            LabelToName = "AI_Timeout"
+        Case "system prompt"
+            LabelToName = "AI_SystemPrompt"
+        Case "stop sequences (comma)"
+            LabelToName = "AI_StopSequences"
+        Case "user label (optional)"
+            LabelToName = "AI_UserLabel"
+        Case "response format (json)"
+            LabelToName = "AI_ResponseFormat"
     End Select
 End Function
 
@@ -1311,6 +1556,97 @@ Private Function ResolveLabelRange(ws As Worksheet, ByVal labelText As String) A
     If Not f Is Nothing Then
         Set ResolveLabelRange = ws.Cells(f.Row, "C")
         If Len(nameKey) > 0 Then AssignRangeName ws, ResolveLabelRange, nameKey
+    End If
+End Function
+
+Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
+    Dim ws As Worksheet, target As Range, raw As Variant
+    If Not SheetExistsRGF("AI_Settings") Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    Set ws = Worksheets("AI_Settings")
+    Set target = ResolveLabelRange(ws, labelText)
+    If target Is Nothing Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    raw = target.Value
+    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+    Else
+        GetSettingValue = raw
+    End If
+End Function
+
+Private Function CsvToArray(ByVal csv As String) As Variant
+    Dim parts() As String, cleaned() As String, value As String
+    Dim i As Long, count As Long
+    If Len(Trim$(csv)) = 0 Then Exit Function
+
+    parts = Split(csv, ",")
+    For i = LBound(parts) To UBound(parts)
+        value = Trim$(CStr(parts(i)))
+        If Len(value) > 0 Then
+            ReDim Preserve cleaned(count)
+            cleaned(count) = value
+            count = count + 1
+        End If
+    Next i
+
+    If count > 0 Then CsvToArray = cleaned
+End Function
+
+Private Function BuildJsonArray(items As Variant) As String
+    Dim pieces() As String, i As Long, n As Long, entry As String
+    If Not ArrAllocated(items) Then
+        BuildJsonArray = "[]"
+        Exit Function
+    End If
+
+    For i = LBound(items) To UBound(items)
+        entry = Trim$(CStr(items(i)))
+        If Len(entry) > 0 Then
+            ReDim Preserve pieces(n)
+            pieces(n) = """" & JsonEscape(entry) & """"
+            n = n + 1
+        End If
+    Next i
+
+    If n = 0 Then
+        BuildJsonArray = "[]"
+    Else
+        BuildJsonArray = "[" & Join(pieces, ",") & "]"
+    End If
+End Function
+
+Private Function JsonNumber(ByVal value As Double) As String
+    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
+End Function
+
+Private Function NormalizeResponseFormat(ByVal formatText As String) As String
+    Dim trimmed As String
+    trimmed = Trim$(formatText)
+    If Len(trimmed) = 0 Then
+        NormalizeResponseFormat = "{""type"":""text""}"
+    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
+        NormalizeResponseFormat = trimmed
+    Else
+        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
     End If
 End Function
 
@@ -1596,6 +1932,97 @@ Private Function AppendStyleAccent(styleBlock As String, accentTag As String) As
             trimmed = trimmed & tag
         End If
         AppendStyleAccent = "[" & trimmed & "]"
+    End If
+End Function
+
+Private Function GetSettingValue(ByVal labelText As String, Optional ByVal defaultValue As Variant) As Variant
+    Dim ws As Worksheet, target As Range, raw As Variant
+    If Not SheetExistsRGF("AI_Settings") Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    Set ws = Worksheets("AI_Settings")
+    Set target = ResolveLabelRange(ws, labelText)
+    If target Is Nothing Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+        Exit Function
+    End If
+
+    raw = target.Value
+    If (VarType(raw) = vbString And Len(Trim$(CStr(raw))) = 0) Or IsEmpty(raw) Then
+        If IsMissing(defaultValue) Then
+            GetSettingValue = ""
+        Else
+            GetSettingValue = defaultValue
+        End If
+    Else
+        GetSettingValue = raw
+    End If
+End Function
+
+Private Function CsvToArray(ByVal csv As String) As Variant
+    Dim parts() As String, cleaned() As String, value As String
+    Dim i As Long, count As Long
+    If Len(Trim$(csv)) = 0 Then Exit Function
+
+    parts = Split(csv, ",")
+    For i = LBound(parts) To UBound(parts)
+        value = Trim$(CStr(parts(i)))
+        If Len(value) > 0 Then
+            ReDim Preserve cleaned(count)
+            cleaned(count) = value
+            count = count + 1
+        End If
+    Next i
+
+    If count > 0 Then CsvToArray = cleaned
+End Function
+
+Private Function BuildJsonArray(items As Variant) As String
+    Dim pieces() As String, i As Long, n As Long, entry As String
+    If Not ArrAllocated(items) Then
+        BuildJsonArray = "[]"
+        Exit Function
+    End If
+
+    For i = LBound(items) To UBound(items)
+        entry = Trim$(CStr(items(i)))
+        If Len(entry) > 0 Then
+            ReDim Preserve pieces(n)
+            pieces(n) = """" & JsonEscape(entry) & """"
+            n = n + 1
+        End If
+    Next i
+
+    If n = 0 Then
+        BuildJsonArray = "[]"
+    Else
+        BuildJsonArray = "[" & Join(pieces, ",") & "]"
+    End If
+End Function
+
+Private Function JsonNumber(ByVal value As Double) As String
+    JsonNumber = Replace$(Format$(value, "0.###############"), ",", ".")
+End Function
+
+Private Function NormalizeResponseFormat(ByVal formatText As String) As String
+    Dim trimmed As String
+    trimmed = Trim$(formatText)
+    If Len(trimmed) = 0 Then
+        NormalizeResponseFormat = "{""type"":""text""}"
+    ElseIf Left$(trimmed, 1) = "{" And Right$(trimmed, 1) = "}" Then
+        NormalizeResponseFormat = trimmed
+    Else
+        NormalizeResponseFormat = """" & JsonEscape(trimmed) & """"
     End If
 End Function
 

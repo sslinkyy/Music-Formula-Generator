@@ -82,7 +82,18 @@ Populated by `CallAI`. Displays the latest API result so you can copy the four S
 Curated list of genres with tempo, style tags, structures, exclude lists, SFX cues, and optional weight presets. The `Apply Genre` button copies these hints into `RGF_Sheet` and offers to apply the corresponding weights.
 
 ### AI_Settings
-Holds API configuration for OpenAI-compatible services: endpoint, model name, API key, temperature, max tokens, and the system prompt used when calling `CallAIFromSheet`.
+Exposes every field consumed by `CallAIFromSheet` so you can tune requests without touching VBA. The sheet includes:
+- Provider (for reference)
+- Endpoint URL
+- Model
+- API Key (Bearer) and optional Organization header
+- Temperature (0-2) and Top P (0-1)
+- Frequency and Presence penalties (-2 to 2)
+- Max Tokens and Request Timeout (ms)
+- System Prompt
+- Stop Sequences (comma separated)
+- User Label (passed as the `user` value)
+- Response Format (raw JSON block such as `{"type":"text"}`)
 
 ## Scoring Inputs Reference
 - **Base Inputs (0-10)**: Cadence, Feel, Wordplay, Lyrical Depth, Beat Fit, Performance, Structure, Versatility, Anthemic Factor, Complexity, Style.
