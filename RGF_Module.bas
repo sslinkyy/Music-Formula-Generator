@@ -52,13 +52,16 @@ Private Const ACCENT_DEFAULT_LABEL As String = "Neutral / Standard"
 '========================
 Public Sub BuildRGFSheet()
     Dim ws As Worksheet, r As Long
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    If wb.ProtectStructure Then Err.Raise vbObjectError + 700, "BuildRGFSheet", "Workbook structure is protected. Unprotect it before running setup."
     On Error Resume Next
-    Set ws = ThisWorkbook.Worksheets("RGF_Sheet")
+    Set ws = wb.Worksheets("RGF_Sheet")
     On Error GoTo 0
     If ws Is Nothing Then
-        Set ws = ThisWorkbook.Worksheets.Add
+        Set ws = wb.Worksheets.Add
         ws.Name = "RGF_Sheet"
     Else
+        If ws.ProtectContents Then Err.Raise vbObjectError + 701, "BuildRGFSheet", "Sheet 'RGF_Sheet' is protected. Unprotect it before running setup."
         ws.Cells.Clear
         DeletePresetButtons ws
     End If
