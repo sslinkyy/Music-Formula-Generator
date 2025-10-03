@@ -18,13 +18,35 @@ Option Explicit
 '
 ' QUICK START
 ' 1) Run RGF_OneClickSetup.
-' 2) Pick a Genre in E2 (optional) and a Premise in E10 (optional).
+' 2) Shape the Genre Mix sliders (F3:F6) and set Premise / Phonetic Accent as needed.
 ' 3) Adjust Base/Derived inputs + Weights or use presets.
 ' 4) Click Make Brief / Make Suno.
 ' 5) Build Prompt -> (optional) Call AI (requires API key).
 ' =============================================================================
 
 
+'========================
+' PHONETIC STATE
+'========================
+Private phoneticActiveLabel As String
+Private phoneticWordMap As Variant
+Private phoneticPatternMap As Variant
+Private phoneticHasWordMap As Boolean
+Private phoneticHasPatternMap As Boolean
+Private phoneticProducerTag As String
+
+Private currentSetupStep As String
+
+Private sliderWarningShown As Boolean
+
+
+
+Private Const ACCENT_LIBRARY_SHEET As String = "Accent_Library"
+Private Const GENRE_MIX_SLOTS As Long = 4
+Private Const GENRE_MIX_FIRST_ROW As Long = 3
+Private Const GENRE_MIX_GENRE_COL As Long = 6
+Private Const GENRE_MIX_WEIGHT_COL As Long = 7
+Private Const ACCENT_DEFAULT_LABEL As String = "Neutral / Standard"
 '========================
 ' BUILD MAIN SHEET
 '========================
@@ -132,13 +154,35 @@ Public Sub BuildRGFSheet()
     ' User sections
     AddUserSectionsBlock ws
 
-    ' Side-panel UI: Genre & Premise
-    ws.Range("E1").Value = "Genre": ws.Range("E1").Font.Bold = True
-    ws.Range("E2").Interior.Color = RGB(240, 255, 240)
+    ' Side-panel UI: Genre mix, premise, phonetics
+    Dim slot As Long, mixRow As Long, labelRow As Long, accentLabelRow As Long
+    ws.Range("E1").Value = "Genre Mix": ws.Range("E1:G1").Font.Bold = True
+    ws.Range("E2:G2").Value = Array("Slot", "Genre", "Weight %")
+    ws.Range("E2:G2").Interior.Color = RGB(210, 230, 210)
+    For slot = 1 To GENRE_MIX_SLOTS
+        mixRow = GENRE_MIX_FIRST_ROW + slot - 1
+        ws.Cells(mixRow, 5).Value = "Slot " & slot
+        ws.Cells(mixRow, 6).Value = ""
+        ws.Cells(mixRow, 7).Value = 0
+        ws.Rows(mixRow).RowHeight = 18
+        AssignRangeName ws, ws.Cells(mixRow, 6), "GenreMix" & slot
+        AssignRangeName ws, ws.Cells(mixRow, 7), "GenreMixWeight" & slot
+    Next slot
+    ws.Range(ws.Cells(GENRE_MIX_FIRST_ROW, 6), ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS - 1, 6)).Interior.Color = RGB(240, 255, 240)
+    ws.Range(ws.Cells(GENRE_MIX_FIRST_ROW, 7), ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS - 1, 7)).Interior.Color = RGB(255, 250, 230)
+    ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS, 5).Value = "Total"
+    ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS, 7).Formula = "=SUM(" & ws.Range(ws.Cells(GENRE_MIX_FIRST_ROW, 7), ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS - 1, 7)).Address(False, False) & ")"
+    ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS, 7).NumberFormat = "0"
+    ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS + 1, 5).Value = "Tip"
+    ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS + 1, 6).Value = "Use the sliders or type weights so they total 100."
+    ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS + 1, 6).Interior.Color = RGB(255, 255, 235)
+    ws.Range(ws.Cells(GENRE_MIX_FIRST_ROW, 5), ws.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS - 1, 5)).Font.Bold = True
+    BuildGenreMixSliders ws
 
-    ws.Range("E9").Value = "Premise": ws.Range("E9").Font.Bold = True
-    ws.Range("E10").ClearContents
-    With ws.Range("E10").Validation
+    labelRow = GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS + 3
+    ws.Cells(labelRow, 5).Value = "Premise": ws.Cells(labelRow, 5).Font.Bold = True
+    ws.Cells(labelRow + 1, 6).ClearContents
+    With ws.Cells(labelRow + 1, 6).Validation
         .Delete
         .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, _
              Formula1:="love & loyalty,heartbreak & healing,hustle & ambition,betrayal & trust,triumph & celebration,redemption & growth,city pride & belonging,struggle & perseverance,(auto)"
@@ -146,21 +190,14 @@ Public Sub BuildRGFSheet()
         .InputTitle = "Pick a core premise"
         .InputMessage = "Choose a human theme for the lyrics. '(auto)' uses Theme/Keywords/Audience."
     End With
-    If Len(Trim$(ws.Range("E10").Value)) = 0 Then ws.Range("E10").Value = "(auto)"
+    If Len(Trim$(ws.Cells(labelRow + 1, 6).Value)) = 0 Then ws.Cells(labelRow + 1, 6).Value = "(auto)"
+    AssignRangeName ws, ws.Cells(labelRow + 1, 6), "Premise"
 
-    ws.Range("E12").Value = "Phonetic Mode": ws.Range("E12").Font.Bold = True
-    ws.Range("E13").ClearContents
-    With ws.Range("E13").Validation
-        .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, _
-             Formula1:="Neutral / Standard,American English (General),American English (Southern),American English (New York),American English (Midwest),Spanish-Influenced English,Indian English Accent,Somali English Accent"
-        .IgnoreBlank = True: .InCellDropdown = True
-        .InputTitle = "Select a phonetic mode"
-        .InputMessage = "Pick an accent reference. Lyrics stay English; this only guides pronunciation."
-    End With
-    If Len(Trim$(ws.Range("E13").Value)) = 0 Then ws.Range("E13").Value = "Neutral / Standard"
-    ws.Range("E13").Interior.Color = RGB(255, 250, 240)
-    AssignRangeName ws, ws.Range("E13"), "PhoneticMode"
+    accentLabelRow = labelRow + 3
+    ws.Cells(accentLabelRow, 5).Value = "Phonetic Accent": ws.Cells(accentLabelRow, 5).Font.Bold = True
+    ws.Cells(accentLabelRow + 1, 6).Value = ACCENT_DEFAULT_LABEL
+    ws.Cells(accentLabelRow + 1, 6).Interior.Color = RGB(255, 250, 240)
+    AssignRangeName ws, ws.Cells(accentLabelRow + 1, 6), "PhoneticMode"
 
     ws.Columns("A:C").AutoFit
     ActiveWindow.SplitRow = 1
@@ -234,7 +271,7 @@ Private Function BuildHelpLines() As String()
     n = n + 1: tmp(n) = "1) Choose a preset or set C9:C14 (weights)."
     n = n + 1: tmp(n) = "2) Score Base Inputs 0-10 (C16:C26) and Derived 0-1 (C27:C38)."
     n = n + 1: tmp(n) = "3) (Optional) Fill USER SECTIONS (verbatim lock for Suno)."
-    n = n + 1: tmp(n) = "4) Pick Genre (E2), Premise (E10), and (optional) Phonetic Mode (E13)."
+    n = n + 1: tmp(n) = "4) Set your genre mix (F3:F6 weights), Premise, and Phonetic Accent."
     n = n + 1: tmp(n) = "5) Click Make Brief / Make Suno."
     n = n + 1: tmp(n) = "6) Setup AI -> Build Prompt -> (optional) Call AI with API key."
     n = n + 1: tmp(n) = "Formatting: [Meta Tags], (other voices), [* noises *]. Style block uses [tag | tag | ...]."
@@ -261,6 +298,9 @@ End Sub
 
 Private Sub CreateButtonRGF(ws As Worksheet, Left As Single, Top As Single, Width As Single, Height As Single, _
                          caption As String, macroName As String, btnName As String)
+    On Error Resume Next
+    ws.Shapes(btnName).Delete
+    On Error GoTo 0
     Dim sh As Shape
     Set sh = ws.Shapes.AddShape(msoShapeRoundedRectangle, Left, Top, Width, Height)
     With sh
@@ -281,6 +321,85 @@ Private Sub CreateButtonRGF(ws As Worksheet, Left As Single, Top As Single, Widt
         End With
     End With
 End Sub
+
+Private Sub DeleteGenreMixSliders(ws As Worksheet)
+    Dim sh As Shape, del As Collection, i As Long
+    Set del = New Collection
+    For Each sh In ws.Shapes
+        If Left$(sh.Name, 12) = "sl_GenreMix" Then del.Add sh.Name
+    Next sh
+    For i = 1 To del.Count
+        ws.Shapes(del(i)).Delete
+    Next i
+End Sub
+
+Private Sub BuildGenreMixSliders(ws As Worksheet)
+
+    Dim slot As Long, mixRow As Long, leftPos As Single, topPos As Single, w As Single, h As Single
+
+    Dim sh As Shape
+
+
+
+    DeleteGenreMixSliders ws
+
+    w = 120: h = 16
+
+    On Error Resume Next
+
+    leftPos = ws.Columns(GENRE_MIX_WEIGHT_COL + 1).Left
+
+    For slot = 1 To GENRE_MIX_SLOTS
+
+        mixRow = GENRE_MIX_FIRST_ROW + slot - 1
+
+        topPos = ws.Rows(mixRow).Top + 1
+
+        Set sh = ws.Shapes.AddFormControl(xlScrollBar, leftPos, topPos, w, h)
+
+        If Err.Number <> 0 Then
+
+            If Not sliderWarningShown Then
+
+                sliderWarningShown = True
+
+                MsgBox "Excel blocked creation of the genre mix sliders (slot " & slot & "). Enter weights 0-100 manually in column G.", vbExclamation, "RGF Genre Mix"
+
+            End If
+
+            Err.Clear
+
+            Exit For
+
+        End If
+
+        On Error GoTo 0
+
+        sh.Name = "sl_GenreMix" & slot
+
+        With sh.ControlFormat
+
+            .Min = 0
+
+            .Max = 100
+
+            .SmallChange = 1
+
+            .LargeChange = 5
+
+            .LinkedCell = ws.Cells(mixRow, GENRE_MIX_WEIGHT_COL).Address(True, True)
+
+        End With
+
+        On Error Resume Next
+
+    Next slot
+
+    On Error GoTo 0
+
+End Sub
+
+
 
 Private Sub DeletePresetButtons(ws As Worksheet)
     Dim sh As Shape, del As Collection, i As Long
@@ -443,16 +562,18 @@ Public Sub GenerateSunoFromSheet()
 
     Dim tempoHint$, structureHint$, excludeCsv$, styleLine$
     Dim phonLabel$, phonInstruction$, phonTag$
+    Dim mixSummary$, sfxCsv$, styleTagsCsv$
     tempoHint = IIf(Anthem >= 0.75, "100-110 bpm feel", IIf(Tech >= 0.7, "84-96 bpm feel", "92-104 bpm feel"))
     styleLine = NormalizeStyleTagsFromList("anthemic rap", "chant hook", "pocket-tight flow", "minor-key trap", tempoHint, "warm 808s", "internal rhymes", "evolving chorus", "call-and-response", "ad-lib stacks")
+    structureHint = ""
+    excludeCsv = ""
 
-    Dim gOK As Boolean, gStyle$, gTempo$, gStruct$, gExclude$
-    gOK = ReadCurrentGenre(gStyle, gTempo, gStruct, gExclude)
-    If gOK Then
-        styleLine = gStyle
+    Dim gStyle$, gTempo$, gStruct$, gExclude$
+    If ReadCurrentGenre(gStyle, gTempo, gStruct, gExclude, hasW, wc, wt, wa, ws_, wg, wp, mixSummary, sfxCsv, styleTagsCsv) Then
+        If Len(Trim$(gStyle)) > 0 Then styleLine = gStyle
         If Len(Trim$(gTempo)) > 0 Then tempoHint = gTempo
-        structureHint = gStruct
-        excludeCsv = gExclude
+        If Len(Trim$(gStruct)) > 0 Then structureHint = gStruct
+        If Len(Trim$(gExclude)) > 0 Then excludeCsv = gExclude
     End If
 
     GetPhoneticMode phonLabel, phonInstruction, phonTag
@@ -520,37 +641,29 @@ End Sub
 
 Private Sub AddKeywordFields(ws As Worksheet)
     Dim startRow As Long: startRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row + 2
+    Dim labels As Variant, defaults As Variant, names As Variant
+    Dim i As Long
+
     ws.Cells(startRow, 1).Value = "AI Prompt Builder": ws.Cells(startRow, 1).Font.Bold = True
 
-    ws.Cells(startRow + 1, 1).Value = "Theme"
-    ws.Cells(startRow + 2, 1).Value = "Keywords (comma-separated)"
-    ws.Cells(startRow + 3, 1).Value = "Must-include words/phrases"
-    ws.Cells(startRow + 4, 1).Value = "Forbidden words/phrases"
-    ws.Cells(startRow + 5, 1).Value = "Style/Mood tags (comma-separated)"
-    ws.Cells(startRow + 6, 1).Value = "Length target (min)"
-    ws.Cells(startRow + 7, 1).Value = "Audience notes"
+    labels = Array("Theme", "Keywords (comma-separated)", "Must-include words/phrases", _
+                   "Forbidden words/phrases", "Style/Mood tags (comma-separated)", _
+                   "Specific instruments (comma-separated)", "Length target (min)", "Audience notes")
+    defaults = Array(ws.Range("C42").Value, "", "", "", "anthemic rap, chant hook, pocket-tight flow", "", 3, "")
+    names = Array("Theme", "Keywords", "MustInclude", "Forbidden", "StyleTags", "SpecificInstruments", "LengthTarget", "AudienceNotes")
 
-    ws.Cells(startRow + 1, 3).Value = ws.Range("C42").Value
-    ws.Cells(startRow + 2, 3).Value = ""
-    ws.Cells(startRow + 3, 3).Value = ""
-    ws.Cells(startRow + 4, 3).Value = ""
-    ws.Cells(startRow + 5, 3).Value = "anthemic rap, chant hook, pocket-tight flow"
-    ws.Cells(startRow + 6, 3).Value = 3
-    ws.Cells(startRow + 7, 3).Value = ""
+    For i = LBound(labels) To UBound(labels)
+        ws.Cells(startRow + 1 + i, 1).Value = labels(i)
+        ws.Cells(startRow + 1 + i, 3).Value = defaults(i)
+        AssignRangeName ws, ws.Cells(startRow + 1 + i, 3), CStr(names(i))
+    Next i
 
-    AssignRangeName ws, ws.Cells(startRow + 1, 3), "Theme"
-    AssignRangeName ws, ws.Cells(startRow + 2, 3), "Keywords"
-    AssignRangeName ws, ws.Cells(startRow + 3, 3), "MustInclude"
-    AssignRangeName ws, ws.Cells(startRow + 4, 3), "Forbidden"
-    AssignRangeName ws, ws.Cells(startRow + 5, 3), "StyleTags"
-    AssignRangeName ws, ws.Cells(startRow + 6, 3), "LengthTarget"
-    AssignRangeName ws, ws.Cells(startRow + 7, 3), "AudienceNotes"
-
-    With ws.Range(ws.Cells(startRow, 1), ws.Cells(startRow + 7, 3)).Interior
+    With ws.Range(ws.Cells(startRow, 1), ws.Cells(startRow + UBound(labels) + 1, 3)).Interior
         .Color = RGB(240, 248, 255)
     End With
     ws.Columns("A:C").AutoFit
 End Sub
+
 
 Private Sub AddAIButtons(ws As Worksheet)
     Dim x As Single, y As Single, w As Single, h As Single, baseY As Single
@@ -585,7 +698,8 @@ Public Sub BuildPromptFromSheet()
     Vn = NzD(src.Range("C23").Value) / 10
     Reg = NzD(src.Range("C58").Value)
 
-    Dim theme$, keywords$, musts$, forbids$, tagsCsv$, mins$, aud$
+    Dim theme$, keywords$, musts$, forbids$, tagsCsv$, mins$, aud$, specInstruments$
+    Dim styleLine$
     theme = Trim$(CStr(src.Cells(FindLabelRow(src, "Theme"), "C").Value))
     keywords = Trim$(CStr(src.Cells(FindLabelRow(src, "Keywords (comma-separated)"), "C").Value))
     musts = Trim$(CStr(src.Cells(FindLabelRow(src, "Must-include words/phrases"), "C").Value))
@@ -593,6 +707,7 @@ Public Sub BuildPromptFromSheet()
     tagsCsv = Trim$(CStr(src.Cells(FindLabelRow(src, "Style/Mood tags (comma-separated)"), "C").Value))
     mins = Trim$(CStr(src.Cells(FindLabelRow(src, "Length target (min)"), "C").Value))
     aud = Trim$(CStr(src.Cells(FindLabelRow(src, "Audience notes"), "C").Value))
+    specInstruments = Trim$(CStr(src.Cells(FindLabelRow(src, "Specific instruments (comma-separated)"), "C").Value))
 
     Dim tempo$, structure$, hookPlan$, flowPlan$, rhymePlan$, audience$, vibe$, premise$
     Dim phonLabel$, phonInstruction$, phonTag$
@@ -649,18 +764,21 @@ Public Sub BuildPromptFromSheet()
 
     premise = ResolvePremise()
 
-    GetPhoneticMode phonLabel, phonInstruction, phonTag
-
     ' ===== GENRE OVERRIDES =====
-    Dim gStyle$, gTempo$, gStruct$, gExclude$, hasW As Boolean, wc#, wt#, wa#, ws_#, wg#, wp#, gName$, accentStyleBlock$
-    gName = Trim$(CStr(src.Range("E2").Value))
-    If ReadCurrentGenre(gStyle, gTempo, gStruct, gExclude, hasW, wc, wt, wa, ws_, wg, wp) Then
+    Dim gStyle$, gTempo$, gStruct$, gExclude$, hasW As Boolean, wc#, wt#, wa#, ws_#, wg#, wp#, gMixSummary$, gSfx$, gStyleTags$, accentStyleBlock$
+    Dim styleBase$
+    styleBase = styleLine
+    If ReadCurrentGenre(gStyle, gTempo, gStruct, gExclude, hasW, wc, wt, wa, ws_, wg, wp, gMixSummary, gSfx, gStyleTags) Then
+        If Len(Trim$(gStyle)) > 0 Then styleBase = gStyle
         If Len(Trim$(gTempo)) > 0 Then tempo = gTempo
         If Len(Trim$(gStruct)) > 0 Then structure = gStruct
+        If Len(Trim$(gStyleTags)) > 0 Then tagsCsv = gStyleTags
     End If
 
-    accentStyleBlock = gStyle
-    If Len(phonTag) > 0 Then accentStyleBlock = AppendStyleAccent(accentStyleBlock, phonTag)
+    GetPhoneticMode phonLabel, phonInstruction, phonTag
+
+    styleLine = AppendStyleAccent(styleBase, phonTag)
+    accentStyleBlock = styleLine
 
     Dim P() As String
     AppendLine P, "You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song."
@@ -679,7 +797,7 @@ Public Sub BuildPromptFromSheet()
     AppendLine P, "- Sanity-check: coherent POV/tense, plausible imagery, strong rhyme chains, natural idioms, on-beat phrasing."
     AppendLine P, ""
 
-    If Len(gName) > 0 Then AppendLine P, "Chosen Genre (for feel only): " & gName
+    If Len(gMixSummary) > 0 Then AppendLine P, "Genre mix (for feel only): " & gMixSummary
     If Len(accentStyleBlock) > 0 Then AppendLine P, "Use this exact Style block for Block 2: " & accentStyleBlock
     If Len(gExclude) > 0 Then AppendLine P, "Use this Exclude list for Block 3: " & LCase$(gExclude)
     AppendLine P, ""
@@ -691,7 +809,10 @@ Public Sub BuildPromptFromSheet()
     AppendLine P, "Flow Plan: " & flowPlan
     AppendLine P, "Rhyme Plan: " & rhymePlan
     AppendLine P, "Style/Vibe: " & vibe
+    If Len(specInstruments) > 0 Then AppendLine P, "Instruments to feature (production cues, not lyric mentions): " & specInstruments
+    If Len(gSfx) > 0 Then AppendLine P, "SFX cues: " & gSfx
     AppendLine P, "Phonetics: " & phonInstruction
+    AppendLine P, "Write the lyrics phonetically in the selected accent while keeping them in English."
     AppendLine P, "Audience: " & audience
     AppendLine P, "Core Premise: " & premise
     AppendLine P, "Length target: " & IIf(Len(mins) > 0, mins & " minutes", "3-3.5 minutes")
@@ -873,6 +994,90 @@ End Function
 '========================
 ' GENRE LIBRARY + UI
 '========================
+Public Sub BuildAccentLibrary()
+    Dim ws As Worksheet, r As Long
+    On Error Resume Next: Set ws = ThisWorkbook.Worksheets(ACCENT_LIBRARY_SHEET): On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        ws.Name = ACCENT_LIBRARY_SHEET
+    Else
+        ws.Cells.Clear
+    End If
+
+    ws.Range("A1:C1").Value = Array("Accent Name", "Instruction", "Style Tag")
+    ws.Rows(1).Font.Bold = True
+    ws.Rows(1).Interior.Color = RGB(235, 225, 245)
+    r = 2
+
+    AddAccentRow ws, r, "Neutral / Standard", "Neutral studio pronunciation; keep English lyrics natural.", ""
+    AddAccentRow ws, r, "American English (General)", "Balanced vowels, crisp consonants, radio-ready delivery.", "accent: general american"
+    AddAccentRow ws, r, "American English (Southern)", "Relaxed drawl, softened r's, warm open vowels.", "accent: southern american"
+    AddAccentRow ws, r, "American English (New York)", "Quick cadence, clipped r's, assertive tone.", "accent: new york american"
+    AddAccentRow ws, r, "American English (Midwest)", "Clean vowels, rounded consonants, friendly tone.", "accent: midwest american"
+    AddAccentRow ws, r, "American English (West Coast)", "Laid-back cadence, lightly clipped consonants, sunny tone.", "accent: west coast american"
+    AddAccentRow ws, r, "Canadian English", "Neutral North American diction with soft r's and rounded vowels.", "accent: canadian english"
+    AddAccentRow ws, r, "British English (RP)", "Precise consonants, non-rhotic r's, formal intonation.", "accent: british rp"
+    AddAccentRow ws, r, "British English (London)", "Glottal stops, dropped r's, urban London energy.", "accent: london uk"
+    AddAccentRow ws, r, "British English (Liverpool)", "Sing-song lilt, crisp consonants, melodic flow.", "accent: liverpool uk"
+    AddAccentRow ws, r, "Scottish English", "Rolled r's, tightened vowels, musical cadence.", "accent: scottish english"
+    AddAccentRow ws, r, "Irish English", "Lilted cadence, bright vowels, lyrical swing.", "accent: irish english"
+    AddAccentRow ws, r, "Australian English", "Open vowels, rising sentence endings, relaxed delivery.", "accent: australian english"
+    AddAccentRow ws, r, "New Zealand English", "Tight short vowels, smooth cadence, gentle delivery.", "accent: new zealand english"
+    AddAccentRow ws, r, "South African English", "Rounded vowels, crisp consonants, rhythmic inflection.", "accent: south african english"
+    AddAccentRow ws, r, "Nigerian English", "Rhythmic cadence, tonal emphasis, clear consonants.", "accent: nigerian english"
+    AddAccentRow ws, r, "Ghanaian English", "Smooth cadence, tonal lilt, deliberate consonants.", "accent: ghanaian english"
+    AddAccentRow ws, r, "Jamaican English", "Patois-influenced rhythm, melodic swing, percussive consonants.", "accent: jamaican english"
+    AddAccentRow ws, r, "Caribbean English (Trinidad)", "Musical inflection, clipped consonants, sunny tone.", "accent: caribbean english"
+    AddAccentRow ws, r, "Spanish-Influenced English", "Open vowels, rolled or tapped r's, melodic inflection.", "accent: spanish-influenced english"
+    AddAccentRow ws, r, "Brazilian Portuguese English", "Nasal vowels, softened consonants, musical phrasing.", "accent: brazilian portuguese english"
+    AddAccentRow ws, r, "French-Accented English", "Front-focused vowels, uvular r's, smooth cadence.", "accent: french-accented english"
+    AddAccentRow ws, r, "German-Accented English", "Crisp consonants, rounded vowels, precise diction.", "accent: german-accented english"
+    AddAccentRow ws, r, "Italian-Accented English", "Open vowels, expressive cadence, rolling r's.", "accent: italian-accented english"
+    AddAccentRow ws, r, "Arabic-Accented English", "Emphatic consonants, deep vowels, rhythmic stress.", "accent: arabic-accented english"
+    AddAccentRow ws, r, "Hindi-Influenced English", "Retroflex consonants, syllable-timed rhythm, precise diction.", "accent: indian english"
+    AddAccentRow ws, r, "Somali English Accent", "Percussive consonants, clipped vowels, lifted sentence endings.", "accent: somali english"
+    AddAccentRow ws, r, "Filipino English", "Bright vowels, gentle consonants, upbeat rhythm.", "accent: filipino english"
+    AddAccentRow ws, r, "Japanese-Accented English", "Even pacing, softened consonants, light vowels.", "accent: japanese-accented english"
+    AddAccentRow ws, r, "Korean-Accented English", "Crisp consonants, even pacing, subtle tonal rise.", "accent: korean-accented english"
+    AddAccentRow ws, r, "Mandarin-Accented English", "Tone-informed rhythm, softened consonants, clear vowels.", "accent: mandarin-accented english"
+    AddAccentRow ws, r, "Cantonese-Accented English", "Clipped vowels, tonal cadence, precise consonants.", "accent: cantonese-accented english"
+    AddAccentRow ws, r, "Turkish-Accented English", "Rounded vowels, firm consonants, rhythmic emphasis.", "accent: turkish-accented english"
+    AddAccentRow ws, r, "Greek-Accented English", "Open vowels, softened consonants, lyrical cadence.", "accent: greek-accented english"
+    AddAccentRow ws, r, "Russian-Accented English", "Hard consonants, deep vowels, deliberate phrasing.", "accent: russian-accented english"
+
+    RefreshAccentListName ws
+    ws.Columns("A:C").AutoFit
+End Sub
+
+Private Sub AddAccentRow(ws As Worksheet, ByRef r As Long, ByVal name As String, ByVal instruction As String, ByVal styleTag As String)
+    ws.Cells(r, 1).Value = name
+    ws.Cells(r, 2).Value = instruction
+    ws.Cells(r, 3).Value = styleTag
+    r = r + 1
+End Sub
+
+Private Sub RefreshAccentListName(ws As Worksheet)
+    Dim lastRow As Long, ref As String
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If lastRow < 2 Then lastRow = 2
+    ref = "='" & ws.Name & "'!$A$2:$A$" & lastRow
+    On Error Resume Next: ws.Parent.Names("AccentList").Delete: On Error GoTo 0
+    ws.Parent.Names.Add Name:="AccentList", RefersTo:=ref
+End Sub
+
+Public Sub OpenAccentLibrary()
+    EnsureAccentLibrary
+    Worksheets(ACCENT_LIBRARY_SHEET).Activate
+End Sub
+
+Public Sub EnsureAccentLibrary()
+    If SheetExistsRGF(ACCENT_LIBRARY_SHEET) Then
+        RefreshAccentListName Worksheets(ACCENT_LIBRARY_SHEET)
+    Else
+        BuildAccentLibrary
+    End If
+End Sub
+
 Public Sub BuildGenreLibrary()
     Dim ws As Worksheet, r As Long
     On Error Resume Next: Set ws = ThisWorkbook.Worksheets("Genre_Library"): On Error GoTo 0
@@ -910,6 +1115,44 @@ Public Sub BuildGenreLibrary()
     AddGenreRow ws, r, "Gospel Choir", "72-96 bpm feel", "uplift harmonies, call-and-response, claps, swell to big hook", "Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Modulate a-' Hook 8", "drill, metal", "choir swell, handclap, organ swell", 0.16, 0.1, 0.28, 0.12, 0.2, 0.14
     AddGenreRow ws, r, "Hyperpop", "140-170 bpm feel", "pitch play, glitchy chops, maximalist energy, bright hooks", "Hook 8 a-' Verse 8 a-' Hook 8 a-' Verse 8 a-' Hook 8", "boom bap, folk", "glitch zap, riser, vox chop", 0.12, 0.16, 0.26, 0.18, 0.12, 0.16
 
+
+    AddGenreRow ws, r, "Trap Soul", "88-96 bpm feel", "moody trap drums, soulful melodies, intimate confessionals, airy pads, autotuned stacks", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "punk, thrash", "808 drop, reverse swell, breath fx", 0.2, 0.16, 0.18, 0.2, 0.14, 0.12
+    AddGenreRow ws, r, "Alt R&B", "70-88 bpm feel", "left-field r&b, atmospheric synths, experimental textures, falsetto stacks, conversational tone", "Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 6 a-' Hook 8", "metal, country", "vinyl crackle, whispered ad-lib, texture swell", 0.18, 0.16, 0.14, 0.24, 0.14, 0.14
+    AddGenreRow ws, r, "Neo-Soul", "72-86 bpm feel", "live pocket, buttery chords, jazz voicings, conversational vamps, warm analog tone", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "metal, edm", "rim click, organ swell, crowd snap", 0.18, 0.14, 0.16, 0.24, 0.16, 0.12
+    AddGenreRow ws, r, "Emo Rap", "70-82 bpm feel", "guitar loops, emotive crooning, angst confessionals, melodic rap hooks, lo-fi textures", "Intro 2 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "salsa, jazz-hop", "guitar feedback, tape stop, sigh fx", 0.2, 0.16, 0.18, 0.22, 0.12, 0.12
+    AddGenreRow ws, r, "Pop Punk", "150-170 bpm feel", "driving guitars, shout-along hooks, energetic drums, youthful angst, gang vocals", "Intro 2 a-' Verse 8 a-' Pre 4 a-' Hook 8 a-' Verse 8 a-' Pre 4 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "trap, drill", "pick scrape, crowd shout, snare build", 0.24, 0.14, 0.2, 0.14, 0.12, 0.16
+    AddGenreRow ws, r, "Alt Rock", "118-136 bpm feel", "crunchy guitars, dynamic quiet-loud leaps, introspective lyrics, soaring choruses", "Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "trap, amapiano", "amp hum, feedback swell, vocal shout", 0.24, 0.18, 0.18, 0.16, 0.12, 0.12
+    AddGenreRow ws, r, "Metalcore", "140-180 bpm feel", "breakdowns, scream-clean blend, double-kick barrages, emotional catharsis, melodic leads", "Intro 2 a-' Verse 16 a-' Hook 8 a-' Breakdown 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "alt r&b, amapiano", "china crash, pick slide, sub drop", 0.26, 0.2, 0.14, 0.12, 0.12, 0.16
+    AddGenreRow ws, r, "Synthwave", "100-118 bpm feel", "retro 80s synths, steady pulse, neon ambience, instrumental hooks, nostalgic leads", "Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "trap, bluegrass", "tom fill, riser sweep, chorus guitar", 0.18, 0.12, 0.22, 0.24, 0.12, 0.12
+    AddGenreRow ws, r, "Vaporwave", "60-84 bpm feel", "pitch-shifted samples, surreal ambience, chopped phrases, dreamy nostalgia, reverb drenched", "Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 6 a-' Hook 8", "metal, country", "cassette stop, reverb tail, chime gliss", 0.14, 0.1, 0.2, 0.28, 0.16, 0.12
+    AddGenreRow ws, r, "Lo-fi Chillhop", "70-90 bpm feel", "dusty drums, jazzy chords, mellow motifs, study vibes, loop-friendly phrases", "Intro 4 a-' Loop 8 a-' Variation 8 a-' Loop 8 a-' Break 4 a-' Loop 8", "metal, hardstyle", "rain loop, vinyl crackle, pen scribble", 0.14, 0.12, 0.12, 0.3, 0.18, 0.14
+    AddGenreRow ws, r, "Phonk", "90-110 bpm feel", "memphis vocals, cowbell grooves, distorted 808s, eerie samples, adrenaline energy", "Intro 4 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8", "bebop, orchestral", "siren shout, cowbell loop, car rev", 0.2, 0.18, 0.16, 0.2, 0.12, 0.14
+    AddGenreRow ws, r, "Future Bass", "138-150 bpm feel", "supersaw swells, vocal chops, emotional drops, lush chords, festival energy", "Intro 4 a-' Build 8 a-' Drop 16 a-' Verse 12 a-' Build 8 a-' Drop 16", "punk, bluegrass", "vocal chop, supersaw swell, snare build", 0.18, 0.16, 0.24, 0.18, 0.1, 0.14
+    AddGenreRow ws, r, "Dubstep", "140 bpm feel", "wobble bass, half-time drums, aggressive drops, sound design flex, cinematic builds", "Intro 8 a-' Build 8 a-' Drop 16 a-' Break 8 a-' Drop 16", "bachata, jazz", "wobble bass, laser zap, snare roll", 0.2, 0.22, 0.22, 0.12, 0.1, 0.14
+    AddGenreRow ws, r, "Drumstep", "160-174 bpm feel", "half-time drops, double-time drums, bass swerves, hybrid dnb energy", "Intro 8 a-' Drop 16 a-' Switch 8 a-' Drop 16", "folk, amapiano", "amen switch, sub drop, glitch fill", 0.18, 0.22, 0.2, 0.12, 0.12, 0.16
+    AddGenreRow ws, r, "Hardstyle", "150-160 bpm feel", "reverse bass, pitched kicks, euphoric synths, anthem shouts, festival power", "Intro 8 a-' Build 8 a-' Drop 16 a-' Mid 8 a-' Drop 16", "neo-soul, lo-fi chillhop", "kick punch, reverse sweep, crowd chant", 0.2, 0.24, 0.22, 0.1, 0.08, 0.16
+    AddGenreRow ws, r, "Techno (Peak Time)", "128-132 bpm feel", "driving four-on-floor, dark synth stabs, hypnotic builds, minimal vocals", "Intro 16 a-' Groove 32 a-' Break 16 a-' Drop 32", "pop, trap", "air raid siren, filtered noise, clap roll", 0.18, 0.24, 0.2, 0.14, 0.1, 0.14
+    AddGenreRow ws, r, "Progressive Trance", "132-136 bpm feel", "uplifting pads, long builds, cascading arps, emotional drops, extended phrasing", "Intro 16 a-' Build 16 a-' Drop 16 a-' Mid 16 a-' Drop 16", "drill, phonk", "uplifter, white noise, impact hit", 0.2, 0.2, 0.22, 0.16, 0.08, 0.14
+    AddGenreRow ws, r, "Deep House", "118-124 bpm feel", "warm basslines, soulful vocals, subtle grooves, nighttime vibe, filtered keys", "Intro 8 a-' Groove 16 a-' Hook 8 a-' Groove 16 a-' Hook 8", "metalcore, pop punk", "shaker loop, filtered pad, crowd breath", 0.18, 0.18, 0.2, 0.2, 0.12, 0.12
+    AddGenreRow ws, r, "Afro House", "120-125 bpm feel", "polyrhythmic percussion, earthy vocals, hypnotic grooves, bright synth stabs", "Intro 8 a-' Groove 16 a-' Hook 8 a-' Groove 16 a-' Hook 8", "trap, hyperpop", "talking drum, chant loop, whistle swell", 0.2, 0.18, 0.22, 0.18, 0.12, 0.1
+    AddGenreRow ws, r, "Amapiano", "110-115 bpm feel", "log drums, spacious grooves, soulful vocals, percussive fills, laid-back vibe", "Intro 8 a-' Groove 16 a-' Hook 8 a-' Groove 16 a-' Hook 8", "metal, drill", "log drum, shaker roll, whistle hit", 0.18, 0.16, 0.24, 0.18, 0.12, 0.12
+    AddGenreRow ws, r, "Dancehall", "96-104 bpm feel", "syncopated riddims, patois delivery, call-and-response hooks, tropical energy", "Intro 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8", "hyperpop, techno", "air horn, crowd hey, siren", 0.22, 0.16, 0.24, 0.14, 0.12, 0.12
+    AddGenreRow ws, r, "Reggae", "72-88 bpm feel", "skank guitar, warm bass, laid-back vocals, conscious lyrics, dub space", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "drill, trap", "spring reverb, skank guitar, crowd clap", 0.18, 0.14, 0.22, 0.16, 0.14, 0.16
+    AddGenreRow ws, r, "Latin Pop", "104-118 bpm feel", "tropical rhythms, bilingual phrasing, glossy production, hook-forward writing", "Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "metalcore, phonk", "clave, synth riser, crowd ole", 0.22, 0.14, 0.24, 0.16, 0.12, 0.12
+    AddGenreRow ws, r, "Bachata", "90-100 bpm feel", "romantic guitars, syncopated patterns, heartfelt storytelling, call-and-response", "Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "drill, dubstep", "guira sweep, guitar slide, conga hit", 0.18, 0.12, 0.24, 0.18, 0.16, 0.12
+    AddGenreRow ws, r, "Salsa", "180-200 bpm feel", "horn hits, montuno piano, tumbao bass, energetic callouts, dancefloor ready", "Intro 4 a-' Verse 8 a-' Coro 8 a-' Mambo 8 a-' Verse 8 a-' Coro 8 a-' Breakdown 4 a-' Coro 8", "drill, phonk", "timbale roll, horn stab, whistle", 0.2, 0.14, 0.22, 0.16, 0.16, 0.12
+    AddGenreRow ws, r, "Cumbia", "90-104 bpm feel", "accordion riffs, percussive swing, storytelling vocals, festive energy", "Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Breakdown 4 a-' Hook 8", "trap, metal", "accordion riff, guiro sweep, crowd clap", 0.18, 0.14, 0.2, 0.18, 0.16, 0.14
+    AddGenreRow ws, r, "K-Pop", "118-128 bpm feel", "bright synth pop, layered harmonies, rap break, choreo-ready hooks, bilingual phrasing", "Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Rap 8 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "thrash metal, doom metal", "sparkle fx, impact boom, group chant", 0.22, 0.14, 0.26, 0.16, 0.1, 0.12
+    AddGenreRow ws, r, "J-Pop", "120-130 bpm feel", "cheerful melodies, tight vocal stacks, anime energy, modulations, playful lyrics", "Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "trap, drill", "kawaii vox, clap stack, riser", 0.2, 0.14, 0.24, 0.18, 0.12, 0.12
+    AddGenreRow ws, r, "Bluegrass", "120-140 bpm feel", "banjo rolls, fiddle leads, storytelling verses, acoustic drive, close harmonies", "Intro 2 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Breakdown 4 a-' Hook 8", "trap, edm", "banjo roll, foot stomp, train whistle", 0.22, 0.12, 0.2, 0.14, 0.2, 0.12
+    AddGenreRow ws, r, "Blues", "70-90 bpm feel", "12-bar form, expressive vocals, guitar bends, smoky mood, call-and-response", "Intro 2 a-' Verse 12 a-' Turnaround 4 a-' Verse 12 a-' Turnaround 4 a-' Solo 12 a-' Verse 12", "edm, hyperpop", "slide guitar, amp hum, crowd moan", 0.2, 0.14, 0.18, 0.18, 0.16, 0.14
+    AddGenreRow ws, r, "Funk", "100-110 bpm feel", "syncopated bass, tight drums, horn stabs, call-and-response, party chants", "Intro 2 a-' Groove 16 a-' Hook 8 a-' Groove 16 a-' Hook 8 a-' Breakdown 4 a-' Hook 8", "metalcore, trance", "horn stab, crowd uh, slap bass hit", 0.22, 0.14, 0.2, 0.18, 0.14, 0.12
+    AddGenreRow ws, r, "Disco", "118-126 bpm feel", "string hits, four-on-floor, falsetto hooks, glitter energy, clap stacks", "Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "metal, phonk", "string hit, handclap loop, reverse cymbal", 0.2, 0.12, 0.24, 0.2, 0.12, 0.12
+    AddGenreRow ws, r, "Classic Soul", "78-96 bpm feel", "horn sections, rich vocals, gospel influence, heartfelt storytelling, groove pocket", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "metal, hardstyle", "crowd snap, organ swell, horn fall", 0.2, 0.14, 0.2, 0.2, 0.16, 0.1
+    AddGenreRow ws, r, "Gospel Trap", "82-92 bpm feel", "808 worship, choir stacks, testimony bars, halftime bounce, uplifting dynamics", "Intro 4 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "metalcore, hyperpop", "choir swell, 808 drop, preacher ad-lib", 0.2, 0.18, 0.2, 0.18, 0.16, 0.08
+    AddGenreRow ws, r, "Cinematic Pop", "90-110 bpm feel", "orchestral swells, emotive vocals, epic builds, hybrid pop orchestration", "Intro 8 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 8 a-' Hook 8", "phonk, drill", "cymbal swell, vocal ahh, trailer boom", 0.18, 0.16, 0.24, 0.18, 0.12, 0.12
+    AddGenreRow ws, r, "Alte (Afrobeats)", "100-110 bpm feel", "warm afrobeats groove, experimental textures, indie vocals, airy guitars", "Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8", "thrash, metalcore", "bird call, crowd murmur, rim click", 0.2, 0.16, 0.22, 0.18, 0.14, 0.1
+    AddGenreRow ws, r, "Gqom", "120-128 bpm feel", "dark percussion, minimal vocals, hypnotic stomp, South African club energy", "Intro 8 a-' Groove 16 a-' Hook 8 a-' Groove 16 a-' Hook 8", "country, lo-fi chillhop", "stomp hit, whistle fx, percussion roll", 0.22, 0.18, 0.2, 0.16, 0.12, 0.12
     ws.Columns("A:L").AutoFit
     ws.Columns("A:L").HorizontalAlignment = xlLeft
 
@@ -934,22 +1177,57 @@ End Sub
 
 Public Sub AddGenreControls()
     Dim main As Worksheet: Set main = Worksheets("RGF_Sheet")
-    main.Range("E2").ClearContents
-    With main.Range("E2").Validation
+    Dim mixGenres As Range, mixWeights As Range, accentCell As Range
+
+    Set mixGenres = main.Range(main.Cells(GENRE_MIX_FIRST_ROW, GENRE_MIX_GENRE_COL), _
+                               main.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS - 1, GENRE_MIX_GENRE_COL))
+    With mixGenres.Validation
         .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="=GenreList"
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, _
+             Formula1:="=GenreList"
         .IgnoreBlank = True: .InCellDropdown = True
-        .InputTitle = "Pick a genre"
-        .InputMessage = "Choose from Genre_Library or add your own."
+        .InputTitle = "Pick genres"
+        .InputMessage = "Blend genres from Genre_Library or add your own rows there."
     End With
-    main.Range("E2").Interior.Color = RGB(240, 255, 240)
+    mixGenres.Interior.Color = RGB(240, 255, 240)
+
+    Set mixWeights = main.Range(main.Cells(GENRE_MIX_FIRST_ROW, GENRE_MIX_WEIGHT_COL), _
+                                main.Cells(GENRE_MIX_FIRST_ROW + GENRE_MIX_SLOTS - 1, GENRE_MIX_WEIGHT_COL))
+    AddDV mixWeights, "Genre mix weight 0-100", "Weights = influence %. Use sliders or type values.", 0, 100
+
+    Set accentCell = ResolveLabelRange(main, "Phonetic Accent")
+    If Not accentCell Is Nothing Then
+        With accentCell.Validation
+            .Delete
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, _
+                 Formula1:="=AccentList"
+            .IgnoreBlank = True: .InCellDropdown = True
+            .InputTitle = "Select an accent"
+            .InputMessage = "Pick an accent. Add more on Accent_Library."
+        End With
+        If Len(Trim$(accentCell.Value)) = 0 Then accentCell.Value = ACCENT_DEFAULT_LABEL
+        accentCell.Interior.Color = RGB(255, 250, 240)
+    End If
+
+    On Error Resume Next
+    BuildGenreMixSliders main
+    If Err.Number <> 0 Then
+        If Not sliderWarningShown Then
+            sliderWarningShown = True
+            MsgBox "Excel blocked creation of the genre mix sliders. Enter weights 0-100 manually in column G.", vbExclamation, "RGF Genre Mix"
+        End If
+        Err.Clear
+    End If
+    On Error GoTo 0
 
     Dim x As Single, y As Single, w As Single, h As Single
     x = main.Columns("J").Left: w = 120: h = 24
     y = main.Rows(12).Top
     CreateButtonRGF main, x, y, w, h, "Open Genre Library", "OpenGenreLibrary", "btn_OpenGenreLib"
-    CreateButtonRGF main, x + (w + 10), y, w, h, "Apply Genre", "ApplySelectedGenre", "btn_ApplyGenre"
+    CreateButtonRGF main, x + (w + 10), y, w, h, "Apply Genre Mix", "ApplySelectedGenre", "btn_ApplyGenre"
+    CreateButtonRGF main, x + 2 * (w + 10), y, w, h, "Open Accent Library", "OpenAccentLibrary", "btn_OpenAccentLib"
 End Sub
+
 
 Public Sub OpenGenreLibrary()
     If SheetExistsRGF("Genre_Library") Then
@@ -962,78 +1240,371 @@ End Sub
 
 Public Sub ApplySelectedGenre()
     Dim main As Worksheet: Set main = Worksheets("RGF_Sheet")
-    Dim g As String: g = Trim$(CStr(main.Range("E2").Value))
-    If g = "" Then MsgBox "Pick a genre in E2 (dropdown).", vbInformation: Exit Sub
-    If Not SheetExistsRGF("Genre_Library") Then MsgBox "Run BuildGenreLibrary first.", vbExclamation: Exit Sub
+    Dim styleBlock As String, tempoHint As String, structureHint As String, excludeCsv As String
+    Dim mixSummary As String, sfxCsv As String, styleTagsCsv As String
+    Dim hasW As Boolean
+    Dim wc As Double, wt As Double, wa As Double, ws_ As Double, wg As Double, wp As Double
+    Dim phonLabel As String, phonInstruction As String, phonTag As String
 
-    Dim tempoHint$, structHint$, exclCsv$, styleBlock$
-    Dim hasW As Boolean, wc#, wt#, wa#, ws_#, wg#, wp#
-    Dim phonLabel$, phonInstruction$, phonTag$
-    If Not ReadCurrentGenre(styleBlock, tempoHint, structHint, exclCsv, hasW, wc, wt, wa, ws_, wg, wp) Then
-        MsgBox "Genre '" & g & "' not found.", vbExclamation: Exit Sub
+    If Not SheetExistsRGF("Genre_Library") Then
+        MsgBox "Run BuildGenreLibrary first.", vbExclamation
+        Exit Sub
+    End If
+
+    If Not ReadCurrentGenre(styleBlock, tempoHint, structureHint, excludeCsv, hasW, wc, wt, wa, ws_, wg, wp, mixSummary, sfxCsv, styleTagsCsv) Then
+        MsgBox "Add at least one genre in the mix (column F) before applying.", vbExclamation
+        Exit Sub
     End If
 
     GetPhoneticMode phonLabel, phonInstruction, phonTag
-    styleBlock = AppendStyleAccent(styleBlock, phonTag)
+    Dim styledWithAccent As String
+    styledWithAccent = AppendStyleAccent(styleBlock, phonTag)
 
-    main.Range("F1").Value = "Genre Applied": main.Range("F2").Value = g
-    main.Range("E4").Value = "Style Block (preview)": main.Range("F4").Value = styleBlock
-    main.Range("E6").Value = "Structure Hint": main.Range("F6").Value = structHint
-    main.Range("E7").Value = "Exclude (preview)": main.Range("F7").Value = LCase$(exclCsv)
-    main.Range("E8").Value = "SFX ideas": main.Range("F8").Value = ReadGenreField(GetGenreRow(g), 6)
-    main.Range("F4").WrapText = True: main.Range("F4").ColumnWidth = 60
+    main.Range("H1:I8").ClearContents
+    main.Range("H1").Value = "Genre Mix Applied": main.Range("H1").Font.Bold = True
+    main.Range("H2").Value = mixSummary
+    main.Range("H3").Value = "Feel": main.Range("I3").Value = tempoHint
+    main.Range("H4").Value = "Style Block (preview)": main.Range("I4").Value = styledWithAccent
+    main.Range("H5").Value = "Structure Hint": main.Range("I5").Value = structureHint
+    main.Range("H6").Value = "Exclude (preview)": main.Range("I6").Value = LCase$(excludeCsv)
+    main.Range("H7").Value = "SFX ideas": main.Range("I7").Value = sfxCsv
+    main.Range("H8").Value = "Phonetics": main.Range("I8").Value = phonInstruction
+    main.Range("I2:I8").WrapText = True
+    main.Range("I2:I8").ColumnWidth = 60
+
+    Dim styleCell As Range
+    Set styleCell = ResolveLabelRange(main, "Style/Mood tags (comma-separated)")
+    If Not styleCell Is Nothing Then
+        styleCell.Value = styleTagsCsv
+    End If
 
     If hasW Then
-        If MsgBox("Apply '" & g & "' weight preset to C9:C14 now?", vbYesNo + vbQuestion, "Apply Genre Weights") = vbYes Then
+        If MsgBox("Apply weighted preset to C9:C14 based on this mix?", vbYesNo + vbQuestion, "Apply Genre Mix Weights") = vbYes Then
             SetWeights wc, wt, wa, ws_, wg, wp
         End If
     End If
-    MsgBox "Genre '" & g & "' applied. Suno and Prompt will reflect this.", vbInformation
+
+    Dim mixRaw As Collection
+    Set mixRaw = LoadGenreMix(main)
+    Dim rawTotal As Double, i As Long
+    For i = 1 To mixRaw.Count
+        rawTotal = rawTotal + mixRaw(i)("weightRaw")
+    Next i
+    If rawTotal > 0 Then
+        main.Range("H2").Value = mixSummary & " (input sum " & Format$(rawTotal, "0.0") & "%)"
+    End If
+
+    MsgBox "Genre mix applied. Preview updated in columns H:I and style tags refreshed.", vbInformation
 End Sub
+
 
 Public Function ReadCurrentGenre(ByRef styleBlock As String, ByRef tempoHint As String, _
                                  ByRef structureHint As String, ByRef excludeCsv As String, _
                                  Optional ByRef weightsFound As Boolean, _
                                  Optional ByRef wc As Double, Optional ByRef wt As Double, Optional ByRef wa As Double, _
-                                 Optional ByRef ws_ As Double, Optional ByRef wg As Double, Optional ByRef wp As Double) As Boolean
+                                 Optional ByRef ws_ As Double, Optional ByRef wg As Double, Optional ByRef wp As Double, _
+                                 Optional ByRef mixSummary As String = "", Optional ByRef sfxCsv As String = "", Optional ByRef styleTagsCsvOut As String = "") As Boolean
     On Error GoTo nope
     Dim main As Worksheet: Set main = Worksheets("RGF_Sheet")
-    Dim g As String: g = Trim$(CStr(main.Range("E2").Value))
-    If g = "" Or Not SheetExistsRGF("Genre_Library") Then Exit Function
+    If main Is Nothing Then Exit Function
+    If Not SheetExistsRGF("Genre_Library") Then Exit Function
 
-    Dim row As Long: row = GetGenreRow(g)
-    If row = 0 Then Exit Function
+    Dim mix As Collection
+    Set mix = LoadGenreMix(main)
+    If mix Is Nothing Then Exit Function
+    If mix.Count = 0 Then Exit Function
 
-    tempoHint = ReadGenreField(row, 2)
-    Dim tagsCsv As String: tagsCsv = ReadGenreField(row, 3)
-    structureHint = ReadGenreField(row, 4)
-    excludeCsv = ReadGenreField(row, 5)
+    Dim tempoDict As Object
+    Set tempoDict = CollectWeightedValues(mix, "tempo")
+    tempoHint = JoinWeightedDict(tempoDict, " | ")
+    If Len(tempoHint) = 0 Then tempoHint = "Hybrid tempo blend"
 
-    wc = Val(ReadGenreField(row, 7)): wt = Val(ReadGenreField(row, 8))
-    wa = Val(ReadGenreField(row, 9)): ws_ = Val(ReadGenreField(row, 10))
-    wg = Val(ReadGenreField(row, 11)): wp = Val(ReadGenreField(row, 12))
+    structureHint = BuildDominantValue(mix, "structure")
+    excludeCsv = BuildCsvUnion(mix, "exclude", True)
+    sfxCsv = BuildCsvUnion(mix, "sfx", False)
+    mixSummary = BuildMixSummary(mix)
+
+    Dim styleDict As Object
+    Set styleDict = CollectWeightedValues(mix, "styleCsv")
+    MergeTempoIntoStyles tempoDict, styleDict
+
+    styleBlock = BuildStyleBlockFromDynamic(styleDict)
+    If Len(styleBlock) = 0 Then styleBlock = "[custom genre blend]"
+    styleTagsCsvOut = BuildCommaList(styleDict)
+
+    Dim i As Long
+    For i = 1 To mix.Count
+        wc = wc + mix(i)("wc") * mix(i)("weight")
+        wt = wt + mix(i)("wt") * mix(i)("weight")
+        wa = wa + mix(i)("wa") * mix(i)("weight")
+        ws_ = ws_ + mix(i)("ws") * mix(i)("weight")
+        wg = wg + mix(i)("wg") * mix(i)("weight")
+        wp = wp + mix(i)("wp") * mix(i)("weight")
+    Next i
     weightsFound = (wc + wt + wa + ws_ + wg + wp > 0)
 
-    styleBlock = BuildStyleBlockFromGenre(tagsCsv, tempoHint)
     ReadCurrentGenre = True
     Exit Function
 nope:
     ReadCurrentGenre = False
 End Function
 
-Private Function BuildStyleBlockFromGenre(ByVal tagsCsv As String, ByVal tempoHint As String) As String
-    Dim arr As Variant, i As Long, cleaned As Collection, t$, flat$
-    Set cleaned = New Collection
-    arr = Split(tagsCsv, ",")
-    For i = LBound(arr) To UBound(arr)
-        t = Trim$(CStr(arr(i))): If Len(t) > 0 Then cleaned.Add t
+Private Function LoadGenreMix(main As Worksheet) As Collection
+    Dim mix As New Collection
+    Dim slot As Long, genreName As String, weightRaw As Double, row As Long
+    Dim item As Object
+    Dim totalWeight As Double
+    Dim hasPositive As Boolean
+
+    For slot = 1 To GENRE_MIX_SLOTS
+        genreName = Trim$(CStr(main.Cells(GENRE_MIX_FIRST_ROW + slot - 1, GENRE_MIX_GENRE_COL).Value))
+        weightRaw = Val(main.Cells(GENRE_MIX_FIRST_ROW + slot - 1, GENRE_MIX_WEIGHT_COL).Value)
+        If Len(genreName) > 0 Then
+            row = GetGenreRow(genreName)
+            If row > 0 Then
+                Set item = CreateObject("Scripting.Dictionary")
+                item.CompareMode = vbTextCompare
+                item("name") = genreName
+                item("weightRaw") = weightRaw
+                item("tempo") = Trim$(ReadGenreField(row, 2))
+                item("styleCsv") = Trim$(ReadGenreField(row, 3))
+                item("structure") = Trim$(ReadGenreField(row, 4))
+                item("exclude") = Trim$(ReadGenreField(row, 5))
+                item("sfx") = Trim$(ReadGenreField(row, 6))
+                item("wc") = Val(ReadGenreField(row, 7))
+                item("wt") = Val(ReadGenreField(row, 8))
+                item("wa") = Val(ReadGenreField(row, 9))
+                item("ws") = Val(ReadGenreField(row, 10))
+                item("wg") = Val(ReadGenreField(row, 11))
+                item("wp") = Val(ReadGenreField(row, 12))
+                mix.Add item
+                If weightRaw > 0 Then
+                    totalWeight = totalWeight + weightRaw
+                    hasPositive = True
+                End If
+            End If
+        End If
+    Next slot
+
+    Dim i As Long
+    If mix.Count = 0 Then
+        Set LoadGenreMix = mix
+        Exit Function
+    End If
+
+    If hasPositive And totalWeight > 0 Then
+        For i = 1 To mix.Count
+            mix(i)("weight") = mix(i)("weightRaw") / totalWeight
+        Next i
+    Else
+        Dim evenWeight As Double
+        evenWeight = 1# / mix.Count
+        For i = 1 To mix.Count
+            mix(i)("weight") = evenWeight
+        Next i
+    End If
+
+    Set LoadGenreMix = mix
+End Function
+
+Private Function BuildMixSummary(mix As Collection) As String
+    Dim parts As New Collection
+    Dim i As Long
+    For i = 1 To mix.Count
+        parts.Add Format$(mix(i)("weight") * 100, "0") & "% " & mix(i)("name")
     Next i
-    If Len(Trim$(tempoHint)) > 0 Then cleaned.Add tempoHint
-    For i = 1 To cleaned.Count
-        If Len(flat) > 0 Then flat = flat & " | "
-        flat = flat & cleaned(i)
+    BuildMixSummary = JoinCollection(parts, " + ")
+End Function
+
+Private Function CollectWeightedValues(mix As Collection, fieldName As String) As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    dict.CompareMode = vbTextCompare
+    Dim i As Long, raw As String, arr As Variant, v As Variant, key As String, label As String
+    For i = 1 To mix.Count
+        raw = Trim$(CStr(mix(i)(fieldName)))
+        If Len(raw) = 0 Then GoTo skipNext
+        If fieldName = "styleCsv" Or fieldName = "exclude" Or fieldName = "sfx" Then
+            arr = Split(raw, ",")
+        Else
+            arr = Array(raw)
+        End If
+        For Each v In arr
+            label = Trim$(CStr(v))
+            If Len(label) > 0 Then
+                key = LCase$(label)
+                If Not dict.Exists(key) Then
+                    dict.Add key, Array(label, CDbl(mix(i)("weight")))
+                Else
+                    dict(key)(1) = dict(key)(1) + CDbl(mix(i)("weight"))
+                End If
+            End If
+        Next v
+skipNext:
     Next i
-    BuildStyleBlockFromGenre = "[" & flat & "]"
+    Set CollectWeightedValues = dict
+End Function
+
+Private Sub MergeTempoIntoStyles(tempoDict As Object, styleDict As Object)
+    If tempoDict Is Nothing Then Exit Sub
+    If styleDict Is Nothing Then Exit Sub
+    Dim key As Variant
+    For Each key In tempoDict
+        Dim lbl As String: lbl = tempoDict(key)(0)
+        Dim wt As Double: wt = tempoDict(key)(1)
+        If wt <= 0 Then GoTo continueKey
+        If styleDict.Exists(key) Then
+            styleDict(key)(1) = styleDict(key)(1) + wt * 0.5
+        Else
+            styleDict.Add key, Array(lbl, wt * 0.5)
+        End If
+continueKey:
+    Next key
+End Sub
+
+Private Function BuildStyleBlockFromDynamic(styleDict As Object) As String
+    If styleDict Is Nothing Then
+        BuildStyleBlockFromDynamic = ""
+        Exit Function
+    End If
+    If styleDict.Count = 0 Then
+        BuildStyleBlockFromDynamic = ""
+        Exit Function
+    End If
+    Dim keys As Variant: keys = SortDictKeysByWeight(styleDict)
+    If IsEmpty(keys) Then
+        BuildStyleBlockFromDynamic = ""
+        Exit Function
+    End If
+    Dim limit As Long: limit = UBound(keys) - LBound(keys) + 1
+    If limit > 14 Then limit = 14
+    Dim i As Long, sb As String
+    For i = LBound(keys) To LBound(keys) + limit - 1
+        If Len(sb) > 0 Then sb = sb & " | "
+        sb = sb & styleDict(keys(i))(0)
+    Next i
+    BuildStyleBlockFromDynamic = "[" & sb & "]"
+End Function
+
+Private Function BuildCommaList(styleDict As Object) As String
+    If styleDict Is Nothing Then Exit Function
+    If styleDict.Count = 0 Then Exit Function
+    Dim keys As Variant: keys = SortDictKeysByWeight(styleDict)
+    If IsEmpty(keys) Then Exit Function
+    Dim limit As Long: limit = UBound(keys) - LBound(keys) + 1
+    If limit > 12 Then limit = 12
+    Dim items As New Collection
+    Dim i As Long
+    For i = LBound(keys) To LBound(keys) + limit - 1
+        items.Add styleDict(keys(i))(0)
+    Next i
+    BuildCommaList = JoinCollection(items, ", ")
+End Function
+
+Private Function BuildDominantValue(mix As Collection, fieldName As String) As String
+    Dim bestLabel As String, bestWeight As Double
+    Dim i As Long
+    For i = 1 To mix.Count
+        Dim candidate As String
+        candidate = Trim$(CStr(mix(i)(fieldName)))
+        If Len(candidate) > 0 Then
+            If mix(i)("weight") >= bestWeight Then
+                bestWeight = mix(i)("weight")
+                bestLabel = candidate
+            End If
+        End If
+    Next i
+    If Len(bestLabel) = 0 Then Exit Function
+    Dim alts As New Collection
+    For i = 1 To mix.Count
+        Dim altVal As String
+        altVal = Trim$(CStr(mix(i)(fieldName)))
+        If Len(altVal) > 0 Then
+            If LCase$(altVal) <> LCase$(bestLabel) Then
+                alts.Add Format$(mix(i)("weight") * 100, "0") & "% " & altVal
+            End If
+        End If
+    Next i
+    If alts.Count > 0 Then
+        BuildDominantValue = bestLabel & " (alts: " & JoinCollection(alts, " / ") & ")"
+    Else
+        BuildDominantValue = bestLabel
+    End If
+End Function
+
+Private Function BuildCsvUnion(mix As Collection, fieldName As String, makeLower As Boolean) As String
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    dict.CompareMode = vbTextCompare
+    Dim i As Long, raw As String, arr As Variant, v As Variant, token As String, key As String
+    For i = 1 To mix.Count
+        raw = Trim$(CStr(mix(i)(fieldName)))
+        If Len(raw) = 0 Then GoTo continueNext
+        arr = Split(raw, ",")
+        For Each v In arr
+            token = Trim$(CStr(v))
+            If Len(token) > 0 Then
+                key = LCase$(token)
+                If Not dict.Exists(key) Then
+                    If makeLower Then
+                        dict.Add key, LCase$(token)
+                    Else
+                        dict.Add key, token
+                    End If
+                End If
+            End If
+        Next v
+continueNext:
+    Next i
+    If dict.Count = 0 Then
+        BuildCsvUnion = ""
+    Else
+        BuildCsvUnion = Join(dict.Items, ", ")
+    End If
+End Function
+
+Private Function JoinWeightedDict(dict As Object, ByVal delimiter As String) As String
+    If dict Is Nothing Then Exit Function
+    If dict.Count = 0 Then Exit Function
+    Dim keys As Variant: keys = SortDictKeysByWeight(dict)
+    If IsEmpty(keys) Then Exit Function
+    Dim parts As New Collection
+    Dim i As Long
+    For i = LBound(keys) To UBound(keys)
+        parts.Add Format$(dict(keys(i))(1) * 100, "0") & "% " & dict(keys(i))(0)
+    Next i
+    JoinWeightedDict = JoinCollection(parts, delimiter)
+End Function
+
+Private Function SortDictKeysByWeight(dict As Object) As Variant
+    If dict Is Nothing Then
+        SortDictKeysByWeight = Empty
+        Exit Function
+    End If
+    If dict.Count = 0 Then
+        SortDictKeysByWeight = Empty
+        Exit Function
+    End If
+    Dim keys As Variant: keys = dict.Keys
+    Dim i As Long, j As Long, tmp As Variant
+    For i = LBound(keys) To UBound(keys) - 1
+        For j = i + 1 To UBound(keys)
+            If dict(keys(j))(1) > dict(keys(i))(1) Then
+                tmp = keys(i)
+                keys(i) = keys(j)
+                keys(j) = tmp
+            End If
+        Next j
+    Next i
+    SortDictKeysByWeight = keys
+End Function
+
+Private Function JoinCollection(col As Collection, delimiter As String) As String
+    If col Is Nothing Then Exit Function
+    Dim res As String, i As Long
+    For i = 1 To col.Count
+        If Len(res) > 0 Then res = res & delimiter
+        res = res & CStr(col(i))
+    Next i
+    JoinCollection = res
 End Function
 
 Private Function GetGenreRow(ByVal genre As String) As Long
@@ -1142,64 +1713,70 @@ End Function
 ' PHONETIC MODE
 '========================
 Private Sub GetPhoneticMode(ByRef modeLabel As String, ByRef modeInstruction As String, ByRef styleTag As String)
-    Dim ws As Worksheet, target As Range, raw As String
-    modeLabel = "Neutral / Standard"
+    modeLabel = ACCENT_DEFAULT_LABEL
     modeInstruction = "Neutral studio pronunciation; keep English lyrics natural."
     styleTag = ""
 
+    Dim ws As Worksheet, target As Range, raw As String
     On Error Resume Next
     Set ws = Worksheets("RGF_Sheet")
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
 
-    Set target = ResolveLabelRange(ws, "Phonetic Mode")
+    On Error Resume Next
+    Set target = ws.Parent.Names("RGF_PhoneticMode").RefersToRange
+    On Error GoTo 0
     If target Is Nothing Then
-        raw = Trim$(CStr(ws.Range("E13").Value))
-        AssignRangeName ws, ws.Range("E13"), "PhoneticMode"
-    Else
-        raw = Trim$(CStr(target.Value))
+        Set target = ResolveLabelRange(ws, "Phonetic Accent")
     End If
-    If Len(raw) = 0 Then raw = "Neutral / Standard"
+    If Not target Is Nothing Then raw = Trim$(CStr(target.Value))
+    If Len(raw) = 0 Then raw = ACCENT_DEFAULT_LABEL
 
-    Select Case LCase$(raw)
-        Case "neutral / standard"
-            modeLabel = "Neutral / Standard"
+    Dim instruction As String, tag As String
+    If FetchAccentFromLibrary(raw, instruction, tag) Then
+        modeLabel = raw
+        modeInstruction = instruction
+        styleTag = tag
+    Else
+        modeLabel = raw
+        If LCase$(raw) = LCase$(ACCENT_DEFAULT_LABEL) Then
             modeInstruction = "Neutral studio pronunciation; keep English lyrics natural."
             styleTag = ""
-        Case "american english (general)"
-            modeLabel = "American English (General)"
-            modeInstruction = "General American accent: balanced vowels, crisp consonants, modern radio tone. Keep lyrics in English."
-            styleTag = "accent: general american"
-        Case "american english (southern)"
-            modeLabel = "American English (Southern)"
-            modeInstruction = "Southern U.S. accent: relaxed drawl, softened r's, warm vowels. Keep lyrics in English."
-            styleTag = "accent: southern american"
-        Case "american english (new york)"
-            modeLabel = "American English (New York)"
-            modeInstruction = "New York accent: quick cadence, clipped r's, assertive delivery. Keep lyrics in English."
-            styleTag = "accent: new york american"
-        Case "american english (midwest)"
-            modeLabel = "American English (Midwest)"
-            modeInstruction = "Midwest accent: clean vowels, light r's, friendly tone. Keep lyrics in English."
-            styleTag = "accent: midwest american"
-        Case "spanish-influenced english"
-            modeLabel = "Spanish-Influenced English"
-            modeInstruction = "Spanish-influenced English: open vowels, rolled or tapped r's, melodic inflection. Keep lyrics in English."
-            styleTag = "accent: spanish-influenced english"
-        Case "indian english accent"
-            modeLabel = "Indian English Accent"
-            modeInstruction = "Indian English accent: precise diction, light retroflex consonants, rhythmic syllable stress. Keep lyrics in English."
-            styleTag = "accent: indian english"
-        Case "somali english accent"
-            modeLabel = "Somali English Accent"
-            modeInstruction = "Somali-accented English: percussive consonants, clipped vowels, lifted sentence endings. Keep lyrics in English."
-            styleTag = "accent: somali english"
-        Case Else
-            modeLabel = raw
-            modeInstruction = raw & " delivery. Keep lyrics in English."
+        Else
+            modeInstruction = raw & " accent: emulate its signature cadence, vowels, and consonants while keeping lyrics in English."
             styleTag = "accent: " & LCase$(raw)
-    End Select
+        End If
+    End If
+
+    If InStr(1, modeInstruction, "Write the lyrics phonetically", vbTextCompare) = 0 Then
+        modeInstruction = modeInstruction & " Write the lyrics phonetically in this accent while keeping them in English."
+    End If
 End Sub
+
+Private Function FetchAccentFromLibrary(ByVal accentName As String, ByRef instructionOut As String, ByRef styleTagOut As String) As Boolean
+    accentName = Trim$(accentName)
+    If Len(accentName) = 0 Then Exit Function
+    EnsureAccentLibrary
+    If Not SheetExistsRGF(ACCENT_LIBRARY_SHEET) Then Exit Function
+
+    Dim ws As Worksheet: Set ws = Worksheets(ACCENT_LIBRARY_SHEET)
+    Dim f As Range
+    Set f = ws.Columns(1).Find(What:=accentName, LookAt:=xlWhole, LookIn:=xlValues, MatchCase:=False)
+    If f Is Nothing Then Exit Function
+
+    instructionOut = Trim$(CStr(ws.Cells(f.Row, 2).Value))
+    styleTagOut = Trim$(CStr(ws.Cells(f.Row, 3).Value))
+
+    If Len(instructionOut) = 0 Then
+        instructionOut = accentName & " accent: emulate its cadence and pronunciation while keeping lyrics in English."
+    End If
+    If Len(styleTagOut) = 0 Then
+        styleTagOut = "accent: " & LCase$(accentName)
+    End If
+
+    FetchAccentFromLibrary = True
+End Function
+
 
 
 Private Sub ApplyPhoneticSpelling(ByRef lines As Variant, ByVal phonLabel As String)
@@ -1627,7 +2204,14 @@ Private Function ResolvePremise() As String
     Dim explicit$, theme$, kw$, aud$, pool As Variant, i&
     If ws Is Nothing Then ResolvePremise = "struggle & perseverance": Exit Function
 
-    explicit = LCase$(Trim$(ws.Range("E10").Value))
+    Dim premiseCell As Range
+    On Error Resume Next: Set premiseCell = ws.Parent.Names("RGF_Premise").RefersToRange: On Error GoTo 0
+    If premiseCell Is Nothing Then Set premiseCell = ResolveLabelRange(ws, "Premise")
+    If premiseCell Is Nothing Then
+        explicit = ""
+    Else
+        explicit = LCase$(Trim$(premiseCell.Value))
+    End If
     If explicit <> "" And explicit <> "(auto)" Then
         ResolvePremise = explicit: Exit Function
     End If
@@ -2210,38 +2794,99 @@ End Function
 ' ONE-CLICK SETUP
 '========================
 Public Sub RGF_OneClickSetup()
+
     On Error GoTo failfast
+
     Application.ScreenUpdating = False
+
     Application.EnableEvents = False
+
     Application.DisplayStatusBar = True
+
+    sliderWarningShown = False
+
+    currentSetupStep = "BuildRGFSheet"
+
     Application.StatusBar = "RGF: building main sheet..."
 
     BuildRGFSheet
 
+
+
+    currentSetupStep = "BuildGenreLibrary"
+
     Application.StatusBar = "RGF: building genre library..."
+
     BuildGenreLibrary
+
+
+
+    currentSetupStep = "EnsureAccentLibrary"
+
+    Application.StatusBar = "RGF: building accent library..."
+
+    EnsureAccentLibrary
+
+
+
+    currentSetupStep = "AddGenreControls"
+
     AddGenreControls
 
+
+
+    currentSetupStep = "BuildHelpSheet"
+
     Application.StatusBar = "RGF: help + action buttons..."
+
     BuildHelpSheet
+
+
+
+    currentSetupStep = "AddBriefAndSunoButtons"
+
     AddBriefAndSunoButtons
 
+
+
+    currentSetupStep = "SetupAIPrompting"
+
     Application.StatusBar = "RGF: AI prompt workspace..."
+
     SetupAIPrompting
 
+
+
+    currentSetupStep = "Finalize"
+
     Worksheets("RGF_Sheet").Activate
+
     Range("A1").Select
+
     Application.StatusBar = False
+
     Application.ScreenUpdating = True
+
     Application.EnableEvents = True
-    MsgBox "RGF is ready. Pick a Genre in E2 and a Premise in E10 (or '(auto)'), adjust inputs/weights, then click 'Make Brief' or 'Make Suno'.", vbInformation, "RGF Setup Complete"
+
+    MsgBox "RGF is ready. Set your genre mix (F3:F6 weights), choose a Premise and Phonetic Accent, adjust inputs/weights, then click 'Make Brief' or 'Make Suno'.", vbInformation, "RGF Setup Complete"
+
+    currentSetupStep = ""
+
     Exit Sub
+
 failfast:
+
     Application.StatusBar = False
+
     Application.ScreenUpdating = True
+
     Application.EnableEvents = True
-    MsgBox "Setup error: " & Err.Description, vbCritical, "RGF One-Click Setup"
+
+    MsgBox "Setup error during '" & currentSetupStep & "': " & Err.Description, vbCritical, "RGF One-Click Setup"
+
 End Sub
+
 
 Public Sub RGF_RebuildPreservingGenres()
     On Error Resume Next
@@ -2269,6 +2914,10 @@ Public Sub RGF_RebuildPreservingGenres()
         MsgBox "Genres restored. (Backup sheet left in workbook: Genre_Library_BACKUP)", vbInformation
     End If
 End Sub
+
+
+
+
 
 
 
