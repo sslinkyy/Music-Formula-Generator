@@ -5,8 +5,9 @@ The Music Formula Generator is a single VBA module (`RGF_Module.bas`) that build
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
 2. [Installation](#installation)
-3. [One-Click Setup](#one-click-setup)
-4. [Workbook Overview](#workbook-overview)
+3. [Web Application](#web-application)
+4. [One-Click Setup](#one-click-setup)
+5. [Workbook Overview](#workbook-overview)
     - [RGF_Sheet](#rgf_sheet)
     - [Creative_Brief](#creative_brief)
     - [Suno_Blocks](#suno_blocks)
@@ -14,16 +15,16 @@ The Music Formula Generator is a single VBA module (`RGF_Module.bas`) that build
     - [AI_Response](#ai_response)
     - [Genre_Library](#genre_library)
     - [AI_Settings](#ai_settings)
-5. [Scoring Inputs Reference](#scoring-inputs-reference)
-6. [Preset Buttons](#preset-buttons)
-7. [Genre Workflow](#genre-workflow)
-8. [Phonetic Mode](#phonetic-mode)
-9. [Suno Export Blocks](#suno-export-blocks)
-10. [AI Prompt Builder](#ai-prompt-builder)
-11. [Calling the API](#calling-the-api)
-12. [Troubleshooting](#troubleshooting)
-13. [Development Notes](#development-notes)
-14. [License](#license)
+6. [Scoring Inputs Reference](#scoring-inputs-reference)
+7. [Preset Buttons](#preset-buttons)
+8. [Genre Workflow](#genre-workflow)
+9. [Phonetic Mode](#phonetic-mode)
+10. [Suno Export Blocks](#suno-export-blocks)
+11. [AI Prompt Builder](#ai-prompt-builder)
+12. [Calling the API](#calling-the-api)
+13. [Troubleshooting](#troubleshooting)
+14. [Development Notes](#development-notes)
+15. [License](#license)
 
 ## Prerequisites
 - **Microsoft Excel for Windows** with VBA enabled. (The module relies on ActiveX buttons and Windows-specific API calls.)
@@ -179,3 +180,15 @@ When you click `Build Prompt`, `AI_Prompt` receives a deeply structured instruct
 
 ## License
 This repository is released under the MIT License. See `LICENSE` for full terms.
+
+## Web Application
+
+The repository now includes a client-side web build that mirrors the Excel experience. Open `web/index.html` in a modern browser (Chrome, Edge, Safari, Firefox) or run a simple static server (for example `npx serve web`) to work locally. The page exposes:
+
+- Live scoring engine (constants, controls, weights, base & derived inputs) with the same math ported from the VBA sheet.
+- Genre mixer with library/exclude/SFX preview, weighted presets, and automatic style-tag propagation.
+- Creative brief generator, Suno block exporter, and AI prompt builder, all re-implemented in JavaScript.
+- Phonetic accent transformations and locked section handling identical to the Excel macros.
+- Optional API caller: configure endpoint/keys inside the form and click **Call AI** to POST an OpenAI-compatible chat completion request using the generated prompt.
+
+All genre/accent data is sourced from `RGF_Module.bas` via `scripts/extract_web_data.py`. Re-run that script if you tweak the VBA tables.
