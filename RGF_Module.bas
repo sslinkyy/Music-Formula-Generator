@@ -2421,7 +2421,7 @@ Private Function LabelToName(ByVal labelText As String) As String
             LabelToName = "MustInclude"
         Case "forbidden words/phrases", "forbidden words"
             LabelToName = "Forbidden"
-        Case "phonetic mode"
+        Case "phonetic mode", "phonetic accent"
             LabelToName = "PhoneticMode"
         Case "style/mood tags (comma-separated)", "style/mood tags"
             LabelToName = "StyleTags"
