@@ -468,10 +468,12 @@ function setupButtons() {
     renderOutputs();
   });
   document.getElementById('build-prompt').addEventListener('click', () => {
-    state.outputs.prompt = buildPromptText();
-    updateHiddenDirective();
-    renderOutputs();
-  });
+      state.outputs.prompt = buildPromptText();
+      updateHiddenDirective();
+      renderOutputs();
+      // Auto-navigate to Outputs so mobile users can see results
+      try { selectTab('outputs'); } catch (_) { /* ignore */ }
+    });
   const copyBtn = document.getElementById('copy-ai-prompt');
   if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
@@ -586,7 +588,13 @@ function setupButtons() {
   const heroBrowse = document.getElementById('open-genre-library-hero');
   const heroBuild = document.getElementById('build-prompt-hero');
   if (heroBrowse) heroBrowse.addEventListener('click', () => openLibraryDialog('Genre Library', buildGenreLibraryTable()));
-  if (heroBuild) heroBuild.addEventListener('click', () => { state.outputs.prompt = buildPromptText(); updateHiddenDirective(); renderOutputs(); showToast('Prompt built'); });
+  if (heroBuild) heroBuild.addEventListener('click', () => {
+    state.outputs.prompt = buildPromptText();
+    updateHiddenDirective();
+    renderOutputs();
+    try { selectTab('outputs'); } catch (_) {}
+    showToast('Prompt built');
+  });
 }
 
 function applyPreset(name) {
@@ -1462,6 +1470,8 @@ function init() {
   updateHiddenDirective();
   setupButtons();
   setupTabs();
+  const backBtn = document.getElementById('back-to-inputs');
+  if (backBtn) backBtn.addEventListener('click', () => { try { selectTab('inputs'); window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {} });
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -1521,12 +1531,11 @@ function setupCollapsibleSections() {
   });
 }
 
-function setupTabs() {
+// Global tab selector so other handlers (e.g., Build Prompt) can navigate
+function selectTab(tab) {
   const inputsBtn = document.getElementById('tab-inputs');
   const outputsBtn = document.getElementById('tab-outputs');
   const aiBtn = document.getElementById('tab-ai');
-  if (!inputsBtn || !outputsBtn || !aiBtn) return;
-
   const panels = {
     inputs: document.getElementById('scoring-panel'),
     outputs: document.getElementById('outputs-panel')
@@ -1536,36 +1545,43 @@ function setupTabs() {
   const suno = document.getElementById('suno-section');
   const brief = document.getElementById('creative-brief-section');
 
-  function select(tab) {
-    // aria selection
+  if (inputsBtn && outputsBtn && aiBtn) {
     inputsBtn.setAttribute('aria-selected', String(tab === 'inputs'));
     outputsBtn.setAttribute('aria-selected', String(tab === 'outputs'));
     aiBtn.setAttribute('aria-selected', String(tab === 'ai'));
-
-    // show/hide panels
+  }
+  if (panels.inputs && panels.outputs) {
     panels.inputs.style.display = (tab === 'inputs') ? '' : 'none';
     panels.outputs.style.display = (tab === 'inputs') ? 'none' : '';
-
-    // when AI tab, hide everything except AI Prompt + Call
-    if (tab === 'ai') {
-      if (aiPrompt) aiPrompt.style.display = '';
-      if (aiCall) aiCall.style.display = '';
-      if (suno) suno.style.display = 'none';
-      if (brief) brief.style.display = 'none';
-    } else if (tab === 'outputs') {
-      if (aiPrompt) aiPrompt.style.display = '';
-      if (aiCall) aiCall.style.display = '';
-      if (suno) suno.style.display = '';
-      if (brief) brief.style.display = '';
-    }
   }
+  if (tab === 'ai') {
+    if (aiPrompt) aiPrompt.style.display = '';
+    if (aiCall) aiCall.style.display = '';
+    if (suno) suno.style.display = 'none';
+    if (brief) brief.style.display = 'none';
+  } else if (tab === 'outputs') {
+    if (aiPrompt) aiPrompt.style.display = '';
+    if (aiCall) aiCall.style.display = '';
+    if (suno) suno.style.display = '';
+    if (brief) brief.style.display = '';
+    // Ensure outputs panel is scrolled into view on mobile
+    const outPanel = document.getElementById('outputs-panel');
+    try { if (outPanel) outPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+  }
+}
 
-  inputsBtn.addEventListener('click', () => select('inputs'));
-  outputsBtn.addEventListener('click', () => select('outputs'));
-  aiBtn.addEventListener('click', () => select('ai'));
+function setupTabs() {
+  const inputsBtn = document.getElementById('tab-inputs');
+  const outputsBtn = document.getElementById('tab-outputs');
+  const aiBtn = document.getElementById('tab-ai');
+  if (!inputsBtn || !outputsBtn || !aiBtn) return;
+
+  inputsBtn.addEventListener('click', () => selectTab('inputs'));
+  outputsBtn.addEventListener('click', () => selectTab('outputs'));
+  aiBtn.addEventListener('click', () => selectTab('ai'));
 
   // default to Inputs
-  select('inputs');
+  selectTab('inputs');
 }
 function buildLockedSections() {
   const sections = [
