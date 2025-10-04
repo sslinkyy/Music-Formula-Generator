@@ -956,6 +956,11 @@ function buildPromptText() {
   lines.push(`Phonetic Accent: ${phonetic.label}`);
   lines.push(`Audience: ${audienceLine}`);
   lines.push(`Phonetics: ${phonetic.instruction}`);
+  const cheat = buildPhoneticCheatsheet(phonetic.label);
+  if (cheat.length) {
+    lines.push('Phonetic details for this accent:');
+    cheat.forEach(line => lines.push(`- ${line}`));
+  }
   lines.push(`Genre Mix: ${analysis.mixSummary || "custom blend"}`);
   if (analysis.sfxCsv) lines.push(`Suggested SFX: ${analysis.sfxCsv}`);
   lines.push("");
@@ -979,6 +984,153 @@ function buildPromptText() {
   lines.push("REWRITE the lyrics phonetically in the accent selected.");
   return lines.join('\n');
 
+}
+
+// Compact phonetic guidance per accent to steer pronunciation beyond simple spellings
+function buildPhoneticCheatsheet(label) {
+  const L = (label || '').toLowerCase();
+  const map = {
+    'american english (general)': [
+      'Rhotic: keep /r/ at syllable ends (car → car).',
+      'Vowels: relatively flat; avoid extreme shifts.',
+      'Rhythm: stress‑timed, neutral intonation.'
+    ],
+    'american english (southern)': [
+      'Monophthongize /ai/ (time → tahm).',
+      'Lengthen open vowels (ride → raahd).',
+      'Pin/pen merger in many words (pen → pin).',
+      'Often weaken post‑vocalic /r/.'
+    ],
+    'american english (new york)': [
+      'Non‑/semi‑rhotic: drop /r/ after vowels (car → caw).',
+      'Diphthong raising (coffee → caw‑fee).',
+      "'Short‑a' split (man → may‑an)."
+    ],
+    'american english (midwest)': [
+      'Rhotic; moderate /a/ tensing (block → blaaack in Inland North).',
+      'cot/caught often merged.',
+      'Clear, even vowels.'
+    ],
+    'american english (west coast)': [
+      'Fronted /u/ (dude → deewd).',
+      'Relaxed consonants, casual delivery.',
+      'Uptalk appears in some lines.'
+    ],
+    'british english (rp)': [
+      'Non‑rhotic: drop /r/ after vowels (car → cah).',
+      'Long broad /a/ (dance → dahns).',
+      'Crisp consonants; careful enunciation.'
+    ],
+    'british english (london)': [
+      'Glottal stops (bottle → bo’ul).',
+      'TH‑fronting (think → fink).',
+      'L‑vocalisation (milk → miwk).'
+    ],
+    'british english (liverpool)': [
+      'Scouse: sing‑song, nasal quality.',
+      'look → lewk; soft /k/ toward fricatives.',
+      'Distinct rising‑falling melody.'
+    ],
+    'scottish english': [
+      'Rhotic with trilled or tapped /r/.',
+      'down → doon; vowel length rules apply.',
+      'Clipped rhythm; clear consonants.'
+    ],
+    'irish english': [
+      'Musical lilt; rising end contours.',
+      'time → toime; right → roight.',
+      'Soft /t/ may edge toward /ch/ (but stay intelligible).'
+    ],
+    'australian english': [
+      'Non‑rhotic; broad diphthongs (mate → maayt).',
+      'Flattened vowels (today → tuh‑die).',
+      'Rising terminals in phrases.'
+    ],
+    'new zealand english': [
+      'Fronted short vowels (fish → fush, pen → pin).',
+      'Smooth cadence with gentle rise.',
+      'Non‑rhotic.'
+    ],
+    'south african english': [
+      'Rounded diphthongs (now → naow).',
+      'Clipped delivery; often non‑rhotic.',
+      'yes → yis in casual speech.'
+    ],
+    'nigerian english': [
+      'Stress‑timed; clear, steady vowels.',
+      'Retroflex consonants may appear.',
+      'Distinct lengthening on stressed syllables.'
+    ],
+    'jamaican english': [
+      'Patois influence (this → dis, them → dem).',
+      'Non‑rhotic; strong rhythmic swing.',
+      'Syllable timing closer to beat.'
+    ],
+    'caribbean english (trinidad)': [
+      'thing → ting; sing‑song intonation.',
+      'Syllable‑timed rhythm; clipped consonants.'
+    ],
+    'spanish-influenced english': [
+      'Syllable‑timed; open pure vowels (no diphthongs).',
+      'th → t/d; v → b in some positions.',
+      'Tapped/rolled r; steady pace.'
+    ],
+    'hindi-influenced english': [
+      'Rhotic; retroflex /t/ /d/.',
+      'th → t/d; v/w distinctions may shift.',
+      'Syllable‑timed rhythm; precise diction.'
+    ],
+    'somali english accent': [
+      'Percussive consonants; clipped vowels.',
+      'Raised long vowels (now → naaw).',
+      'Lifted phrase endings.'
+    ],
+    'filipino english': [
+      'Syllable‑timed; bright vowels.',
+      'f → p and v → b substitutions appear.',
+      'Flat intonation compared to American.'
+    ],
+    'mandarin-accented english': [
+      'Tone‑influenced rhythm; even pacing.',
+      'Non‑rhotic; soften consonant clusters.',
+      'Clear, simple vowels.'
+    ],
+    'cantonese-accented english': [
+      'R/L may interchange (rice → lice).',
+      'Tonal cadence; clipped vowels.',
+      'Non‑rhotic tendencies.'
+    ],
+    'french-accented english': [
+      'Front vowels; uvular /r/.',
+      'Drop some final consonants softly.',
+      'Even, legato rhythm.'
+    ],
+    'german-accented english': [
+      'Crisp stops; strong /r/.',
+      'Long tense vowels; precise diction.'
+    ],
+    'italian-accented english': [
+      'Open pure vowels; expressive cadence.',
+      'Trilled/tapped /r/; syllable‑timed.'
+    ],
+    'arabic-accented english': [
+      'Emphatic consonants; deep vowels.',
+      'th → t/d; rhythm with strong stress.'
+    ],
+    'turkish-accented english': [
+      'Rounded vowels; firm stops.',
+      'Syllable‑timed with clear stress.'
+    ],
+    'greek-accented english': [
+      'Open vowels; softened consonants.',
+      'Lyrical cadence; steady rhythm.'
+    ],
+    'russian-accented english': [
+      'Hard consonants; strong /r/.',
+      'Reduced articles; deliberate pacing.'
+    ]
+  };
+  return map[L] || [];
 }
 
 function chooseBlock(label, userLines, generatedLines) {
