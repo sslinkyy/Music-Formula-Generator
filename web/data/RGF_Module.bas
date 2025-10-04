@@ -2207,7 +2207,8 @@ End Function\r\n'========================
 '========================
 Private Function ResolvePremise() As String
     Dim ws As Worksheet: On Error Resume Next: Set ws = Worksheets("RGF_Sheet"): On Error GoTo 0
-    Dim explicit$, theme$, kw$, aud$, pool As Variant, i&
+    Dim explicit$, theme$, kw$, aud$, txt$, pool As Variant
+    Dim i&, pick$
     If ws Is Nothing Then ResolvePremise = "struggle & perseverance": Exit Function
 
     Dim premiseCell As Range
@@ -2225,18 +2226,104 @@ Private Function ResolvePremise() As String
     theme = LCase$(Trim$(SectionText(ws, "Theme")))
     kw = LCase$(Trim$(SectionText(ws, "Keywords (comma-separated)")))
     aud = LCase$(Trim$(SectionText(ws, "Audience notes")))
-    If InStr(theme & " " & kw & " " & aud, "love") > 0 Then ResolvePremise = "love & loyalty": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "heartbreak") > 0 Then ResolvePremise = "heartbreak & healing": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "hustle") > 0 Then ResolvePremise = "hustle & ambition": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "betray") > 0 Then ResolvePremise = "betrayal & trust": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "win") > 0 Or InStr(theme & " " & kw & " " & aud, "victory") > 0 Then ResolvePremise = "triumph & celebration": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "redemption") > 0 Or InStr(theme & " " & kw & " " & aud, "forgive") > 0 Then ResolvePremise = "redemption & growth": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "city") > 0 Or InStr(theme & " " & kw & " " & aud, "hometown") > 0 Then ResolvePremise = "city pride & belonging": Exit Function
-    If InStr(theme & " " & kw & " " & aud, "grind") > 0 Or InStr(theme & " " & kw & " " & aud, "struggle") > 0 Then ResolvePremise = "struggle & perseverance": Exit Function
+    txt = theme & " " & kw & " " & aud
 
-    pool = Array("love & loyalty", "heartbreak & healing", "hustle & ambition", "betrayal & trust", "triumph & celebration", "redemption & growth", "city pride & belonging", "struggle & perseverance")
-    i = ((Minute(Now) + Second(Now)) Mod (UBound(pool) + 1))
-    ResolvePremise = CStr(pool(i))
+    ' Keyword-driven mapping for richer variety
+    If InStr(txt, "love") > 0 Or InStr(txt, "loyal") > 0 Then ResolvePremise = "love & loyalty": Exit Function
+    If InStr(txt, "heartbreak") > 0 Or InStr(txt, "breakup") > 0 Or InStr(txt, "broken") > 0 Then ResolvePremise = "heartbreak & healing": Exit Function
+    If InStr(txt, "hustle") > 0 Or InStr(txt, "grind") > 0 Or InStr(txt, "ambition") > 0 Then ResolvePremise = "hustle & ambition": Exit Function
+    If InStr(txt, "betray") > 0 Or InStr(txt, "lies") > 0 Or InStr(txt, "snake") > 0 Then ResolvePremise = "betrayal & trust": Exit Function
+    If InStr(txt, "win") > 0 Or InStr(txt, "victory") > 0 Or InStr(txt, "champion") > 0 Then ResolvePremise = "triumph & celebration": Exit Function
+    If InStr(txt, "redemption") > 0 Or InStr(txt, "forgive") > 0 Or InStr(txt, "aton") > 0 Then ResolvePremise = "redemption & growth": Exit Function
+    If InStr(txt, "city") > 0 Or InStr(txt, "hometown") > 0 Or InStr(txt, "neighborhood") > 0 Then ResolvePremise = "city pride & belonging": Exit Function
+    If InStr(txt, "struggle") > 0 Or InStr(txt, "persevere") > 0 Or InStr(txt, "survive") > 0 Then ResolvePremise = "struggle & perseverance": Exit Function
+
+    ' New themes
+    If InStr(txt, "freedom") > 0 Or InStr(txt, "escape") > 0 Then ResolvePremise = "freedom & escape": Exit Function
+    If InStr(txt, "nostalgia") > 0 Or InStr(txt, "memory") > 0 Or InStr(txt, "childhood") > 0 Then ResolvePremise = "nostalgia & memory": Exit Function
+    If InStr(txt, "rebel") > 0 Or InStr(txt, "defiance") > 0 Or InStr(txt, "resist") > 0 Or InStr(txt, "protest") > 0 Then ResolvePremise = "rebellion & defiance": Exit Function
+    If InStr(txt, "identity") > 0 Or InStr(txt, "self") > 0 Or InStr(txt, "becoming") > 0 Then ResolvePremise = "self-discovery & identity": Exit Function
+    If InStr(txt, "faith") > 0 Or InStr(txt, "prayer") > 0 Or InStr(txt, "doubt") > 0 Then ResolvePremise = "faith & doubt": Exit Function
+    If InStr(txt, "sacrifice") > 0 Or InStr(txt, "cost") > 0 Then ResolvePremise = "ambition & sacrifice": Exit Function
+    If InStr(txt, "legacy") > 0 Or InStr(txt, "family") > 0 Or InStr(txt, "ancestors") > 0 Then ResolvePremise = "legacy & family": Exit Function
+    If InStr(txt, "loss") > 0 Or InStr(txt, "grief") > 0 Or InStr(txt, "gone") > 0 Then ResolvePremise = "loss & remembrance": Exit Function
+    If InStr(txt, "hope") > 0 Or InStr(txt, "renewal") > 0 Or InStr(txt, "reborn") > 0 Then ResolvePremise = "hope & renewal": Exit Function
+    If InStr(txt, "summer") > 0 Or InStr(txt, "party") > 0 Or InStr(txt, "club") > 0 Then ResolvePremise = "party & vibe": Exit Function
+    If InStr(txt, "distance") > 0 Or InStr(txt, "far") > 0 Or InStr(txt, "apart") > 0 Or InStr(txt, "miles") > 0 Then ResolvePremise = "long-distance & yearning": Exit Function
+    If InStr(txt, "anxiety") > 0 Or InStr(txt, "mind") > 0 Or InStr(txt, "therapy") > 0 Then ResolvePremise = "mental health & healing": Exit Function
+    If InStr(txt, "money") > 0 Or InStr(txt, "power") > 0 Or InStr(txt, "status") > 0 Then ResolvePremise = "money & power": Exit Function
+    If InStr(txt, "fame") > 0 Or InStr(txt, "pressure") > 0 Or InStr(txt, "spotlight") > 0 Then ResolvePremise = "fame & pressure": Exit Function
+    If InStr(txt, "street") > 0 Or InStr(txt, "survival") > 0 Or InStr(txt, "hunger") > 0 Then ResolvePremise = "survival & street wisdom": Exit Function
+    If InStr(txt, "addiction") > 0 Or InStr(txt, "recovery") > 0 Or InStr(txt, "sober") > 0 Then ResolvePremise = "addiction & recovery": Exit Function
+    If InStr(txt, "revenge") > 0 Or InStr(txt, "payback") > 0 Then ResolvePremise = "betrayal & revenge": Exit Function
+    If InStr(txt, "underdog") > 0 Or InStr(txt, "come-up") > 0 Or InStr(txt, "come up") > 0 Then ResolvePremise = "underdog & come-up": Exit Function
+    If InStr(txt, "gratitude") > 0 Or InStr(txt, "humble") > 0 Then ResolvePremise = "gratitude & humility": Exit Function
+    If InStr(txt, "nature") > 0 Or InStr(txt, "calm") > 0 Or InStr(txt, "ocean") > 0 Then ResolvePremise = "nature & calm": Exit Function
+    If InStr(txt, "technology") > 0 Or InStr(txt, "isolation") > 0 Or InStr(txt, "alone") > 0 Then ResolvePremise = "technology & isolation": Exit Function
+    If InStr(txt, "community") > 0 Or InStr(txt, "together") > 0 Or InStr(txt, "solidarity") > 0 Then ResolvePremise = "community & solidarity": Exit Function
+    If InStr(txt, "wanderlust") > 0 Or InStr(txt, "travel") > 0 Or InStr(txt, "homecoming") > 0 Then ResolvePremise = "wanderlust & homecoming": Exit Function
+
+    ' Expanded pool + procedural generation to avoid staleness
+    pool = Array( _
+        "love & loyalty", "heartbreak & healing", "hustle & ambition", "betrayal & trust", _
+        "triumph & celebration", "redemption & growth", "city pride & belonging", "struggle & perseverance", _
+        "freedom & escape", "nostalgia & memory", "rebellion & defiance", "self-discovery & identity", _
+        "faith & doubt", "ambition & sacrifice", "legacy & family", "loss & remembrance", _
+        "hope & renewal", "party & vibe", "long-distance & yearning", "mental health & healing", _
+        "money & power", "fame & pressure", "survival & street wisdom", "addiction & recovery", _
+        "betrayal & revenge", "underdog & come-up", "gratitude & humility", "nature & calm", _
+        "technology & isolation", "community & solidarity", "wanderlust & homecoming" _
+    )
+
+    ' 70%: pick from curated pool, 30%: generate a new combo from concept lists
+    Randomize Timer
+    If Rnd() < 0.7 Then
+        pick = PickPremiseFromPool(pool)
+    Else
+        pick = GeneratePremisePair()
+    End If
+    ResolvePremise = pick
+End Function
+
+Private Function PickPremiseFromPool(pool As Variant) As String
+    Static last As String
+    Dim tries As Long, choiceIndex As Long
+    Dim n As Long: n = UBound(pool) - LBound(pool) + 1
+    If n <= 1 Then
+        PickPremiseFromPool = CStr(pool(LBound(pool)))
+        Exit Function
+    End If
+    For tries = 1 To 8
+        choiceIndex = LBound(pool) + CLng(Int(n * Rnd()))
+        If CStr(pool(choiceIndex)) <> last Then Exit For
+    Next tries
+    PickPremiseFromPool = CStr(pool(choiceIndex))
+    last = PickPremiseFromPool
+End Function
+
+Private Function GeneratePremisePair() As String
+    ' Lightweight procedural generator: mix-and-match human concepts
+    Static last As String
+    Dim left As Variant, right As Variant
+    left = Array("love", "heartbreak", "hustle", "betrayal", "triumph", "redemption", "city pride", "struggle", _
+                 "freedom", "nostalgia", "rebellion", "identity", "faith", "ambition", "legacy", "loss", _
+                 "hope", "party", "distance", "healing", "money", "fame", "survival", "recovery", _
+                 "underdog", "gratitude", "nature", "technology", "community", "wanderlust")
+    right = Array("loyalty", "healing", "ambition", "trust", "celebration", "growth", "belonging", "perseverance", _
+                  "escape", "memory", "defiance", "self-discovery", "doubt", "sacrifice", "family", "remembrance", _
+                  "renewal", "vibe", "yearning", "balance", "power", "pressure", "street wisdom", "comeback", _
+                  "come-up", "humility", "calm", "isolation", "solidarity", "homecoming")
+    Dim a$, b$, tries As Long, idxL As Long, idxR As Long
+    Randomize Timer
+    For tries = 1 To 12
+        idxL = LBound(left) + CLng(Int((UBound(left) - LBound(left) + 1) * Rnd()))
+        idxR = LBound(right) + CLng(Int((UBound(right) - LBound(right) + 1) * Rnd()))
+        a = CStr(left(idxL))
+        b = CStr(right(idxR))
+        If a <> b And (a & " & " & b) <> last Then Exit For
+    Next tries
+    GeneratePremisePair = a & " & " & b
+    last = GeneratePremisePair
 End Function
 
 Private Function BuildIntro() As String()
