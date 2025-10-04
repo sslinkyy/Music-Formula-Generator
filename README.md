@@ -6,6 +6,7 @@ The Music Formula Generator is a single VBA module (`RGF_Module.bas`) that build
 1. [Prerequisites](#prerequisites)
 2. [Installation](#installation)
 3. [Web Application](#web-application)
+    - [Android APK](#android-apk)
 4. [One-Click Setup](#one-click-setup)
 5. [Workbook Overview](#workbook-overview)
     - [RGF_Sheet](#rgf_sheet)
