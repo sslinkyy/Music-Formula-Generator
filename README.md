@@ -196,11 +196,21 @@ All genre/accent data is sourced from `RGF_Module.bas` via `scripts/extract_web_
 ### Android APK
 - A fully offline Android build is available via the GitHub Releases page.
 - Download: https://github.com/sslinkyy/Music-Formula-Generator/releases
-- Installation:
-  - On your device, enable installing apps from unknown sources (Settings → Security).
+- What it is:
+  - The Android app bundles this web UI and serves it locally in a WebView using `WebViewAssetLoader`.
+  - Works fully offline by default; the AI tab will use network only if you press Call AI and provide an API key.
+  - Mobile UX: after you tap “Build Prompt,” the app auto-switches to the Outputs tab. A “Back to Inputs” button at the top of Outputs returns to the Inputs panel.
+- Install on device:
+  - Enable installing apps from unknown sources if prompted.
   - Download the `.apk` from the latest release and open it to install.
-  - The app bundles this web UI and runs it locally in a WebView (no server required).
-- Build from source: see `android-app/README.md` in this repository for keystore, signing, and build instructions.
+  - Minimum Android: 8.0 (API 26) or higher.
+- Build from source (quick start):
+  1) Generate web data files once: `python Music-Formula-Generator/scripts/extract_web_data.py`.
+  2) Open `android-app` in Android Studio (if your checkout includes it) and build:
+     - Debug APK: Build → Build APK(s) → Debug → `android-app/app/build/outputs/apk/debug/app-debug.apk`.
+     - Release APK: Build → Generate Signed Bundle/APK… → APK → choose/create keystore → `android-app/app/build/outputs/apk/release/app-release.apk`.
+  3) CLI signed build (optional): add signing values to `android-app/gradle.properties` and run `gradlew :app:assembleRelease`.
+  4) For detailed steps (keystore creation, CI, troubleshooting), see `android-app/README.md` if present in your checkout.
 
 ### Web UI Notes
 - Tabs: the toolbar provides three views — `Inputs`, `Outputs`, and `AI` — to keep scoring, results, and API tools organized.
