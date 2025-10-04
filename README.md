@@ -192,3 +192,10 @@ The repository now includes a client-side web build that mirrors the Excel exper
 - Optional API caller: configure endpoint/keys inside the form and click **Call AI** to POST an OpenAI-compatible chat completion request using the generated prompt.
 
 All genre/accent data is sourced from `RGF_Module.bas` via `scripts/extract_web_data.py`. Re-run that script if you tweak the VBA tables.
+
+### Web UI Notes
+- Tabs: the toolbar provides three views — `Inputs`, `Outputs`, and `AI` — to keep scoring, results, and API tools organized.
+- User Sections: in the web UI these are inputs (not outputs) and live under the `Inputs` panel so you can lock lyric sections before generating outputs.
+- Theme: use the `Theme` button in the toolbar to toggle light/dark mode. The Genre Library dialog and table headers use dark-friendly surfaces for better contrast.
+- Genre Library: structure, style tags, exclude, and SFX render as chips that wrap to use horizontal space. Structure tokens from the VBA export like `a-'` are automatically cleaned in the UI and in outputs.
+- Apply Genre Mix: clicking this button auto-fills style tags into the Creative Inputs, and appends a brief summary (mix, feel, structure, exclude, SFX) to help you proceed quickly.
