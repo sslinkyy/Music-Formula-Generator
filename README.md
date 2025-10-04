@@ -193,6 +193,15 @@ The repository now includes a client-side web build that mirrors the Excel exper
 
 All genre/accent data is sourced from `RGF_Module.bas` via `scripts/extract_web_data.py`. Re-run that script if you tweak the VBA tables.
 
+### Android APK
+- A fully offline Android build is available via the GitHub Releases page.
+- Download: https://github.com/sslinkyy/Music-Formula-Generator/releases
+- Installation:
+  - On your device, enable installing apps from unknown sources (Settings → Security).
+  - Download the `.apk` from the latest release and open it to install.
+  - The app bundles this web UI and runs it locally in a WebView (no server required).
+- Build from source: see `android-app/README.md` in this repository for keystore, signing, and build instructions.
+
 ### Web UI Notes
 - Tabs: the toolbar provides three views — `Inputs`, `Outputs`, and `AI` — to keep scoring, results, and API tools organized.
 - User Sections: in the web UI these are inputs (not outputs) and live under the `Inputs` panel so you can lock lyric sections before generating outputs.
