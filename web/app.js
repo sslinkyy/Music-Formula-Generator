@@ -944,6 +944,7 @@ function buildPromptText() {
   lines.push("- Begin lyrics with: [Producer Tag] iMob Worldwide!");
   lines.push("- 3+ minutes; evolving choruses; stage cues in [brackets]; call-and-response via (parentheses).");
   lines.push("- Do NOT reference production gear, BPM, mixing jargon, or arrangement terms unless explicitly requested.");
+  lines.push("- Do NOT reference any instruments in the lyrics.");
   lines.push("");
   lines.push(`Final Score: ${formatNumber(computed.final.clamped, 1)}`);
   lines.push(`Tempo / Feel: ${analysis.tempoHint || tempo}`);
