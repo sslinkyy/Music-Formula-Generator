@@ -17,6 +17,7 @@ function buildDefaultState() {
     creativeInputs: Object.fromEntries(CREATIVE_FIELDS.map(field => [field.id, field.defaultValue])),
     genreMix: Array.from({ length: GENRE_SLOTS }, () => ({ genre: '', weight: 0 })),
     premise: '(auto)',
+    customPremise: '',
     accent: ACCENT_DEFAULT,
     userSections: Object.fromEntries(USER_SECTION_DEFS.map(item => [item.id, ''])),
     aiSettings: { ...DEFAULT_AI_SETTINGS },
@@ -34,6 +35,7 @@ const state = {
   creativeInputs: Object.fromEntries(CREATIVE_FIELDS.map(field => [field.id, field.defaultValue])),
   genreMix: Array.from({ length: GENRE_SLOTS }, () => ({ genre: '', weight: 0 })),
   premise: '(auto)',
+  customPremise: '',
   accent: ACCENT_DEFAULT,
   userSections: Object.fromEntries(USER_SECTION_DEFS.map(item => [item.id, ''])),
   aiSettings: { ...DEFAULT_AI_SETTINGS },
@@ -269,11 +271,38 @@ function renderGenreMixTotal() {
 
 function renderPremise() {
   const select = document.getElementById('premise-select');
-  select.innerHTML = PREMISE_OPTIONS.map(opt => `
-    <option value="${opt}">${opt}</option>`).join('');
+  select.innerHTML = PREMISE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
   select.value = state.premise;
+
+  // Create or reuse a sibling input for custom premise
+  let custom = document.getElementById('premise-custom-input');
+  if (!custom) {
+    custom = document.createElement('input');
+    custom.type = 'text';
+    custom.id = 'premise-custom-input';
+    custom.placeholder = 'Type custom premise…';
+    custom.value = state.customPremise || '';
+    custom.style.minWidth = '220px';
+    custom.style.marginLeft = '8px';
+    // Insert next to the select
+    select.parentElement.appendChild(custom);
+  } else {
+    custom.value = state.customPremise || '';
+  }
+
+  const updateCustomVisibility = () => {
+    const isCustom = (select.value || '').toLowerCase() === '(custom)';
+    custom.style.display = isCustom ? '' : 'none';
+    if (isCustom) setTimeout(() => custom.focus(), 0);
+  };
+  updateCustomVisibility();
+
   select.addEventListener('change', () => {
     state.premise = select.value;
+    updateCustomVisibility();
+  });
+  custom.addEventListener('input', () => {
+    state.customPremise = custom.value;
   });
 }
 
@@ -1147,8 +1176,14 @@ function buildOutro() {
   return lines;
 }
 function resolvePremise() {
-  const explicit = (state.premise || '').trim().toLowerCase();
-  if (explicit && explicit !== '(auto)') return explicit;
+  const mode = (state.premise || '').trim().toLowerCase();
+  if (mode === '(custom)') {
+    const c = (state.customPremise || '').trim();
+    if (c) return c.toLowerCase();
+    // fall through to auto detection if empty
+  } else if (mode && mode !== '(auto)') {
+    return mode;
+  }
   const theme = (state.creativeInputs.theme || '').toLowerCase();
   const keywords = (state.creativeInputs.keywords || '').toLowerCase();
   const audience = (state.creativeInputs.audienceNotes || '').toLowerCase();
@@ -1514,6 +1549,7 @@ function loadState() {
     Object.assign(state.creativeInputs, saved.creativeInputs || {});
     state.genreMix = Array.isArray(saved.genreMix) ? saved.genreMix : state.genreMix;
     state.premise = saved.premise || state.premise;
+    state.customPremise = typeof saved.customPremise === 'string' ? saved.customPremise : state.customPremise;
     state.accent = saved.accent || state.accent;
     Object.assign(state.userSections, saved.userSections || {});
     Object.assign(state.aiSettings, saved.aiSettings || {});
@@ -1531,6 +1567,7 @@ function resetState() {
   Object.assign(state.creativeInputs, fresh.creativeInputs);
   state.genreMix = fresh.genreMix;
   state.premise = fresh.premise;
+  state.customPremise = fresh.customPremise;
   state.accent = fresh.accent;
   Object.assign(state.userSections, fresh.userSections);
   Object.assign(state.aiSettings, fresh.aiSettings);
