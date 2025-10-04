@@ -5,6 +5,27 @@ import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
 import { GENRE_LIBRARY } from './data/genres.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
+// Persistence keys and default-state builder
+const __STATE_KEY = 'rgf_state_v1';
+const __THEME_KEY = 'rgf_theme_v1';
+function buildDefaultState() {
+  return {
+    controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
+    weights: { ...DEFAULT_WEIGHTS },
+    baseInputs: Object.fromEntries(BASE_INPUTS.map(item => [item.id, item.value])),
+    derivedInputs: Object.fromEntries(DERIVED_INPUTS.map(item => [item.id, item.value])),
+    creativeInputs: Object.fromEntries(CREATIVE_FIELDS.map(field => [field.id, field.defaultValue])),
+    genreMix: Array.from({ length: GENRE_SLOTS }, () => ({ genre: '', weight: 0 })),
+    premise: '(auto)',
+    accent: ACCENT_DEFAULT,
+    userSections: Object.fromEntries(USER_SECTION_DEFS.map(item => [item.id, ''])),
+    aiSettings: { ...DEFAULT_AI_SETTINGS },
+    computed: null,
+    genreAnalysis: null,
+    outputs: { brief: '', suno: '', prompt: '', aiResponse: '' }
+  };
+}
+
 const state = {
   controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
   weights: { ...DEFAULT_WEIGHTS },
@@ -25,6 +46,8 @@ const state = {
     aiResponse: ''
   }
 };
+// Reduce immediate repeats when auto-picking premise
+let __lastPremise = '';
 function formatNumber(value, digits = 2) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '';
   return value.toFixed(digits);
@@ -261,7 +284,16 @@ function renderAccent() {
   select.value = state.accent;
   select.addEventListener('change', () => {
     state.accent = select.value;
+    updateHiddenDirective();
   });
+}
+
+// Utility: clean VBA artifact tokens from structure strings for display
+function cleanStructureDisplay(text) {
+  return String(text || '')
+    .replace(/\s*a-[\'’]\s*/g, ' | ')
+    .replace(/\s+\|\s+/g, ' | ')
+    .trim();
 }
 function renderUserSections() {
   const container = document.getElementById('user-sections');
@@ -311,10 +343,24 @@ function renderComputed() {
       { label: 'Final Score', value: '—' }
     ];
   }
-  container.innerHTML = renderStaticGrid(entries.map(item => ({
-    label: item.label,
-    value: typeof item.value === 'number' ? formatNumber(item.value, item.label.startsWith('Final') ? 1 : 3) : item.value
-  })));
+  // Build grid with meters for numeric values
+  const html = ['<div class="table-grid">'];
+  entries.forEach(item => {
+    const isNumber = typeof item.value === 'number' && !Number.isNaN(item.value);
+    const isFinal = item.label.startsWith('Final (0-100)');
+    const max = isFinal ? 100 : 1;
+    const val = isNumber ? Math.max(0, Math.min(max, item.value)) : null;
+    const pct = isNumber ? Math.round((val / max) * 100) : null;
+    html.push('<div class="cell">');
+    html.push(`<span>${item.label}</span>`);
+    html.push(`<strong>${isNumber ? formatNumber(val, isFinal ? 1 : 3) : (item.value || '-') }</strong>`);
+    if (isNumber) {
+      html.push(`<div class=\"meter\"><div class=\"meter-track\"><div class=\"meter-bar\" style=\"width:${pct}%\"></div></div><div class=\"meter-label\"><span>${pct}%</span><span>max ${max}</span></div></div>`);
+    }
+    html.push('</div>');
+  });
+  html.push('</div>');
+  container.innerHTML = html.join('');
 }
 
 function renderAISettings() {
@@ -394,8 +440,62 @@ function setupButtons() {
   });
   document.getElementById('build-prompt').addEventListener('click', () => {
     state.outputs.prompt = buildPromptText();
+    updateHiddenDirective();
     renderOutputs();
   });
+  const copyBtn = document.getElementById('copy-ai-prompt');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const text = (state.outputs.prompt || '').trim();
+      if (!text) {
+        flashButton(copyBtn, 'Nothing to copy', 900);
+        return;
+      }
+      try {
+        await copyToClipboard(text);
+        flashButton(copyBtn, 'Copied!', 900);
+      } catch (err) {
+        console.error('Copy failed', err);
+        flashButton(copyBtn, 'Copy failed', 1200);
+      }
+    });
+  }
+
+  const copyBriefBtn = document.getElementById('copy-brief');
+  if (copyBriefBtn) {
+    copyBriefBtn.addEventListener('click', async () => {
+      const text = (state.outputs.brief || '').trim();
+      if (!text) {
+        flashButton(copyBriefBtn, 'Nothing to copy', 900);
+        return;
+      }
+      try {
+        await copyToClipboard(text);
+        flashButton(copyBriefBtn, 'Copied!', 900);
+      } catch (err) {
+        console.error('Copy failed', err);
+        flashButton(copyBriefBtn, 'Copy failed', 1200);
+      }
+    });
+  }
+
+  const copySunoBtn = document.getElementById('copy-suno');
+  if (copySunoBtn) {
+    copySunoBtn.addEventListener('click', async () => {
+      const text = (state.outputs.suno || '').trim();
+      if (!text) {
+        flashButton(copySunoBtn, 'Nothing to copy', 900);
+        return;
+      }
+      try {
+        await copyToClipboard(text);
+        flashButton(copySunoBtn, 'Copied!', 900);
+      } catch (err) {
+        console.error('Copy failed', err);
+        flashButton(copySunoBtn, 'Copy failed', 1200);
+      }
+    });
+  }
   document.getElementById('call-ai').addEventListener('click', async (event) => {
     event.preventDefault();
     const button = event.currentTarget;
@@ -423,7 +523,7 @@ function setupButtons() {
       const summary = [
         `Mix: ${analysis.mixSummary}`,
         `Feel: ${analysis.tempoHint}`,
-        analysis.structureHint ? `Structure: ${analysis.structureHint}` : '',
+        analysis.structureHint ? `Structure: ${cleanStructureDisplay(analysis.structureHint)}` : '',
         analysis.excludeCsv ? `Exclude: ${analysis.excludeCsv}` : '',
         analysis.sfxCsv ? `SFX: ${analysis.sfxCsv}` : ''
       ].filter(Boolean).join('\n');
@@ -443,6 +543,21 @@ function setupButtons() {
     openLibraryDialog('Accent Library', buildAccentLibraryTable());
   });
   document.getElementById('close-dialog').addEventListener('click', () => closeDialog());
+
+  // Header/toolbar app actions
+  const saveBtn = document.getElementById('save-state');
+  const loadBtn = document.getElementById('load-state');
+  const resetBtn = document.getElementById('reset-state');
+  const themeBtn = document.getElementById('theme-toggle');
+  if (saveBtn) saveBtn.addEventListener('click', () => { saveState(); showToast('Saved settings'); });
+  if (loadBtn) loadBtn.addEventListener('click', () => { const ok = loadState(); showToast(ok ? 'Loaded settings' : 'No saved settings'); rerenderAll(); });
+  if (resetBtn) resetBtn.addEventListener('click', () => { resetState(); showToast('Reset to defaults'); rerenderAll(); });
+  if (themeBtn) themeBtn.addEventListener('click', () => { toggleTheme(); showToast(`Theme: ${getTheme().toUpperCase()}`); });
+  // Hero quick actions
+  const heroBrowse = document.getElementById('open-genre-library-hero');
+  const heroBuild = document.getElementById('build-prompt-hero');
+  if (heroBrowse) heroBrowse.addEventListener('click', () => openLibraryDialog('Genre Library', buildGenreLibraryTable()));
+  if (heroBuild) heroBuild.addEventListener('click', () => { state.outputs.prompt = buildPromptText(); updateHiddenDirective(); renderOutputs(); showToast('Prompt built'); });
 }
 
 function applyPreset(name) {
@@ -486,16 +601,43 @@ function buildGenreLibraryTable() {
       <th>SFX</th>
     </tr>
   </thead>`;
+
+  // Helpers to format cells
+  const toChips = (list) => {
+    const safe = (s) => String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `<div class="chips">${list.filter(Boolean).map(x => `<span class="chip">${safe(x.trim())}</span>`).join('')}</div>`;
+  };
+  const splitStructure = (text) => {
+    const raw = String(text || '').trim();
+    if (!raw) return [];
+    // Split on the VBA artifact token a-' or a-’ and clean pieces
+    return raw.split(/\s*a-[\'’]\s*/i).map(s => s.trim()).filter(Boolean);
+  };
+  const splitCsv = (text) => String(text || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
   const tbody = document.createElement('tbody');
   GENRE_LIBRARY.forEach(item => {
     const row = document.createElement('tr');
+    const name = String(item.name || '').trim();
+    const tempo = String(item.tempo || '').trim();
+    const structureParts = splitStructure(item.structure);
+    const styleParts = splitCsv(item.styleTags);
+    const excludeParts = splitCsv(item.exclude);
+    const sfxParts = splitCsv(item.sfx);
+
     row.innerHTML = `
-      <td>${item.name}</td>
-      <td>${item.tempo}</td>
-      <td>${item.structure}</td>
-      <td>${item.styleTags}</td>
-      <td>${item.exclude}</td>
-      <td>${item.sfx}</td>
+      <td>${name}</td>
+      <td>${tempo}</td>
+      <td>${toChips(structureParts)}</td>
+      <td>${toChips(styleParts)}</td>
+      <td>${toChips(excludeParts)}</td>
+      <td>${toChips(sfxParts)}</td>
     `;
     tbody.appendChild(row);
   });
@@ -613,7 +755,7 @@ function buildCreativeBrief() {
     '',
     `Final Score: ${formatNumber(computed.final.clamped, 1)}`,
     `Feel: ${analysis.tempoHint || tempo}`,
-    `Structure: ${analysis.structureHint || structure}`,
+    `Structure: ${cleanStructureDisplay(analysis.structureHint || structure)}`,
     `Hook Plan: ${hookPlan}`,
     `Flow Plan: ${flowPlan}`,
     `Rhyme Plan: ${rhymePlan}`,
@@ -755,7 +897,11 @@ function buildPromptText() {
   else audienceLine = 'Keep universal messaging.';
 
   const lockedSections = buildLockedSections();
-  const styleTagsCombined = [analysis.styleTagsCsv || '', state.creativeInputs.styleTags || ''].filter(Boolean).join(', ');
+  const styleTagsCombined = [
+    analysis.styleTagsCsv || '',
+    state.creativeInputs.styleTags || '',
+    phonetic.styleTag || ''
+  ].filter(Boolean).join(', ');
 
   const lines = [];
   lines.push("You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song.");
@@ -772,11 +918,12 @@ function buildPromptText() {
   lines.push("");
   lines.push(`Final Score: ${formatNumber(computed.final.clamped, 1)}`);
   lines.push(`Tempo / Feel: ${analysis.tempoHint || tempo}`);
-  lines.push(`Structure: ${analysis.structureHint || structure}`);
+  lines.push(`Structure: ${cleanStructureDisplay(analysis.structureHint || structure)}`);
   lines.push(`Hook Plan: ${hookPlan}`);
   lines.push(`Flow Plan: ${flowPlan}`);
   lines.push(`Rhyme Plan: ${rhymePlan}`);
   lines.push(`Style / Vibe: ${vibe}`);
+  lines.push(`Phonetic Accent: ${phonetic.label}`);
   lines.push(`Audience: ${audienceLine}`);
   lines.push(`Phonetics: ${phonetic.instruction}`);
   lines.push(`Genre Mix: ${analysis.mixSummary || "custom blend"}`);
@@ -798,6 +945,8 @@ function buildPromptText() {
     lines.push("");
   }
   lines.push("If any rule is broken, fix and re-output without commentary.");
+  // Uppercase directive appended at the very end for extra emphasis
+  lines.push("REWRITE the lyrics phonetically in the accent selected.");
   return lines.join('\n');
 
 }
@@ -1004,20 +1153,111 @@ function resolvePremise() {
   const keywords = (state.creativeInputs.keywords || '').toLowerCase();
   const audience = (state.creativeInputs.audienceNotes || '').toLowerCase();
   const haystack = `${theme} ${keywords} ${audience}`;
-  if (haystack.includes('love')) return 'love & loyalty';
-  if (haystack.includes('heartbreak')) return 'heartbreak & healing';
-  if (haystack.includes('hustle')) return 'hustle & ambition';
-  if (haystack.includes('betray')) return 'betrayal & trust';
-  if (haystack.includes('win') || haystack.includes('victory')) return 'triumph & celebration';
-  if (haystack.includes('redemption') || haystack.includes('forgive')) return 'redemption & growth';
-  if (haystack.includes('city') || haystack.includes('hometown')) return 'city pride & belonging';
-  if (haystack.includes('grind') || haystack.includes('struggle')) return 'struggle & perseverance';
-  const pool = ['love & loyalty', 'heartbreak & healing', 'hustle & ambition', 'betrayal & trust', 'triumph & celebration', 'redemption & growth', 'city pride & belonging', 'struggle & perseverance'];
-  const index = Math.floor(Math.random() * pool.length);
-  return pool[index];
+  if (haystack.includes('love') || haystack.includes('loyal')) return 'love & loyalty';
+  if (haystack.includes('heartbreak') || haystack.includes('breakup') || haystack.includes('broken')) return 'heartbreak & healing';
+  if (haystack.includes('hustle') || haystack.includes('grind') || haystack.includes('ambition')) return 'hustle & ambition';
+  if (haystack.includes('betray') || haystack.includes('lies') || haystack.includes('snake')) return 'betrayal & trust';
+  if (haystack.includes('win') || haystack.includes('victory') || haystack.includes('champion')) return 'triumph & celebration';
+  if (haystack.includes('redemption') || haystack.includes('forgive') || haystack.includes('aton')) return 'redemption & growth';
+  if (haystack.includes('city') || haystack.includes('hometown') || haystack.includes('neighborhood')) return 'city pride & belonging';
+  if (haystack.includes('struggle') || haystack.includes('persevere') || haystack.includes('survive')) return 'struggle & perseverance';
+  if (haystack.includes('freedom') || haystack.includes('escape')) return 'freedom & escape';
+  if (haystack.includes('nostalgia') || haystack.includes('memory') || haystack.includes('childhood')) return 'nostalgia & memory';
+  if (haystack.includes('rebel') || haystack.includes('defiance') || haystack.includes('resist') || haystack.includes('protest')) return 'rebellion & defiance';
+  if (haystack.includes('identity') || haystack.includes('self') || haystack.includes('becoming')) return 'self-discovery & identity';
+  if (haystack.includes('faith') || haystack.includes('prayer') || haystack.includes('doubt')) return 'faith & doubt';
+  if (haystack.includes('sacrifice') || haystack.includes('cost')) return 'ambition & sacrifice';
+  if (haystack.includes('legacy') || haystack.includes('family') || haystack.includes('ancestors')) return 'legacy & family';
+  if (haystack.includes('loss') || haystack.includes('grief') || haystack.includes('gone')) return 'loss & remembrance';
+  if (haystack.includes('hope') || haystack.includes('renewal') || haystack.includes('reborn')) return 'hope & renewal';
+  if (haystack.includes('summer') || haystack.includes('party') || haystack.includes('club')) return 'party & vibe';
+  if (haystack.includes('distance') || haystack.includes('far') || haystack.includes('apart') || haystack.includes('miles')) return 'long-distance & yearning';
+  if (haystack.includes('anxiety') || haystack.includes('therapy') || haystack.includes('mind')) return 'mental health & healing';
+  if (haystack.includes('money') || haystack.includes('power') || haystack.includes('status')) return 'money & power';
+  if (haystack.includes('fame') || haystack.includes('pressure') || haystack.includes('spotlight')) return 'fame & pressure';
+  if (haystack.includes('street') || haystack.includes('survival') || haystack.includes('hunger')) return 'survival & street wisdom';
+  if (haystack.includes('addiction') || haystack.includes('recovery') || haystack.includes('sober')) return 'addiction & recovery';
+  if (haystack.includes('revenge') || haystack.includes('payback')) return 'betrayal & revenge';
+  if (haystack.includes('underdog') || haystack.includes('come-up') || haystack.includes('come up')) return 'underdog & come-up';
+  if (haystack.includes('gratitude') || haystack.includes('humble')) return 'gratitude & humility';
+  if (haystack.includes('nature') || haystack.includes('calm') || haystack.includes('ocean')) return 'nature & calm';
+  if (haystack.includes('technology') || haystack.includes('isolation') || haystack.includes('alone')) return 'technology & isolation';
+  if (haystack.includes('community') || haystack.includes('together') || haystack.includes('solidarity')) return 'community & solidarity';
+  if (haystack.includes('wanderlust') || haystack.includes('travel') || haystack.includes('homecoming')) return 'wanderlust & homecoming';
+  const pool = [
+    'love & loyalty', 'heartbreak & healing', 'hustle & ambition', 'betrayal & trust',
+    'triumph & celebration', 'redemption & growth', 'city pride & belonging', 'struggle & perseverance',
+    'freedom & escape', 'nostalgia & memory', 'rebellion & defiance', 'self-discovery & identity',
+    'faith & doubt', 'ambition & sacrifice', 'legacy & family', 'loss & remembrance',
+    'hope & renewal', 'party & vibe', 'long-distance & yearning', 'mental health & healing',
+    'money & power', 'fame & pressure', 'survival & street wisdom', 'addiction & recovery',
+    'betrayal & revenge', 'underdog & come-up', 'gratitude & humility', 'nature & calm',
+    'technology & isolation', 'community & solidarity', 'wanderlust & homecoming'
+  ];
+  if (Math.random() < 0.7) {
+    for (let tries = 0; tries < 8; tries++) {
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      if (pick !== __lastPremise) { __lastPremise = pick; return pick; }
+    }
+    const fallback = pool[Math.floor(Math.random() * pool.length)];
+    __lastPremise = fallback; return fallback;
+  }
+  const left = ['love','heartbreak','hustle','betrayal','triumph','redemption','city pride','struggle','freedom','nostalgia','rebellion','identity','faith','ambition','legacy','loss','hope','party','distance','healing','money','fame','survival','recovery','underdog','gratitude','nature','technology','community','wanderlust'];
+  const right = ['loyalty','healing','ambition','trust','celebration','growth','belonging','perseverance','escape','memory','defiance','self-discovery','doubt','sacrifice','family','remembrance','renewal','vibe','yearning','balance','power','pressure','street wisdom','comeback','come-up','humility','calm','isolation','solidarity','homecoming'];
+  for (let tries = 0; tries < 12; tries++) {
+    const a = left[Math.floor(Math.random() * left.length)];
+    const b = right[Math.floor(Math.random() * right.length)];
+    const result = `${a} & ${b}`;
+    if (a !== b && result !== __lastPremise) { __lastPremise = result; return result; }
+  }
+  return 'struggle & perseverance';
+}
+
+function updateHiddenDirective() {
+  try {
+    const el = document.getElementById('hidden-phonetic-directive');
+    if (!el) return;
+    // Invisible on the page; clear and set directive
+    el.textContent = `REWRITE the lyrics phonetically in the accent selected.`;
+  } catch (_) {
+    // no-op
+  }
+}
+
+async function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-1000px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
+function flashButton(btn, label, delay = 800) {
+  const original = btn.textContent;
+  btn.textContent = label;
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.disabled = false;
+  }, delay);
 }
 
 function init() {
+  // Apply theme from previous session and compact density
+  applyTheme(getTheme());
+  try { document.body.classList.add('density-compact'); } catch (_) {}
+  // Ensure close button glyph renders correctly regardless of HTML encoding
+  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
   renderConstants();
   renderControls();
   renderWeights();
@@ -1031,10 +1271,114 @@ function init() {
   recompute();
   renderAISettings();
   renderOutputs();
+  updateHiddenDirective();
   setupButtons();
+  setupTabs();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Enhance UX with collapsible sections and toolbar controls
+document.addEventListener('DOMContentLoaded', setupCollapsibleSections);
+
+function setupCollapsibleSections() {
+  const sections = Array.from(document.querySelectorAll('.panel-group > section'));
+  const storeKey = 'rgf_collapsed_sections_v1';
+  let collapsed = [];
+  try { collapsed = JSON.parse(localStorage.getItem(storeKey) || '[]'); } catch (_) { collapsed = []; }
+
+  const slug = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  sections.forEach(section => {
+    const h3 = section.querySelector('h3');
+    if (!h3) return;
+    const id = section.dataset.id || slug(h3.textContent);
+    section.dataset.id = id;
+    h3.setAttribute('role', 'button');
+    h3.setAttribute('tabindex', '0');
+    const isCollapsed = collapsed.includes(id);
+    section.classList.toggle('collapsed', isCollapsed);
+    h3.setAttribute('aria-expanded', String(!isCollapsed));
+
+    const toggle = (force) => {
+      const willCollapse = typeof force === 'boolean' ? !force : !section.classList.contains('collapsed');
+      section.classList.toggle('collapsed', willCollapse);
+      h3.setAttribute('aria-expanded', String(!willCollapse));
+      const set = new Set(collapsed);
+      if (willCollapse) set.add(id); else set.delete(id);
+      collapsed = Array.from(set);
+      try { localStorage.setItem(storeKey, JSON.stringify(collapsed)); } catch (_) {}
+    };
+
+    h3.addEventListener('click', () => toggle());
+    h3.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      if (e.key === 'ArrowRight') toggle(true);
+      if (e.key === 'ArrowLeft') toggle(false);
+    });
+  });
+
+  const collapseAll = document.getElementById('collapse-all');
+  const expandAll = document.getElementById('expand-all');
+  if (collapseAll) collapseAll.addEventListener('click', () => {
+    sections.forEach(s => s.classList.add('collapsed'));
+    sections.forEach(s => { const h3 = s.querySelector('h3'); if (h3) h3.setAttribute('aria-expanded', 'false'); });
+    const ids = sections.map(s => s.dataset.id).filter(Boolean);
+    try { localStorage.setItem(storeKey, JSON.stringify(ids)); } catch (_) {}
+  });
+  if (expandAll) expandAll.addEventListener('click', () => {
+    sections.forEach(s => s.classList.remove('collapsed'));
+    sections.forEach(s => { const h3 = s.querySelector('h3'); if (h3) h3.setAttribute('aria-expanded', 'true'); });
+    try { localStorage.setItem(storeKey, JSON.stringify([])); } catch (_) {}
+  });
+}
+
+function setupTabs() {
+  const inputsBtn = document.getElementById('tab-inputs');
+  const outputsBtn = document.getElementById('tab-outputs');
+  const aiBtn = document.getElementById('tab-ai');
+  if (!inputsBtn || !outputsBtn || !aiBtn) return;
+
+  const panels = {
+    inputs: document.getElementById('scoring-panel'),
+    outputs: document.getElementById('outputs-panel')
+  };
+  const aiPrompt = document.getElementById('ai-prompt-section');
+  const aiCall = document.getElementById('ai-call-section');
+  const suno = document.getElementById('suno-section');
+  const brief = document.getElementById('creative-brief-section');
+
+  function select(tab) {
+    // aria selection
+    inputsBtn.setAttribute('aria-selected', String(tab === 'inputs'));
+    outputsBtn.setAttribute('aria-selected', String(tab === 'outputs'));
+    aiBtn.setAttribute('aria-selected', String(tab === 'ai'));
+
+    // show/hide panels
+    panels.inputs.style.display = (tab === 'inputs') ? '' : 'none';
+    panels.outputs.style.display = (tab === 'inputs') ? 'none' : '';
+
+    // when AI tab, hide everything except AI Prompt + Call
+    if (tab === 'ai') {
+      if (aiPrompt) aiPrompt.style.display = '';
+      if (aiCall) aiCall.style.display = '';
+      if (suno) suno.style.display = 'none';
+      if (brief) brief.style.display = 'none';
+    } else if (tab === 'outputs') {
+      if (aiPrompt) aiPrompt.style.display = '';
+      if (aiCall) aiCall.style.display = '';
+      if (suno) suno.style.display = '';
+      if (brief) brief.style.display = '';
+    }
+  }
+
+  inputsBtn.addEventListener('click', () => select('inputs'));
+  outputsBtn.addEventListener('click', () => select('outputs'));
+  aiBtn.addEventListener('click', () => select('ai'));
+
+  // default to Inputs
+  select('inputs');
+}
 function buildLockedSections() {
   const sections = [
     { id: 'titleIdea', label: 'TITLE' },
@@ -1126,6 +1470,89 @@ async function callAI() {
     return data.choices[0].message.content.trim();
   }
   return JSON.stringify(data, null, 2);
+}
+
+// ---------- UX helpers: Toasts, Theme, Persistence ----------
+function showToast(message, ms = 1500) {
+  try {
+    const root = document.getElementById('toast-root');
+    if (!root) return;
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = message;
+    root.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; }, Math.max(500, ms - 250));
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, ms);
+  } catch (_) { /* no-op */ }
+}
+
+function getTheme() {
+  try { return localStorage.getItem(__THEME_KEY) || 'light'; } catch (_) { return 'light'; }
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem(__THEME_KEY, theme); } catch (_) {}
+}
+function toggleTheme() {
+  const next = getTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+}
+
+function saveState() {
+  const payload = JSON.stringify(state);
+  try { localStorage.setItem(__STATE_KEY, payload); return true; } catch (_) { return false; }
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(__STATE_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    Object.assign(state.controls, saved.controls || {});
+    Object.assign(state.weights, saved.weights || {});
+    Object.assign(state.baseInputs, saved.baseInputs || {});
+    Object.assign(state.derivedInputs, saved.derivedInputs || {});
+    Object.assign(state.creativeInputs, saved.creativeInputs || {});
+    state.genreMix = Array.isArray(saved.genreMix) ? saved.genreMix : state.genreMix;
+    state.premise = saved.premise || state.premise;
+    state.accent = saved.accent || state.accent;
+    Object.assign(state.userSections, saved.userSections || {});
+    Object.assign(state.aiSettings, saved.aiSettings || {});
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+function resetState() {
+  const fresh = buildDefaultState();
+  Object.assign(state.controls, fresh.controls);
+  Object.assign(state.weights, fresh.weights);
+  Object.assign(state.baseInputs, fresh.baseInputs);
+  Object.assign(state.derivedInputs, fresh.derivedInputs);
+  Object.assign(state.creativeInputs, fresh.creativeInputs);
+  state.genreMix = fresh.genreMix;
+  state.premise = fresh.premise;
+  state.accent = fresh.accent;
+  Object.assign(state.userSections, fresh.userSections);
+  Object.assign(state.aiSettings, fresh.aiSettings);
+  state.outputs = fresh.outputs;
+  state.computed = null;
+  state.genreAnalysis = null;
+}
+function rerenderAll() {
+  renderConstants();
+  renderControls();
+  renderWeights();
+  renderBaseInputs();
+  renderDerivedInputs();
+  renderCreativeInputs();
+  renderGenreMix();
+  renderPremise();
+  renderAccent();
+  renderUserSections();
+  recompute();
+  renderAISettings();
+  renderOutputs();
+  updateHiddenDirective();
 }
 
 

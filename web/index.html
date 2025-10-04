@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,9 +8,38 @@
 </head>
 <body>
   <header>
-    <h1>RGF f�p�e Music Formula Generator</h1>
-    <p class="tagline">Web adaptation of the Excel songwriting cockpit</p>
+    <h1>RGF Music Formula Generator</h1>
+    <p class="tagline">A clean, Apple-inspired songwriting cockpit</p>
   </header>
+
+  <div class="toolbar header-actions" role="group" aria-label="App controls">
+    <span class="brand">RGF</span>
+    <div class="spacer"></div>
+    <div class="tabs segmented" role="tablist" aria-label="Primary views">
+      <button type="button" id="tab-inputs" role="tab" aria-selected="true">Inputs</button>
+      <button type="button" id="tab-outputs" role="tab" aria-selected="false">Outputs</button>
+      <button type="button" id="tab-ai" role="tab" aria-selected="false">AI</button>
+    </div>
+    <div class="spacer"></div>
+    <button type="button" id="collapse-all" title="Collapse all sections">Collapse</button>
+    <button type="button" id="expand-all" title="Expand all sections">Expand</button>
+    <button type="button" id="save-state" title="Save current settings to this browser">Save</button>
+    <button type="button" id="load-state" title="Load settings saved in this browser">Load</button>
+    <button type="button" id="reset-state" title="Reset to defaults">Reset</button>
+    <button type="button" id="theme-toggle" title="Toggle dark mode">Theme</button>
+  </div>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <h2 class="hero-title">Write smarter. Score better.</h2>
+      <p class="hero-sub">Blend genres, score concepts, and export ready-to-use Suno blocks — in a refined, minimal workspace.</p>
+      <div class="hero-actions">
+        <button type="button" id="open-genre-library-hero" class="btn-primary">Browse Genres</button>
+        <button type="button" id="build-prompt-hero">Build Prompt</button>
+      </div>
+    </div>
+  </section>
+  
 
   <main class="layout">
     <section class="panel" id="scoring-panel">
@@ -24,7 +53,7 @@
         <section>
           <h3>Weights</h3>
           <div id="weights"></div>
-          <div class="inline-buttons">
+          <div class="inline-buttons segmented">
             <button type="button" data-preset="street">Street</button>
             <button type="button" data-preset="club">Club</button>
             <button type="button" data-preset="backpack">Backpack</button>
@@ -58,6 +87,10 @@
             <select id="accent-select"></select>
           </label>
         </section>
+        <section>
+          <h3>User Sections (lock lyrics verbatim)</h3>
+          <div id="user-sections"></div>
+        </section>
       </div>
     </section>
 
@@ -68,32 +101,31 @@
           <h3>Computed Scores</h3>
           <div id="computed-scores"></div>
         </section>
-        <section>
-          <h3>User Sections (lock lyrics verbatim)</h3>
-          <div id="user-sections"></div>
-        </section>
-        <section>
+        <section id="creative-brief-section">
           <h3>Creative Brief</h3>
           <div class="actions">
-            <button type="button" id="generate-brief">Make Brief</button>
+            <button type="button" id="generate-brief" class="btn-primary">Make Brief</button>
+            <button type="button" id="copy-brief" title="Copy Creative Brief to clipboard">Copy</button>
           </div>
           <pre id="creative-brief" class="output-block"></pre>
         </section>
-        <section>
+        <section id="suno-section">
           <h3>Suno Export Blocks</h3>
           <div class="actions">
-            <button type="button" id="generate-suno">Make Suno</button>
+            <button type="button" id="generate-suno" class="btn-primary">Make Suno</button>
+            <button type="button" id="copy-suno" title="Copy Suno blocks to clipboard">Copy</button>
           </div>
           <pre id="suno-output" class="output-block"></pre>
         </section>
-        <section>
+        <section id="ai-prompt-section">
           <h3>AI Prompt Workspace</h3>
           <div class="actions">
-            <button type="button" id="build-prompt">Build Prompt</button>
+            <button type="button" id="build-prompt" class="btn-primary">Build Prompt</button>
+            <button type="button" id="copy-ai-prompt" title="Copy AI prompt to clipboard">Copy</button>
           </div>
           <pre id="ai-prompt" class="output-block"></pre>
         </section>
-        <section>
+        <section id="ai-call-section">
           <h3>Call AI (Optional)</h3>
           <form id="ai-settings" class="grid-form">
             <label><span>Endpoint URL</span><input type="url" name="endpoint"></label>
@@ -112,7 +144,7 @@
             <label><span>Response Format (JSON)</span><input type="text" name="responseFormat"></label>
           </form>
           <div class="actions">
-            <button type="button" id="call-ai">Call AI</button>
+            <button type="button" id="call-ai" class="btn-primary">Call AI</button>
           </div>
           <pre id="ai-response" class="output-block"></pre>
         </section>
@@ -123,17 +155,24 @@
   <dialog id="library-dialog">
     <div class="dialog-header">
       <h2 id="dialog-title"></h2>
-      <button type="button" id="close-dialog" aria-label="Close">�</button>
+      <button type="button" id="close-dialog" aria-label="Close">×</button>
     </div>
     <div id="dialog-content"></div>
   </dialog>
 
   <footer>
-    <p>RGF web build &copy; iMob Worldwide � ported from the VBA module.</p>
+    <p>RGF web build &copy; iMob Worldwide ? ported from the VBA module.</p>
   </footer>
 
+  <!-- Toast notifications -->
+  <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+  <!-- Hidden directive for phonetic rewrites (not displayed) -->
+  <div id="hidden-phonetic-directive" aria-hidden="true" style="display:none"></div>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+
+
+
 
 
