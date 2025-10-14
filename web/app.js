@@ -256,8 +256,29 @@ function renderCreativeInputs() {
         try { scheduleSave(); } catch (_) {}
       }
       function renderChips(list) {
-        chips.innerHTML = list.filter(Boolean).map(s => `<span class="chip">${s}</span>`).join('');
+        const safe = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+        chips.innerHTML = list.filter(Boolean).map(name => `
+          <span class="chip">${safe(name)}
+            <button type="button" class="chip-remove" data-name="${safe(name)}" title="Remove">&times;</button>
+          </span>
+        `).join('');
       }
+      chips.addEventListener('click', (e) => {
+        const btn = e.target.closest('.chip-remove');
+        if (!btn) return;
+        const name = btn.getAttribute('data-name') || '';
+        // Uncheck if it is a predefined option
+        const cbs = Array.from(checklist.querySelectorAll('input[type="checkbox"]'));
+        const found = cbs.find(el => el.value.toLowerCase() === name.toLowerCase());
+        if (found) {
+          found.checked = false;
+        } else {
+          // Remove from custom CSV
+          const items = custom.value.split(',').map(s => s.trim()).filter(Boolean);
+          custom.value = items.filter(x => x.toLowerCase() !== name.toLowerCase()).join(', ');
+        }
+        updateFromUI();
+      });
       renderChips(current);
 
       wrapperDiv.appendChild(checklist);
