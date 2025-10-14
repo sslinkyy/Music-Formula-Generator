@@ -205,39 +205,64 @@ function renderCreativeInputs() {
         try { scheduleSave(); } catch (_) {}
       });
     } else if (field.id === 'specificInstruments') {
+      // Checkbox list + chips + custom input for multi-select UX
       const wrapperDiv = document.createElement('div');
       wrapperDiv.className = 'instrument-picker';
-      const select = document.createElement('select');
-      select.multiple = true;
-      select.size = Math.min(8, __INSTRUMENT_OPTIONS.length);
-      __INSTRUMENT_OPTIONS.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-      });
+
       const current = (state.creativeInputs[field.id] || '')
         .split(',').map(s => s.trim()).filter(Boolean);
-      for (const option of Array.from(select.options)) {
-        option.selected = current.includes(option.value);
-      }
+
+      const checklist = document.createElement('div');
+      checklist.className = 'instrument-checklist';
+      __INSTRUMENT_OPTIONS.forEach(name => {
+        const id = `inst-${name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}`;
+        const lbl = document.createElement('label');
+        lbl.style.display = 'inline-flex';
+        lbl.style.alignItems = 'center';
+        lbl.style.marginRight = '12px';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = id;
+        cb.value = name;
+        cb.checked = current.includes(name);
+        cb.addEventListener('change', () => { updateFromUI(); });
+        const span = document.createElement('span');
+        span.textContent = name;
+        span.style.marginLeft = '4px';
+        lbl.appendChild(cb);
+        lbl.appendChild(span);
+        checklist.appendChild(lbl);
+      });
+
       const custom = document.createElement('input');
       custom.type = 'text';
       custom.placeholder = 'Other (comma-separated)';
-      custom.style.marginLeft = '8px';
+      custom.style.display = 'block';
+      custom.style.marginTop = '8px';
       const customs = current.filter(x => !__INSTRUMENT_OPTIONS.includes(x));
       custom.value = customs.join(', ');
-      const update = () => {
-        const selected = Array.from(select.selectedOptions).map(o => o.value);
+      custom.addEventListener('input', () => { updateFromUI(); });
+
+      const chips = document.createElement('div');
+      chips.className = 'chips';
+      chips.style.marginTop = '8px';
+
+      function updateFromUI() {
+        const selected = Array.from(checklist.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
         const extra = custom.value.split(',').map(s => s.trim()).filter(Boolean);
         const merged = [...selected, ...extra];
         state.creativeInputs[field.id] = merged.join(', ');
+        renderChips(merged);
         try { scheduleSave(); } catch (_) {}
-      };
-      select.addEventListener('change', update);
-      custom.addEventListener('input', update);
-      wrapperDiv.appendChild(select);
+      }
+      function renderChips(list) {
+        chips.innerHTML = list.filter(Boolean).map(s => `<span class="chip">${s}</span>`).join('');
+      }
+      renderChips(current);
+
+      wrapperDiv.appendChild(checklist);
       wrapperDiv.appendChild(custom);
+      wrapperDiv.appendChild(chips);
       input = wrapperDiv;
     } else {
       input = document.createElement('input');
