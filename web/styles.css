@@ -242,18 +242,30 @@ button:disabled { opacity: 0.6; cursor: default; }
 .library-table th { position: sticky; top: 0; background: #fff; z-index: 1; }
 
 /* Chip lists inside library cells use horizontal space well */
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+:root { --chip-bg: #f0f2f5; --chip-border: var(--panel-border); }
+:root[data-theme="dark"] { --chip-bg: #1e1e26; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: #f0f2f5;
-  border: 1px solid var(--panel-border);
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
   color: var(--text);
   line-height: 1.2;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
 }
 :root[data-theme="dark"] .chip { background: #1e1e26; }
+
+/* Instrument picker refinements */
+.instrument-picker { display: block; }
+.instrument-checklist { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.instrument-checklist label { padding: 4px 8px; border: 1px solid transparent; border-radius: 10px; }
+.instrument-checklist input[type="checkbox"] { accent-color: var(--accent); }
+.instrument-checklist label:hover { border-color: var(--panel-border); background: rgba(0,0,0,0.02); }
+:root[data-theme="dark"] .instrument-checklist label:hover { background: rgba(255,255,255,0.04); }
 
 /* Dark theme fixes for dialog + table contrast */
 :root[data-theme="dark"] #library-dialog { background: var(--panel); color: var(--text); }
