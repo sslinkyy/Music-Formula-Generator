@@ -104,7 +104,8 @@ export const PREMISE_OPTIONS = [
   '(auto)'
 ];
 
-export const GENRE_SLOTS = 4;
+// Allow more genre slots in the mix
+export const GENRE_SLOTS = 6;
 export const GENRE_SLOT_WEIGHT_TOTAL = 100;
 export const ACCENT_DEFAULT = 'Neutral / Standard';
 
@@ -129,10 +130,56 @@ export const CREATIVE_FIELDS = [
   { id: 'theme', label: 'Theme', defaultValue: '' },
   { id: 'keywords', label: 'Keywords (comma-separated)', defaultValue: '' },
   { id: 'mustInclude', label: 'Must-include words/phrases', defaultValue: '' },
-  { id: 'forbidden', label: 'Forbidden words/phrases', defaultValue: '' },
+  // Pre-populate common overused words to avoid; editable by user
+  { id: 'forbidden', label: 'Forbidden words/phrases', defaultValue: 'glow, glitch, pulse' },
   { id: 'styleTags', label: 'Style/Mood tags (comma-separated)', defaultValue: 'anthemic rap, chant hook, pocket-tight flow' },
-  { id: 'specificInstruments', label: 'Specific instruments (comma-separated)', defaultValue: '' },
+  { id: 'specificInstruments', label: 'Specific instruments (select or type)', defaultValue: '' },
   { id: 'lengthTarget', label: 'Length target (min)', defaultValue: 3 },
   { id: 'audienceNotes', label: 'Audience notes', defaultValue: '' }
+];
+
+// Languages available for lyric output (plus custom)
+export const LANGUAGE_OPTIONS = [
+  'English',
+  'Spanish',
+  'French',
+  'German',
+  'Italian',
+  'Portuguese',
+  'Arabic',
+  'Hindi',
+  'Japanese',
+  'Korean',
+  'Mandarin Chinese',
+  'Cantonese',
+  'Swahili',
+  'Turkish',
+  'Greek',
+  'Russian',
+  '(custom)'
+];
+
+// Suggested instrument list for multi-select UX
+export const INSTRUMENT_OPTIONS = [
+  '808 bass',
+  'acoustic guitar',
+  'electric guitar',
+  'piano',
+  'rhodes',
+  'synth pad',
+  'synth lead',
+  'strings',
+  'brass',
+  'woodwinds',
+  'pluck synth',
+  'arp',
+  'drum kit',
+  'trap hats',
+  'claps',
+  'snare',
+  'kick',
+  'choir',
+  'vocal chop',
+  'fx riser'
 ];
 

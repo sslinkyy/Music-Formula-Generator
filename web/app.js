@@ -5,6 +5,14 @@ import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
 import { GENRE_LIBRARY } from './data/genres.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
+// Local UX option lists (duplicated from config for easier patching)
+const __LANGUAGE_OPTIONS = [
+  'English','Spanish','French','German','Italian','Portuguese','Arabic','Hindi','Japanese','Korean','Mandarin Chinese','Cantonese','Swahili','Turkish','Greek','Russian','(custom)'
+];
+const __INSTRUMENT_OPTIONS = [
+  '808 bass','acoustic guitar','electric guitar','piano','rhodes','synth pad','synth lead','strings','brass','woodwinds','pluck synth','arp','drum kit','trap hats','claps','snare','kick','choir','vocal chop','fx riser'
+];
+
 // Persistence keys and default-state builder
 const __STATE_KEY = 'rgf_state_v1';
 const __THEME_KEY = 'rgf_theme_v1';
@@ -78,6 +86,7 @@ function renderControls() {
     input.addEventListener('input', () => {
       state.controls[ctrl.id] = parseFloat(input.value) || 0;
       recompute();
+      try { scheduleSave(); } catch (_) {}
     });
     label.appendChild(input);
     container.appendChild(label);
@@ -193,13 +202,50 @@ function renderCreativeInputs() {
       input.value = state.creativeInputs[field.id] || '';
       input.addEventListener('input', () => {
         state.creativeInputs[field.id] = input.value;
+        try { scheduleSave(); } catch (_) {}
       });
+    } else if (field.id === 'specificInstruments') {
+      const wrapperDiv = document.createElement('div');
+      wrapperDiv.className = 'instrument-picker';
+      const select = document.createElement('select');
+      select.multiple = true;
+      select.size = Math.min(8, __INSTRUMENT_OPTIONS.length);
+      __INSTRUMENT_OPTIONS.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      const current = (state.creativeInputs[field.id] || '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+      for (const option of Array.from(select.options)) {
+        option.selected = current.includes(option.value);
+      }
+      const custom = document.createElement('input');
+      custom.type = 'text';
+      custom.placeholder = 'Other (comma-separated)';
+      custom.style.marginLeft = '8px';
+      const customs = current.filter(x => !__INSTRUMENT_OPTIONS.includes(x));
+      custom.value = customs.join(', ');
+      const update = () => {
+        const selected = Array.from(select.selectedOptions).map(o => o.value);
+        const extra = custom.value.split(',').map(s => s.trim()).filter(Boolean);
+        const merged = [...selected, ...extra];
+        state.creativeInputs[field.id] = merged.join(', ');
+        try { scheduleSave(); } catch (_) {}
+      };
+      select.addEventListener('change', update);
+      custom.addEventListener('input', update);
+      wrapperDiv.appendChild(select);
+      wrapperDiv.appendChild(custom);
+      input = wrapperDiv;
     } else {
       input = document.createElement('input');
       input.type = 'text';
       input.value = state.creativeInputs[field.id] || '';
       input.addEventListener('input', () => {
         state.creativeInputs[field.id] = input.value;
+        try { scheduleSave(); } catch (_) {}
       });
     }
     wrapper.appendChild(input);
@@ -215,12 +261,28 @@ function renderGenreMix() {
     card.innerHTML = `<p><strong>Slot ${index + 1}</strong></p>`;
 
     const select = document.createElement('select');
-    select.innerHTML = `<option value="">(none)</option>` + GENRE_LIBRARY.map(g => `
+    select.innerHTML = `<option value="">(none)</option><option value="(custom)">(custom)</option>` + GENRE_LIBRARY.map(g => `
       <option value="${g.name}">${g.name}</option>`).join('');
     select.value = slot.genre;
     select.addEventListener('change', () => {
       slot.genre = select.value;
+      try { toggleCustom(); } catch (_) {}
+      try { scheduleSave(); } catch (_) {}
     });
+
+    const custom = document.createElement('input');
+    custom.type = 'text';
+    custom.placeholder = 'Custom genre label';
+    custom.value = slot.customGenre || '';
+    custom.style.display = 'none';
+    custom.style.marginLeft = '8px';
+    custom.addEventListener('input', () => { slot.customGenre = custom.value; try { scheduleSave(); } catch (_) {} });
+
+    const toggleCustom = () => {
+      const show = (select.value || '').toLowerCase() === '(custom)';
+      custom.style.display = show ? '' : 'none';
+    };
+    toggleCustom();
 
     const slider = document.createElement('input');
     slider.type = 'range';
@@ -246,6 +308,7 @@ function renderGenreMix() {
     number.addEventListener('input', () => syncWeight(number.value));
 
     card.appendChild(select);
+    card.appendChild(custom);
     const weightRow = document.createElement('div');
     weightRow.className = 'weight-row';
     weightRow.appendChild(slider);
@@ -300,9 +363,11 @@ function renderPremise() {
   select.addEventListener('change', () => {
     state.premise = select.value;
     updateCustomVisibility();
+    try { scheduleSave(); } catch (_) {}
   });
   custom.addEventListener('input', () => {
     state.customPremise = custom.value;
+    try { scheduleSave(); } catch (_) {}
   });
 }
 
@@ -314,7 +379,37 @@ function renderAccent() {
   select.addEventListener('change', () => {
     state.accent = select.value;
     updateHiddenDirective();
+    try { scheduleSave(); } catch (_) {}
   });
+}
+
+function renderLanguage() {
+  const select = document.getElementById('language-select');
+  if (!select) return;
+  const opts = __LANGUAGE_OPTIONS;
+  select.innerHTML = opts.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+  if (!state.language) state.language = 'English';
+  select.value = state.language;
+  let custom = document.getElementById('language-custom-input');
+  if (!custom) {
+    custom = document.createElement('input');
+    custom.type = 'text';
+    custom.id = 'language-custom-input';
+    custom.placeholder = 'Type custom language';
+    custom.style.minWidth = '220px';
+    custom.style.marginLeft = '8px';
+    const label = select.parentElement;
+    if (label) label.appendChild(custom);
+  }
+  custom.value = state.customLanguage || '';
+  const updateCustomVisibility = () => {
+    const isCustom = (select.value || '').toLowerCase() === '(custom)';
+    custom.style.display = isCustom ? '' : 'none';
+    if (isCustom) setTimeout(() => custom.focus(), 0);
+  };
+  updateCustomVisibility();
+  select.addEventListener('change', () => { state.language = select.value; updateCustomVisibility(); try { scheduleSave(); } catch (_) {} });
+  custom.addEventListener('input', () => { state.customLanguage = custom.value; try { scheduleSave(); } catch (_) {} });
 }
 
 // Utility: clean VBA artifact tokens from structure strings for display
@@ -962,6 +1057,9 @@ function buildPromptText() {
   lines.push(`Rhyme Plan: ${rhymePlan}`);
   lines.push(`Style / Vibe: ${vibe}`);
   lines.push(`Phonetic Accent: ${phonetic.label}`);
+  const __langSel = (state.language || 'English');
+  const __langFinal = (__langSel.toLowerCase && __langSel.toLowerCase() === '(custom)') ? (state.customLanguage || 'English') : __langSel;
+  lines.push(`Language: ${__langFinal}`);
   lines.push(`Audience: ${audienceLine}`);
   lines.push(`Phonetics: ${phonetic.instruction}`);
   const cheat = buildPhoneticCheatsheet(phonetic.label);
@@ -1451,6 +1549,7 @@ function flashButton(btn, label, delay = 800) {
 function init() {
   // Apply theme from previous session and compact density
   applyTheme(getTheme());
+  try { loadState(); } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
   try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
@@ -1463,6 +1562,7 @@ function init() {
   renderGenreMix();
   renderPremise();
   renderAccent();
+  renderLanguage();
   renderUserSections();
   recompute();
   renderAISettings();
@@ -1754,12 +1854,24 @@ function rerenderAll() {
   renderGenreMix();
   renderPremise();
   renderAccent();
+  renderLanguage();
   renderUserSections();
   recompute();
   renderAISettings();
   renderOutputs();
   updateHiddenDirective();
 }
+
+// Debounced autosave: persist state across restarts without manual Save
+let __saveTimer = null;
+function scheduleSave(delay = 400) {
+  if (__saveTimer) clearTimeout(__saveTimer);
+  __saveTimer = setTimeout(() => { try { saveState(); } catch (_) {} }, delay);
+}
+
+// Generic listeners to catch most changes without touching every handler
+document.addEventListener('input', () => { try { scheduleSave(600); } catch (_) {} });
+document.addEventListener('change', () => { try { scheduleSave(600); } catch (_) {} });
 
 
 

@@ -50,7 +50,24 @@ function buildMix(slots) {
   for (const slot of slots) {
     const name = slot.genre?.trim();
     if (!name) continue;
-    const genre = findGenreByName(library, name);
+    let genre = findGenreByName(library, name);
+    // Support custom genre label when user selects (custom)
+    if (!genre && name.toLowerCase() === '(custom)') {
+      const custom = (slot.customGenre || '').trim();
+      if (!custom) continue;
+      genre = {
+        name: custom,
+        tempo: '',
+        styleTags: custom,
+        structure: '',
+        exclude: '',
+        sfx: '',
+        hookPlan: '',
+        flowPlan: '',
+        rhymePlan: '',
+        weights: { core: 0, tech: 0, anthem: 0, style: 0, group: 0, perf: 0 }
+      };
+    }
     if (!genre) continue;
     const weightRaw = Number(slot.weight) || 0;
     entries.push({
