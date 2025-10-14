@@ -1,5 +1,7 @@
 # Music Formula Generator
 
+Live web app: https://sslinkyy.github.io/Music-Formula-Generator/
+
 The Music Formula Generator is a single VBA module (`RGF_Module.bas`) that builds an end-to-end songwriting cockpit inside Excel. When you import the module and run the setup macro, the workbook creates a scoring sheet, genre library, creative brief tooling, Suno export blocks, an AI prompt builder, and optional API integration for OpenAI-compatible services. The focus is speed: score ideas, lock lyrical sections, pick a vibe, and generate production-ready prompts in minutes.
 
 ## Table of Contents
