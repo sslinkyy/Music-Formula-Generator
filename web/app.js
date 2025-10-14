@@ -1144,6 +1144,9 @@ function buildPromptText() {
   ].filter(Boolean).join(', ');
 
   const lines = [];
+  // Resolve final output language early for use below
+  const __langSel = (state.language || 'English');
+  const __langFinal = (__langSel.toLowerCase && __langSel.toLowerCase() === '(custom)') ? (state.customLanguage || 'English') : __langSel;
   lines.push("You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song.");
   lines.push("Output exactly four code blocks, in this order: 1) title 2) style 3) exclude 4) lyrics.");
   lines.push("Formatting rules (MANDATORY):");
@@ -1170,8 +1173,6 @@ function buildPromptText() {
   lines.push(`Rhyme Plan: ${rhymePlan}`);
   lines.push(`Style / Vibe: ${vibe}`);
   lines.push(`Phonetic Accent: ${phonetic.label}`);
-  const __langSel = (state.language || 'English');
-  const __langFinal = (__langSel.toLowerCase && __langSel.toLowerCase() === '(custom)') ? (state.customLanguage || 'English') : __langSel;
   lines.push(`Language: ${__langFinal}`);
   lines.push(`Audience: ${audienceLine}`);
   lines.push(`Phonetics: ${phonetic.instruction}`);
