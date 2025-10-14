@@ -669,7 +669,12 @@ function setupButtons() {
     renderOutputs();
   });
   document.getElementById('build-prompt').addEventListener('click', () => {
-      state.outputs.prompt = buildPromptText();
+      try {
+        state.outputs.prompt = buildPromptText();
+      } catch (err) {
+        console.error('Build Prompt failed:', err);
+        state.outputs.prompt = `Build Prompt error: ${err?.message || err}`;
+      }
       updateHiddenDirective();
       renderOutputs();
       // Auto-navigate to Outputs so mobile users can see results
@@ -791,7 +796,12 @@ function setupButtons() {
   const heroBuild = document.getElementById('build-prompt-hero');
   if (heroBrowse) heroBrowse.addEventListener('click', () => openLibraryDialog('Genre Library', buildGenreLibraryTable()));
   if (heroBuild) heroBuild.addEventListener('click', () => {
-    state.outputs.prompt = buildPromptText();
+    try {
+      state.outputs.prompt = buildPromptText();
+    } catch (err) {
+      console.error('Build Prompt failed:', err);
+      state.outputs.prompt = `Build Prompt error: ${err?.message || err}`;
+    }
     updateHiddenDirective();
     renderOutputs();
     try { selectTab('outputs'); } catch (_) {}
@@ -1175,7 +1185,11 @@ function buildPromptText() {
   lines.push(`Phonetic Accent: ${phonetic.label}`);
   lines.push(`Language: ${__langFinal}`);
   lines.push(`Audience: ${audienceLine}`);
-  lines.push(`Phonetics: ${phonetic.instruction}`);
+  // Adapt phonetic instruction to selected language where appropriate (e.g., Neutral instruction)
+  let __instr = String(phonetic.instruction || '');
+  // Replace standalone 'English' with selected language (avoids modifying names/tags since we only touch instruction)
+  __instr = __instr.replace(/\bEnglish\b/gi, __langFinal);
+  lines.push(`Phonetics: ${__instr}`);
   const cheat = buildPhoneticCheatsheet(phonetic.label);
   if (cheat.length) {
     lines.push('Phonetic details for this accent:');
