@@ -204,6 +204,65 @@ function renderCreativeInputs() {
         state.creativeInputs[field.id] = input.value;
         try { scheduleSave(); } catch (_) {}
       });
+    } else if (field.id === 'keywords' || field.id === 'styleTags') {
+      // Tokenized input with removable chips for keywords/style tags
+      const wrapperDiv = document.createElement('div');
+      const chips = document.createElement('div');
+      chips.className = 'chips';
+      const text = document.createElement('input');
+      text.type = 'text';
+      text.placeholder = field.id === 'keywords' ? 'Add keyword and press Enter' : 'Add style tag and press Enter';
+      text.style.marginTop = '8px';
+      text.style.minWidth = '220px';
+
+      let tokens = (state.creativeInputs[field.id] || '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+
+      const normalize = (s) => s.replace(/\s+/g, ' ').trim();
+      const uniquePush = (list, item) => {
+        const lower = item.toLowerCase();
+        if (!list.some(x => x.toLowerCase() === lower)) list.push(item);
+      };
+      const commit = () => {
+        state.creativeInputs[field.id] = tokens.join(', ');
+        try { scheduleSave(); } catch (_) {}
+      };
+      const renderChips = () => {
+        const safe = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+        chips.innerHTML = tokens.map(name => `
+          <span class="chip">${safe(name)}
+            <button type="button" class="chip-remove" data-name="${safe(name)}" title="Remove">&times;</button>
+          </span>
+        `).join('');
+      };
+      const addFromText = () => {
+        let raw = text.value;
+        if (!raw || !raw.trim()) return;
+        const parts = raw.split(',').map(normalize).filter(Boolean);
+        parts.forEach(p => uniquePush(tokens, p));
+        text.value = '';
+        renderChips();
+        commit();
+      };
+      text.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          addFromText();
+        }
+      });
+      text.addEventListener('blur', addFromText);
+      chips.addEventListener('click', (e) => {
+        const btn = e.target.closest('.chip-remove');
+        if (!btn) return;
+        const name = btn.getAttribute('data-name') || '';
+        tokens = tokens.filter(x => x.toLowerCase() !== name.toLowerCase());
+        renderChips();
+        commit();
+      });
+      renderChips();
+      wrapperDiv.appendChild(chips);
+      wrapperDiv.appendChild(text);
+      input = wrapperDiv;
     } else if (field.id === 'specificInstruments') {
       // Checkbox list + chips + custom input for multi-select UX
       const wrapperDiv = document.createElement('div');
