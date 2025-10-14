@@ -197,9 +197,9 @@ function renderCreativeInputs() {
       input.addEventListener('input', () => {
         state.creativeInputs[field.id] = parseFloat(input.value) || 0;
       });
-    } else if (['mustInclude', 'forbidden', 'audienceNotes'].includes(field.id)) {
+    } else if (['mustInclude', 'forbidden', 'audienceNotes', 'externalDirectives'].includes(field.id)) {
       input = document.createElement('textarea');
-      input.rows = field.id === 'audienceNotes' ? 3 : 2;
+      input.rows = field.id === 'audienceNotes' ? 3 : (field.id === 'externalDirectives' ? 4 : 2);
       input.value = state.creativeInputs[field.id] || '';
       input.addEventListener('input', () => {
         state.creativeInputs[field.id] = input.value;
@@ -1208,6 +1208,16 @@ function buildPromptText() {
   if (state.creativeInputs.audienceNotes) lines.push(`Audience notes: ${state.creativeInputs.audienceNotes}`);
   lines.push(`Premise focus: ${resolvePremise()}`);
   lines.push("");
+  // External directives (user-specified), one-per-line
+  const extraDirectives = String(state.creativeInputs.externalDirectives || '')
+    .split(/\r?\n/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (extraDirectives.length) {
+    lines.push('Additional directives:');
+    extraDirectives.forEach(d => lines.push(`- ${d}`));
+    lines.push('');
+  }
   if (lockedSections.length) {
     lines.push("LOCKED SECTIONS (use verbatim; only write missing parts):");
     lockedSections.forEach(line => lines.push(line));
