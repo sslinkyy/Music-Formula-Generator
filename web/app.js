@@ -1195,7 +1195,7 @@ function buildPromptText() {
   }
   lines.push("If any rule is broken, fix and re-output without commentary.");
   // Uppercase directive appended at the very end for extra emphasis
-  lines.push("REWRITE the lyrics phonetically in the accent selected.");
+  lines.push(`REWRITE the lyrics phonetically in the selected accent, in ${__langFinal}.`);
   return lines.join('\n');
 
 }
@@ -1619,8 +1619,12 @@ function updateHiddenDirective() {
   try {
     const el = document.getElementById('hidden-phonetic-directive');
     if (!el) return;
+    const langSel = (state.language || 'English');
+    const langFinal = (langSel.toLowerCase ? langSel.toLowerCase() : '') === '(custom)'
+      ? (state.customLanguage || 'English')
+      : langSel;
     // Invisible on the page; clear and set directive
-    el.textContent = `REWRITE the lyrics phonetically in the accent selected.`;
+    el.textContent = `REWRITE the lyrics phonetically in the selected accent, in ${langFinal}.`;
   } catch (_) {
     // no-op
   }
