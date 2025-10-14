@@ -1147,6 +1147,11 @@ function buildPromptText() {
   lines.push("You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song.");
   lines.push("Output exactly four code blocks, in this order: 1) title 2) style 3) exclude 4) lyrics.");
   lines.push("Formatting rules (MANDATORY):");
+  // Universality and language handling
+  lines.push(`- Write all lyrics in ${__langFinal}.`);
+  lines.push("- Keep all meta tags in English regardless of lyric language (e.g., [HOOK], [Verse 1]).");
+  lines.push("- Use globally understandable phrasing; avoid region-specific slang unless provided in user sections.");
+  lines.push("- Only adapt conventions common across languages (e.g., bar counts, chorus structure), not culture-specific wordplay.");
   lines.push("- All meta tags/directives must be in [square brackets] (e.g., [HOOK], [Verse 1], [Bridge], [Outro], [Chant]).");
   lines.push("- Alternate voices / ad-libs go in (parentheses): (yeah), (echo), (crowd: ay!).");
   lines.push("- Any noises/SFX go in bracketed asterisks: [* cheer *], [* breath *], [* bass drop *].");
