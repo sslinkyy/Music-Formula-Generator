@@ -16,6 +16,7 @@ const __INSTRUMENT_OPTIONS = [
 // Persistence keys and default-state builder
 const __STATE_KEY = 'rgf_state_v1';
 const __THEME_KEY = 'rgf_theme_v1';
+const __HIST_KEY = 'rgf_prompt_history_v1';
 function buildDefaultState() {
   return {
     controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
@@ -673,6 +674,7 @@ function setupButtons() {
       renderOutputs();
       // Auto-navigate to Outputs so mobile users can see results
       try { selectTab('outputs'); } catch (_) { /* ignore */ }
+      try { addPromptHistory(state.outputs.prompt); } catch (_) {}
     });
   const copyBtn = document.getElementById('copy-ai-prompt');
   if (copyBtn) {
@@ -794,6 +796,7 @@ function setupButtons() {
     renderOutputs();
     try { selectTab('outputs'); } catch (_) {}
     showToast('Prompt built');
+    try { addPromptHistory(state.outputs.prompt); } catch (_) {}
   });
 }
 
@@ -1673,6 +1676,7 @@ function init() {
   renderAISettings();
   renderOutputs();
   updateHiddenDirective();
+  renderPromptHistory();
   setupButtons();
   setupTabs();
   const backBtn = document.getElementById('back-to-inputs');
@@ -1965,6 +1969,7 @@ function rerenderAll() {
   renderAISettings();
   renderOutputs();
   updateHiddenDirective();
+  renderPromptHistory();
 }
 
 // Debounced autosave: persist state across restarts without manual Save
@@ -1978,10 +1983,88 @@ function scheduleSave(delay = 400) {
 document.addEventListener('input', () => { try { scheduleSave(600); } catch (_) {} });
 document.addEventListener('change', () => { try { scheduleSave(600); } catch (_) {} });
 
-
-
-
-
+// ---------- Prompt history (localStorage) ----------
+function getPromptHistory() {
+  try {
+    const raw = localStorage.getItem(__HIST_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (_) { return []; }
+}
+function setPromptHistory(list) {
+  try { localStorage.setItem(__HIST_KEY, JSON.stringify(list)); } catch (_) {}
+}
+function addPromptHistory(text) {
+  const t = String(text || '').trim();
+  if (!t) return;
+  const analysis = state.genreAnalysis || analyzeGenreMix(state.genreMix);
+  const computed = state.computed;
+  const score = computed?.final?.clamped != null ? formatNumber(computed.final.clamped, 1) : '';
+  const langSel = (state.language || 'English');
+  const langFinal = (langSel.toLowerCase ? langSel.toLowerCase() : '') === '(custom)' ? (state.customLanguage || 'English') : langSel;
+  const entry = {
+    ts: Date.now(),
+    score,
+    accent: state.accent || '',
+    language: langFinal || 'English',
+    mix: analysis?.mixSummary || '',
+    text: t
+  };
+  const list = getPromptHistory();
+  list.unshift(entry);
+  while (list.length > 50) list.pop();
+  setPromptHistory(list);
+  renderPromptHistory();
+}
+function clearPromptHistory() {
+  setPromptHistory([]);
+  renderPromptHistory();
+}
+function renderPromptHistory() {
+  const root = document.getElementById('prompt-history-list');
+  const clearBtn = document.getElementById('clear-prompt-history');
+  if (clearBtn) clearBtn.onclick = () => { clearPromptHistory(); };
+  if (!root) return;
+  const list = getPromptHistory();
+  if (!list.length) {
+    root.innerHTML = '<p class="hint">No prompt history yet. Click "Build Prompt" to generate one.</p>';
+    return;
+  }
+  const safe = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmt = (ts) => { try { return new Date(ts).toLocaleString(); } catch (_) { return String(ts); } };
+  root.innerHTML = list.map((item, idx) => `
+    <div class="history-item" data-idx="${idx}" style="border:1px solid var(--panel-border); border-radius:10px; padding:0.6rem; margin:0.5rem 0; background: var(--panel);">
+      <div class="history-head" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
+        <div style="font-size:.9rem; color: var(--muted);">
+          <strong>${safe(item.language)}</strong> • ${safe(item.accent)}${item.score?` • Score ${safe(item.score)}`:''}${item.mix?` • ${safe(item.mix)}`:''}
+          <div style="font-size:.8rem;">${safe(fmt(item.ts))}</div>
+        </div>
+        <div style="display:flex; gap:.4rem;">
+          <button type="button" class="ph-copy" data-idx="${idx}">Copy</button>
+          <button type="button" class="ph-toggle" data-idx="${idx}">Show</button>
+        </div>
+      </div>
+      <pre class="output-block ph-body" style="display:none; margin-top:.5rem;">${safe(item.text)}</pre>
+    </div>
+  `).join('');
+  root.querySelectorAll('.ph-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = btn.closest('.history-item').querySelector('.ph-body');
+      const visible = panel.style.display !== 'none';
+      panel.style.display = visible ? 'none' : '';
+      btn.textContent = visible ? 'Show' : 'Hide';
+    });
+  });
+  root.querySelectorAll('.ph-copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.getAttribute('data-idx'));
+      const entry = getPromptHistory()[idx];
+      if (!entry) return;
+      try { await copyToClipboard(entry.text); flashButton(btn, 'Copied!', 900);} catch(_) { flashButton(btn, 'Copy failed', 1200);} 
+    });
+  });
+}
 
 
 
