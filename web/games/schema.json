@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RGF Game Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["genres", "meta"],
+  "properties": {
+    "genres": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "influence"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "influence": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "premise": { "type": "string" },
+    "styleTags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "language": { "type": "string" },
+    "accent": { "type": "string" },
+    "forbidden": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["rhythm", "grid", "shooter"] },
+        "difficulty": { "type": "string", "enum": ["easy", "normal", "hard"] },
+        "duration": { "type": "number", "minimum": 0 },
+        "score": { "type": "number", "minimum": 0 },
+        "accuracy": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    }
+  }
+}
+
