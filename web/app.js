@@ -2728,6 +2728,27 @@ function applyGameOutput(out) {
       state.creativeInputs.lengthTarget = minutes;
     }
   } catch (_) {}
+  // Audience notes from gameplay stats (accuracy/combo/hazards/duration)
+  try {
+    const acc = Number(out.meta?.accuracy || 0);
+    const combo = Number(out.meta?.bestCombo || 0);
+    const hazards = forb.length;
+    const dur = Number(out.meta?.duration || 0);
+    const parts = [];
+    if (acc >= 90) parts.push('High timing accuracy');
+    else if (acc >= 75) parts.push('Good timing accuracy');
+    else if (acc > 0) parts.push('Practice timing');
+    if (combo >= 30) parts.push('Sustained long combo');
+    else if (combo >= 15) parts.push('Solid combo streaks');
+    if (hazards === 0) parts.push('No hazards collected');
+    if (dur > 0) parts.push(`Round length ~${Math.round(dur)}s`);
+    if (parts.length) {
+      const prefix = 'Rhythm stats: ';
+      const line = prefix + parts.join('; ') + '.';
+      const existing = String(state.creativeInputs.audienceNotes || '').trim();
+      state.creativeInputs.audienceNotes = existing ? (existing + (existing.endsWith('.') ? ' ' : '. ') + line) : line;
+    }
+  } catch (_) {}
 }
 function findGenreNameClosest(label) {
   try {
