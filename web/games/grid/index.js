@@ -5,6 +5,15 @@ import { ACCENT_LIBRARY } from '../../data/accents.js';
 
 export function buildGridGameDialog(onFinish, options = {}) {
   const wrap = document.createElement('div');
+  // Inject minimal styles for selected state
+  const style = document.createElement('style');
+  style.textContent = `
+    .grid-card { transition: transform .06s ease, box-shadow .06s ease; }
+    .grid-card:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    .grid-card.selected { border-color: var(--accent); background: #1b2130; color: #eaf2ff; }
+    .grid-card[data-kind="kw"].selected { border-color: #B084CC; background: #251b2f; }
+  `;
+  wrap.appendChild(style);
   const state = { step: 0, picks: { genres: [], premise: '', tags: [], kws: [], lang: 'English', acc: 'Neutral / Standard' } };
   const steps = ['Genres','Premise','Tags'];
   const header = document.createElement('div'); header.className='inline-buttons';
@@ -164,4 +173,3 @@ export function buildGridGameDialog(onFinish, options = {}) {
   setStep(0);
   return wrap;
 }
-
