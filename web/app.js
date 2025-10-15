@@ -826,6 +826,8 @@ function setupButtons() {
   if (premBtn) premBtn.addEventListener('click', () => { const s = suggestPremise(); state.premise = '(custom)'; state.customPremise = s; renderPremise(); showToast('Premise suggested'); try { scheduleSave(); } catch(_){} });
   const genreBtn = document.getElementById('genre-suggest');
   if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { scheduleSave(); } catch(_){} });
+  const genrePresetsBtn = document.getElementById('genre-presets');
+  if (genrePresetsBtn) genrePresetsBtn.addEventListener('click', () => openLibraryDialog('Blend Presets', buildGenrePresetDialog()));
 }
 
 function applyPreset(name) {
@@ -2317,6 +2319,90 @@ function suggestGenreBlend() {
     slot.customGenre = '';
     slot.weight = picks[i] ? weights[i] : 0;
   });
+}
+
+// ---------- Curated Genre Blend Presets ----------
+const GENRE_BLEND_PRESETS = [
+  { id: 'drill-afrobeats', label: 'UK Drill + Afrobeats', items: [ ['drill', 60], ['afro', 40] ], desc: 'Dark bounce + sunny percussion' },
+  { id: 'phonk-trap', label: 'Phonk + Trap', items: [ ['phonk', 60], ['trap', 40] ], desc: 'Retro memphis grit + modern slap' },
+  { id: 'lofi-boombap', label: 'Lo-fi + Boom Bap', items: [ ['lo-fi', 55], ['boom', 45] ], desc: 'Warm, dusty, head-nod' },
+  { id: 'edm-pop-rap', label: 'EDM Pop + Rap', items: [ ['edm', 50], ['pop', 25], ['rap', 25] ], desc: 'Festival-friendly energy' },
+  { id: 'rnb-trap-soul', label: 'R&B + Trap Soul', items: [ ['r&b', 60], ['trap', 40] ], desc: 'Smooth melodies + modern drums' }
+];
+function buildGenrePresetDialog() {
+  const wrap = document.createElement('div');
+  const table = document.createElement('table');
+  table.className = 'library-table';
+  table.innerHTML = `<thead>
+    <tr><th>Preset</th><th>Blend</th><th>Description</th><th></th></tr>
+  </thead>`;
+  const tbody = document.createElement('tbody');
+  GENRE_BLEND_PRESETS.forEach(p => {
+    const row = document.createElement('tr');
+    const blend = p.items.map(([name, w]) => `${name} ${w}%`).join(' + ');
+    row.innerHTML = `<td>${p.label}</td><td>${blend}</td><td>${p.desc || ''}</td><td><button type="button" data-id="${p.id}">Apply</button></td>`;
+    const btn = row.querySelector('button');
+    btn.addEventListener('click', () => { applyGenrePreset(p); });
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+function applyGenrePreset(preset) {
+  // Helper to find a library match by token(s)
+  const findByToken = (label) => {
+    const token = String(label || '').toLowerCase();
+    const lib = GENRE_LIBRARY || [];
+    let best = lib.find(g => (g.name||'').toLowerCase() === token);
+    if (best) return best.name;
+    best = lib.find(g => (g.name||'').toLowerCase().includes(token));
+    if (best) return best.name;
+    // common variants
+    if (token === 'boom') {
+      const b = lib.find(g => /boom\s*bap/i.test(g.name||''));
+      if (b) return b.name;
+    }
+    if (token === 'lo-fi' || token === 'lofi') {
+      const b = lib.find(g => /(lo\s*-?fi)/i.test(g.name||''));
+      if (b) return b.name;
+    }
+    return null;
+  };
+  const items = preset.items.slice(0, state.genreMix.length);
+  state.genreMix.forEach((slot, i) => {
+    const it = items[i];
+    if (!it) { slot.genre = ''; slot.customGenre=''; slot.weight=0; return; }
+    const [label, w] = it;
+    const match = findByToken(label);
+    if (match) { slot.genre = match; slot.customGenre=''; }
+    else { slot.genre = '(custom)'; slot.customGenre = label; }
+    slot.weight = w;
+  });
+  renderGenreMix();
+  recompute();
+  // Also mirror the Apply Genre Mix behavior
+  try {
+    const analysis = analyzeGenreMix(state.genreMix);
+    state.genreAnalysis = analysis.mix.length ? analysis : null;
+    if (analysis.mix.length) {
+      if (analysis.styleTagsCsv) {
+        state.creativeInputs.styleTags = analysis.styleTagsCsv;
+        renderCreativeInputs();
+      }
+      const summary = [
+        `Mix: ${analysis.mixSummary}`,
+        `Feel: ${analysis.tempoHint}`,
+        analysis.structureHint ? `Structure: ${cleanStructureDisplay(analysis.structureHint)}` : '',
+        analysis.excludeCsv ? `Exclude: ${analysis.excludeCsv}` : '',
+        analysis.sfxCsv ? `SFX: ${analysis.sfxCsv}` : ''
+      ].filter(Boolean).join('\n');
+      state.outputs.brief = summary;
+      renderOutputs();
+    }
+  } catch(_) {}
+  showToast(`Applied: ${preset.label}`);
+  try { scheduleSave(); } catch(_){}
 }
 
 
