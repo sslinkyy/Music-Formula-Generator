@@ -1,4 +1,4 @@
-﻿import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
+import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
 import { computeScores } from './js/scoring.js';
 import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
@@ -464,7 +464,7 @@ function renderPremise() {
     custom = document.createElement('input');
     custom.type = 'text';
     custom.id = 'premise-custom-input';
-    custom.placeholder = 'Type custom premise…';
+    custom.placeholder = 'Type custom premise�';
     custom.value = state.customPremise || '';
     custom.style.minWidth = '220px';
     custom.style.marginLeft = '8px';
@@ -557,7 +557,7 @@ function renderLanguage() {
 // Utility: clean VBA artifact tokens from structure strings for display
 function cleanStructureDisplay(text) {
   return String(text || '')
-    .replace(/\s*a-[\'’]\s*/g, ' | ')
+    .replace(/\s*a-[\'�]\s*/g, ' | ')
     .replace(/\s+\|\s+/g, ' | ')
     .trim();
 }
@@ -599,14 +599,14 @@ function renderComputed() {
     ];
   } else {
     entries = [
-      { label: 'Core', value: '—' },
-      { label: 'Tech', value: '—' },
-      { label: 'Anthem', value: '—' },
-      { label: 'StyleSig', value: '—' },
-      { label: 'Group', value: '—' },
-      { label: 'Perf', value: '—' },
-      { label: 'Regularizer', value: '—' },
-      { label: 'Final Score', value: '—' }
+      { label: 'Core', value: '�' },
+      { label: 'Tech', value: '�' },
+      { label: 'Anthem', value: '�' },
+      { label: 'StyleSig', value: '�' },
+      { label: 'Group', value: '�' },
+      { label: 'Perf', value: '�' },
+      { label: 'Regularizer', value: '�' },
+      { label: 'Final Score', value: '�' }
     ];
   }
   // Build grid with meters for numeric values
@@ -938,8 +938,8 @@ function buildGenreLibraryTable() {
   const splitStructure = (text) => {
     const raw = String(text || '').trim();
     if (!raw) return [];
-    // Split on the VBA artifact token a-' or a-’ and clean pieces
-    return raw.split(/\s*a-[\'’]\s*/i).map(s => s.trim()).filter(Boolean);
+    // Split on the VBA artifact token a-' or a-� and clean pieces
+    return raw.split(/\s*a-[\'�]\s*/i).map(s => s.trim()).filter(Boolean);
   };
   const splitCsv = (text) => String(text || '')
     .split(',')
@@ -1310,114 +1310,114 @@ function buildPhoneticCheatsheet(label) {
   const L = (label || '').toLowerCase();
   const map = {
     'american english (general)': [
-      'Rhotic: keep /r/ at syllable ends (car → car).',
+      'Rhotic: keep /r/ at syllable ends (car ? car).',
       'Vowels: relatively flat; avoid extreme shifts.',
-      'Rhythm: stress‑timed, neutral intonation.'
+      'Rhythm: stress-timed, neutral intonation.'
     ],
     'american english (southern)': [
-      'Monophthongize /ai/ (time → tahm).',
-      'Lengthen open vowels (ride → raahd).',
-      'Pin/pen merger in many words (pen → pin).',
-      'Often weaken post‑vocalic /r/.'
+      'Monophthongize /ai/ (time ? tahm).',
+      'Lengthen open vowels (ride ? raahd).',
+      'Pin/pen merger in many words (pen ? pin).',
+      'Often weaken post-vocalic /r/.'
     ],
     'american english (new york)': [
-      'Non‑/semi‑rhotic: drop /r/ after vowels (car → caw).',
-      'Diphthong raising (coffee → caw‑fee).',
-      "'Short‑a' split (man → may‑an)."
+      'Non-/semi-rhotic: drop /r/ after vowels (car ? caw).',
+      'Diphthong raising (coffee ? caw-fee).',
+      "'Short-a' split (man ? may-an)."
     ],
     'american english (midwest)': [
-      'Rhotic; moderate /a/ tensing (block → blaaack in Inland North).',
+      'Rhotic; moderate /a/ tensing (block ? blaaack in Inland North).',
       'cot/caught often merged.',
       'Clear, even vowels.'
     ],
     'american english (west coast)': [
-      'Fronted /u/ (dude → deewd).',
+      'Fronted /u/ (dude ? deewd).',
       'Relaxed consonants, casual delivery.',
       'Uptalk appears in some lines.'
     ],
     'british english (rp)': [
-      'Non‑rhotic: drop /r/ after vowels (car → cah).',
-      'Long broad /a/ (dance → dahns).',
+      'Non-rhotic: drop /r/ after vowels (car ? cah).',
+      'Long broad /a/ (dance ? dahns).',
       'Crisp consonants; careful enunciation.'
     ],
     'british english (london)': [
-      'Glottal stops (bottle → bo’ul).',
-      'TH‑fronting (think → fink).',
-      'L‑vocalisation (milk → miwk).'
+      'Glottal stops (bottle ? bo�ul).',
+      'TH-fronting (think ? fink).',
+      'L-vocalisation (milk ? miwk).'
     ],
     'british english (liverpool)': [
-      'Scouse: sing‑song, nasal quality.',
-      'look → lewk; soft /k/ toward fricatives.',
-      'Distinct rising‑falling melody.'
+      'Scouse: sing-song, nasal quality.',
+      'look ? lewk; soft /k/ toward fricatives.',
+      'Distinct rising-falling melody.'
     ],
     'scottish english': [
       'Rhotic with trilled or tapped /r/.',
-      'down → doon; vowel length rules apply.',
+      'down ? doon; vowel length rules apply.',
       'Clipped rhythm; clear consonants.'
     ],
     'irish english': [
       'Musical lilt; rising end contours.',
-      'time → toime; right → roight.',
+      'time ? toime; right ? roight.',
       'Soft /t/ may edge toward /ch/ (but stay intelligible).'
     ],
     'australian english': [
-      'Non‑rhotic; broad diphthongs (mate → maayt).',
-      'Flattened vowels (today → tuh‑die).',
+      'Non-rhotic; broad diphthongs (mate ? maayt).',
+      'Flattened vowels (today ? tuh-die).',
       'Rising terminals in phrases.'
     ],
     'new zealand english': [
-      'Fronted short vowels (fish → fush, pen → pin).',
+      'Fronted short vowels (fish ? fush, pen ? pin).',
       'Smooth cadence with gentle rise.',
-      'Non‑rhotic.'
+      'Non-rhotic.'
     ],
     'south african english': [
-      'Rounded diphthongs (now → naow).',
-      'Clipped delivery; often non‑rhotic.',
-      'yes → yis in casual speech.'
+      'Rounded diphthongs (now ? naow).',
+      'Clipped delivery; often non-rhotic.',
+      'yes ? yis in casual speech.'
     ],
     'nigerian english': [
-      'Stress‑timed; clear, steady vowels.',
+      'Stress-timed; clear, steady vowels.',
       'Retroflex consonants may appear.',
       'Distinct lengthening on stressed syllables.'
     ],
     'jamaican english': [
-      'Patois influence (this → dis, them → dem).',
-      'Non‑rhotic; strong rhythmic swing.',
+      'Patois influence (this ? dis, them ? dem).',
+      'Non-rhotic; strong rhythmic swing.',
       'Syllable timing closer to beat.'
     ],
     'caribbean english (trinidad)': [
-      'thing → ting; sing‑song intonation.',
-      'Syllable‑timed rhythm; clipped consonants.'
+      'thing ? ting; sing-song intonation.',
+      'Syllable-timed rhythm; clipped consonants.'
     ],
     'spanish-influenced english': [
-      'Syllable‑timed; open pure vowels (no diphthongs).',
-      'th → t/d; v → b in some positions.',
+      'Syllable-timed; open pure vowels (no diphthongs).',
+      'th ? t/d; v ? b in some positions.',
       'Tapped/rolled r; steady pace.'
     ],
     'hindi-influenced english': [
       'Rhotic; retroflex /t/ /d/.',
-      'th → t/d; v/w distinctions may shift.',
-      'Syllable‑timed rhythm; precise diction.'
+      'th ? t/d; v/w distinctions may shift.',
+      'Syllable-timed rhythm; precise diction.'
     ],
     'somali english accent': [
       'Percussive consonants; clipped vowels.',
-      'Raised long vowels (now → naaw).',
+      'Raised long vowels (now ? naaw).',
       'Lifted phrase endings.'
     ],
     'filipino english': [
-      'Syllable‑timed; bright vowels.',
-      'f → p and v → b substitutions appear.',
+      'Syllable-timed; bright vowels.',
+      'f ? p and v ? b substitutions appear.',
       'Flat intonation compared to American.'
     ],
     'mandarin-accented english': [
-      'Tone‑influenced rhythm; even pacing.',
-      'Non‑rhotic; soften consonant clusters.',
+      'Tone-influenced rhythm; even pacing.',
+      'Non-rhotic; soften consonant clusters.',
       'Clear, simple vowels.'
     ],
     'cantonese-accented english': [
-      'R/L may interchange (rice → lice).',
+      'R/L may interchange (rice ? lice).',
       'Tonal cadence; clipped vowels.',
-      'Non‑rhotic tendencies.'
+      'Non-rhotic tendencies.'
     ],
     'french-accented english': [
       'Front vowels; uvular /r/.',
@@ -1430,15 +1430,15 @@ function buildPhoneticCheatsheet(label) {
     ],
     'italian-accented english': [
       'Open pure vowels; expressive cadence.',
-      'Trilled/tapped /r/; syllable‑timed.'
+      'Trilled/tapped /r/; syllable-timed.'
     ],
     'arabic-accented english': [
       'Emphatic consonants; deep vowels.',
-      'th → t/d; rhythm with strong stress.'
+      'th ? t/d; rhythm with strong stress.'
     ],
     'turkish-accented english': [
       'Rounded vowels; firm stops.',
-      'Syllable‑timed with clear stress.'
+      'Syllable-timed with clear stress.'
     ],
     'greek-accented english': [
       'Open vowels; softened consonants.',
@@ -1769,7 +1769,7 @@ function init() {
   try { loadState(); } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
-  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
+  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '�'; } catch (_) {}
   renderConstants();
   renderControls();
   renderWeights();
@@ -2350,7 +2350,7 @@ function renderPromptHistory() {
     <div class="history-item" data-idx="${idx}" style="border:1px solid var(--panel-border); border-radius:10px; padding:0.6rem; margin:0.5rem 0; background: var(--panel);">
       <div class="history-head" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
         <div style="font-size:.9rem; color: var(--muted);">
-          <strong>${safe(item.language)}</strong> • ${safe(item.accent)}${item.score?` • Score ${safe(item.score)}`:''}${item.mix?` • ${safe(item.mix)}`:''}
+          <strong>${safe(item.language)}</strong> � ${safe(item.accent)}${item.score?` � Score ${safe(item.score)}`:''}${item.mix?` � ${safe(item.mix)}`:''}
           <div style="font-size:.8rem;">${safe(fmt(item.ts))}</div>
         </div>
         <div style="display:flex; gap:.4rem;">
@@ -2383,40 +2383,40 @@ function renderPromptHistory() {
 const __GAMIFY_KEY = 'rgf_gamify_v1';
 // Known achievements registry for consistent labeling + icons
 const ACHIEVEMENTS = {
-  firstPrompt: { label: 'First Prompt!', icon: '✨', desc: 'Build your first prompt.' },
-  perfectWeights: { label: 'Perfect Weights', icon: '⚖️', desc: 'Make weights sum to exactly 1.00.' },
-  fusionChef: { label: 'Fusion Chef', icon: '🍲', desc: 'Use 3 or more genres in a mix.' },
-  build5: { label: '5 Prompts', icon: '5️⃣', desc: 'Build 5 prompts total.' },
-  build10: { label: '10 Prompts', icon: '🔟', desc: 'Build 10 prompts total.' },
-  build25: { label: '25 Prompts', icon: '🏅', desc: 'Build 25 prompts total.' },
-  readyToRoll: { label: 'Ready to Roll', icon: '🚦', desc: 'Reach 100% readiness and build.' },
-  streak3: { label: '3-Day Streak', icon: '📆', desc: 'Build prompts 3 days in a row.' },
-  streak7: { label: '7-Day Streak', icon: '🔥', desc: 'Build prompts 7 days in a row.' },
-  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙', desc: 'Turn on Wizard Mode.' },
-  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓', desc: 'Reach the Build step in Wizard Mode.' },
-  demoExplorer: { label: 'Demo Explorer', icon: '🧭', desc: 'Load the demo setup.' },
-  muse: { label: 'Muse', icon: '🎭', desc: 'Use Suggest for Premise.' },
-  djBlend: { label: 'Blend DJ', icon: '🎚️', desc: 'Use Suggest Blend for Genre Mix.' },
-  curator: { label: 'Curator', icon: '🧰', desc: 'Apply a curated Blend Preset.' },
-  promptCopier: { label: 'Prompt Copier', icon: '📋', desc: 'Copy the AI prompt to clipboard.' },
-  briefCopier: { label: 'Brief Copier', icon: '📋', desc: 'Copy the Creative Brief.' },
-  sunoCopier: { label: 'Suno Copier', icon: '📋', desc: 'Copy the Suno blocks.' },
-  apiCaller: { label: 'API Caller', icon: '🔗', desc: 'Call the AI endpoint successfully.' },
-  voiceActor: { label: 'Voice Actor', icon: '🎙️', desc: 'Select a non-neutral accent.' },
-  accentExplorer: { label: 'Accent Explorer', icon: '🌍', desc: 'Use 3 or more different accents.' },
-  polyglot1: { label: 'Polyglot I', icon: '🈴', desc: 'Select a non-English language.' },
-  polyglot2: { label: 'Polyglot II', icon: '🈵', desc: 'Enter a custom language.' },
-  polyglotExplorer: { label: 'Polyglot Explorer', icon: '🈚', desc: 'Use 3 or more different languages.' },
-  presetDriver: { label: 'Preset Driver', icon: '🎛️', desc: 'Apply a weight preset.' },
-  presetMaestro: { label: 'Preset Maestro', icon: '🎛️', desc: 'Apply weight presets 5 times.' },
-  lyricist: { label: 'Lyricist', icon: '✍️', desc: 'Enter any user section (title/intro/hook/etc.).' },
-  composer: { label: 'Composer', icon: '🎼', desc: 'Enter 3 or more user sections.' },
-  crateDigger: { label: 'Crate Digger', icon: '📦', desc: 'Use 5 unique genres across mixes.' },
-  crateCurator: { label: 'Crate Curator', icon: '🗂️', desc: 'Use 10 unique genres across mixes.' },
-  rhythmFirst: { label: 'Rhythm First Round', icon: '🥁', desc: 'Finish a Rhythm Tapper round.' },
-  rhythmAce: { label: 'Rhythm Ace', icon: '🎯', desc: 'Finish Rhythm with ≥90% accuracy.' },
-  comboMaster: { label: 'Combo Master', icon: '🔗', desc: 'Reach a 30+ combo in Rhythm.' },
-  hazardAvoider: { label: 'Hazard Avoider', icon: '🛡️', desc: 'Finish Rhythm with 0 hazards collected.' }
+  firstPrompt: { label: 'First Prompt!', icon: '?', desc: 'Build your first prompt.' },
+  perfectWeights: { label: 'Perfect Weights', icon: '??', desc: 'Make weights sum to exactly 1.00.' },
+  fusionChef: { label: 'Fusion Chef', icon: '??', desc: 'Use 3 or more genres in a mix.' },
+  build5: { label: '5 Prompts', icon: '5??', desc: 'Build 5 prompts total.' },
+  build10: { label: '10 Prompts', icon: '??', desc: 'Build 10 prompts total.' },
+  build25: { label: '25 Prompts', icon: '??', desc: 'Build 25 prompts total.' },
+  readyToRoll: { label: 'Ready to Roll', icon: '??', desc: 'Reach 100% readiness and build.' },
+  streak3: { label: '3-Day Streak', icon: '??', desc: 'Build prompts 3 days in a row.' },
+  streak7: { label: '7-Day Streak', icon: '??', desc: 'Build prompts 7 days in a row.' },
+  apprenticeWizard: { label: 'Apprentice Wizard', icon: '??', desc: 'Turn on Wizard Mode.' },
+  wizardGraduate: { label: 'Wizard Graduate', icon: '??', desc: 'Reach the Build step in Wizard Mode.' },
+  demoExplorer: { label: 'Demo Explorer', icon: '??', desc: 'Load the demo setup.' },
+  muse: { label: 'Muse', icon: '??', desc: 'Use Suggest for Premise.' },
+  djBlend: { label: 'Blend DJ', icon: '???', desc: 'Use Suggest Blend for Genre Mix.' },
+  curator: { label: 'Curator', icon: '??', desc: 'Apply a curated Blend Preset.' },
+  promptCopier: { label: 'Prompt Copier', icon: '??', desc: 'Copy the AI prompt to clipboard.' },
+  briefCopier: { label: 'Brief Copier', icon: '??', desc: 'Copy the Creative Brief.' },
+  sunoCopier: { label: 'Suno Copier', icon: '??', desc: 'Copy the Suno blocks.' },
+  apiCaller: { label: 'API Caller', icon: '??', desc: 'Call the AI endpoint successfully.' },
+  voiceActor: { label: 'Voice Actor', icon: '???', desc: 'Select a non-neutral accent.' },
+  accentExplorer: { label: 'Accent Explorer', icon: '??', desc: 'Use 3 or more different accents.' },
+  polyglot1: { label: 'Polyglot I', icon: '??', desc: 'Select a non-English language.' },
+  polyglot2: { label: 'Polyglot II', icon: '??', desc: 'Enter a custom language.' },
+  polyglotExplorer: { label: 'Polyglot Explorer', icon: '??', desc: 'Use 3 or more different languages.' },
+  presetDriver: { label: 'Preset Driver', icon: '???', desc: 'Apply a weight preset.' },
+  presetMaestro: { label: 'Preset Maestro', icon: '???', desc: 'Apply weight presets 5 times.' },
+  lyricist: { label: 'Lyricist', icon: '??', desc: 'Enter any user section (title/intro/hook/etc.).' },
+  composer: { label: 'Composer', icon: '??', desc: 'Enter 3 or more user sections.' },
+  crateDigger: { label: 'Crate Digger', icon: '??', desc: 'Use 5 unique genres across mixes.' },
+  crateCurator: { label: 'Crate Curator', icon: '???', desc: 'Use 10 unique genres across mixes.' },
+  rhythmFirst: { label: 'Rhythm First Round', icon: '??', desc: 'Finish a Rhythm Tapper round.' },
+  rhythmAce: { label: 'Rhythm Ace', icon: '??', desc: 'Finish Rhythm with =90% accuracy.' },
+  comboMaster: { label: 'Combo Master', icon: '??', desc: 'Reach a 30+ combo in Rhythm.' },
+  hazardAvoider: { label: 'Hazard Avoider', icon: '???', desc: 'Finish Rhythm with 0 hazards collected.' }
 };
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
@@ -2498,13 +2498,13 @@ function buildTrophiesContent() {
   // Full list with lock state
   const ul = document.createElement('ul'); ul.className = 'trophy-list';
   knownKeys.forEach(k => {
-    const meta = ACHIEVEMENTS[k] || { label: k, icon: '🏆' };
+    const meta = ACHIEVEMENTS[k] || { label: k, icon: '??' };
     const unlocked = !!g[k];
     const li = document.createElement('li'); li.className = 'trophy-item' + (unlocked ? '' : ' locked');
     const when = unlocked ? new Date(g[k].unlockedAt||Date.now()).toLocaleString() : '';
     const safe = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     li.innerHTML = `
-      <div class="trophy-icon" title="${safe(meta.desc||'')}">${meta.icon || '🏆'}</div>
+      <div class="trophy-icon" title="${safe(meta.desc||'')}">${meta.icon || '??'}</div>
       <div>
         <div title="${safe(meta.desc||'')}">${meta.label || k}</div>
         <div class="trophy-meta">${unlocked ? safe(when) : 'Locked'}</div>
@@ -2525,7 +2525,7 @@ function buildTrophyGuideContent() {
     keys.forEach(k => {
       const meta = ACHIEVEMENTS[k] || { label: k };
       const li = document.createElement('li'); li.className = 'trophy-item';
-      li.innerHTML = `<div class="trophy-icon">${meta.icon || '🏆'}</div><div><div>${meta.label || k}</div><div class="trophy-meta">${meta.desc || ''}</div></div>`;
+      li.innerHTML = `<div class="trophy-icon">${meta.icon || '??'}</div><div><div>${meta.label || k}</div><div class="trophy-meta">${meta.desc || ''}</div></div>`;
       ul.appendChild(li);
     });
     sec.appendChild(ul);
@@ -2556,7 +2556,7 @@ function buildGameHubDialog() {
     const sample = document.createElement('button'); sample.textContent = 'Sample';
     sample.addEventListener('click', () => {
       const out = sampleFn();
-      openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
+      openLibraryDialog(`${title} � Summary`, buildGameSummary(out, key));
     });
     row.appendChild(sample);
     if (opts.start) {
@@ -2573,18 +2573,18 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildRhythmGameDialog((output) => {
-        openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
+        openLibraryDialog('Rhythm � Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('Rhythm Tapper', content);
     }
   }));
-  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3�4 turns to compose your blend.', sampleGridOutput, 'grid', {
     start: () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildGridGameDialog((output) => {
-        openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
+        openLibraryDialog('Grid � Summary', buildGameSummary(output, 'grid'));
       }, { difficulty: 'normal' });
       openLibraryDialog('Grid Picker', content);
     }
@@ -2595,7 +2595,7 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildShooterGameDialog((output) => {
-        openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
+        openLibraryDialog('Shooter � Summary', buildGameSummary(output, 'shooter'));
       }, { durationSec: 60 });
       openLibraryDialog('Shooter (Concept)', content);
     }
@@ -2676,7 +2676,7 @@ function buildGameSummary(output, modeKey) {
 }
 function applyGameOutput(out) {
   if (!out || typeof out !== 'object') return;
-  // Genres → top N slots
+  // Genres ? top N slots
   const slots = (out.genres || []).slice(0, GENRE_SLOTS);
   const total = slots.reduce((a,b)=>a + Number(b.influence||0), 0) || 1;
   state.genreMix.forEach((slot, i) => {
@@ -2720,7 +2720,7 @@ function applyGameOutput(out) {
   if (out.premise) {
     state.creativeInputs.theme = out.premise;
   }
-  // Length target from meta.duration (seconds → minutes, 1 decimal)
+  // Length target from meta.duration (seconds ? minutes, 1 decimal)
   try {
     const durSec = Number(out.meta?.duration || 0);
     if (durSec > 0) {
