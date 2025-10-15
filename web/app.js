@@ -2628,6 +2628,15 @@ function resetInputsForGame() {
     }
     // Clear any prior genre analysis
     state.genreAnalysis = null;
+    // Clear Outputs panes (Brief / Suno / Prompt / AI Response)
+    if (state.outputs) {
+      state.outputs.brief = '';
+      state.outputs.suno = '';
+      state.outputs.prompt = '';
+      state.outputs.aiResponse = '';
+    }
+    // Drop computed scores so UI doesn't show stale meters
+    state.computed = null;
     // Persist
     try { scheduleSave(); } catch (_) {}
   } catch (_) {}
