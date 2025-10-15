@@ -2569,6 +2569,9 @@ function buildGameHubDialog() {
   };
   grid.appendChild(mkCard('Rhythm Tapper', 'Tap notes across lanes to shape genres, tags, and premise.', sampleRhythmOutput, 'rhythm', {
     start: () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
       const content = buildRhythmGameDialog((output) => {
         openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
@@ -2577,6 +2580,9 @@ function buildGameHubDialog() {
   }));
   grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
     start: () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
       const content = buildGridGameDialog((output) => {
         openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
       }, { difficulty: 'normal' });
@@ -2585,6 +2591,9 @@ function buildGameHubDialog() {
   }));
   grid.appendChild(mkCard('Shooter (concept)', 'Arena shooter mapping hits to influences.', sampleShooterOutput, 'shooter', {
     start: () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
       const content = buildShooterGameDialog((output) => {
         openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
       }, { durationSec: 60 });
@@ -2593,6 +2602,30 @@ function buildGameHubDialog() {
   }));
   wrap.appendChild(grid);
   return wrap;
+}
+
+// Resets relevant input fields so that game results are applied cleanly
+function resetInputsForGame() {
+  try {
+    // Clear genre mix
+    state.genreMix.forEach(slot => { slot.genre=''; slot.customGenre=''; slot.weight=0; });
+    // Reset premise and language/accent
+    state.premise = '(custom)';
+    state.customPremise = '';
+    state.language = 'English';
+    state.customLanguage = '';
+    state.accent = ACCENT_DEFAULT;
+    // Clear creative inputs likely influenced by games
+    if (state.creativeInputs) {
+      state.creativeInputs.styleTags = '';
+      state.creativeInputs.keywords = '';
+      state.creativeInputs.forbidden = '';
+    }
+    // Clear any prior genre analysis
+    state.genreAnalysis = null;
+    // Persist
+    try { scheduleSave(); } catch (_) {}
+  } catch (_) {}
 }
 function buildGameSummary(output, modeKey) {
   const wrap = document.createElement('div');
