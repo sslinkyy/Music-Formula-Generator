@@ -681,6 +681,7 @@ function setupButtons() {
       // Auto-navigate to Outputs so mobile users can see results
       try { selectTab('outputs'); } catch (_) { /* ignore */ }
       try { addPromptHistory(state.outputs.prompt); } catch (_) {}
+      try { postBuildAchievements(); } catch (_) {}
     });
   const copyBtn = document.getElementById('copy-ai-prompt');
   if (copyBtn) {
@@ -810,10 +811,21 @@ function setupButtons() {
     try { selectTab('outputs'); } catch (_) {}
     showToast('Prompt built');
     try { addPromptHistory(state.outputs.prompt); } catch (_) {}
+    try { postBuildAchievements(); } catch (_) {}
   });
   const loadDemo = () => { try { applyDemoPreset(); showToast('Demo loaded'); rerenderAll(); } catch (e) { console.error(e); } };
   if (demoTop) demoTop.addEventListener('click', loadDemo);
   if (demoHero) demoHero.addEventListener('click', loadDemo);
+
+  // Trophies
+  const trophiesBtn = document.getElementById('open-trophies');
+  if (trophiesBtn) trophiesBtn.addEventListener('click', () => openLibraryDialog('Trophies', buildTrophiesContent()));
+
+  // Suggest buttons
+  const premBtn = document.getElementById('premise-suggest');
+  if (premBtn) premBtn.addEventListener('click', () => { const s = suggestPremise(); state.premise = '(custom)'; state.customPremise = s; renderPremise(); showToast('Premise suggested'); try { scheduleSave(); } catch(_){} });
+  const genreBtn = document.getElementById('genre-suggest');
+  if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { scheduleSave(); } catch(_){} });
 }
 
 function applyPreset(name) {
@@ -2207,6 +2219,105 @@ function renderPromptHistory() {
   });
 }
 
+// ---------- Achievements + Confetti ----------
+const __GAMIFY_KEY = 'rgf_gamify_v1';
+function getGamify() {
+  try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
+}
+function setGamify(obj) {
+  try { localStorage.setItem(__GAMIFY_KEY, JSON.stringify(obj)); } catch(_) {}
+}
+function unlockAchievement(key, label) {
+  const g = getGamify();
+  if (g[key]) return false;
+  g[key] = { unlockedAt: Date.now(), label };
+  setGamify(g);
+  showToast(`Unlocked: ${label}`);
+  try { fireConfetti(); } catch(_) {}
+  return true;
+}
+function postBuildAchievements() {
+  const g = getGamify();
+  // First Prompt
+  if (!g.firstPrompt) unlockAchievement('firstPrompt', 'First Prompt!');
+  // Perfect Weights
+  const wsum = Object.values(state.weights).reduce((a,b)=>a+Number(b||0),0);
+  if (Math.abs(wsum - 1) < 0.0001) unlockAchievement('perfectWeights', 'Perfect Weights');
+  // Fusion Chef (3+ genres weighted)
+  const genresUsed = state.genreMix.filter(s => (s.genre||s.customGenre) && (s.weight||0) > 0).length;
+  if (genresUsed >= 3) unlockAchievement('fusionChef', 'Fusion Chef');
+  // Streaks (calendar days)
+  const today = new Date(); const dayKey = today.toISOString().slice(0,10);
+  const last = g.lastBuildDay; let streak = g.streak || 0;
+  if (last) {
+    const prev = new Date(last); const delta = Math.round((today - prev)/86400000);
+    if (delta === 1) streak += 1; else if (delta > 1) streak = 1; // same day keeps streak
+  } else streak = 1;
+  g.streak = streak; g.lastBuildDay = dayKey; setGamify(g);
+  if (streak === 3) unlockAchievement('streak3', '3-Day Streak');
+  if (streak === 7) unlockAchievement('streak7', '7-Day Streak');
+}
+function fireConfetti(count = 36) {
+  const colors = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#B084CC'];
+  for (let i=0;i<count;i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.floor(Math.random()*100) + 'vw';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDelay = (Math.random()*0.2) + 's';
+    el.style.transform = `translateY(-20px) rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 1500);
+  }
+}
+function buildTrophiesContent() {
+  const g = getGamify();
+  const list = Object.values(g).filter(v => v && v.label).sort((a,b)=>a.unlockedAt-b.unlockedAt);
+  const wrap = document.createElement('div');
+  if (!list.length) { wrap.innerHTML = '<p class="hint">No achievements yet. Build your first prompt!</p>'; return wrap; }
+  const ul = document.createElement('ul');
+  ul.style.listStyle = 'none'; ul.style.padding = '0'; ul.style.margin = '0';
+  list.forEach(item => {
+    const li = document.createElement('li');
+    li.style.padding = '6px 0';
+    const when = new Date(item.unlockedAt||Date.now()).toLocaleString();
+    li.innerHTML = `<span>🏆 ${item.label}</span> <span class="hint" style="margin-left:8px">${when}</span>`;
+    ul.appendChild(li);
+  });
+  wrap.appendChild(ul);
+  return wrap;
+}
+
+// ---------- Suggestions ----------
+function suggestPremise() {
+  // Reuse the randomizer pairs used elsewhere
+  const left = ['love','heartbreak','hustle','betrayal','triumph','redemption','city pride','struggle','freedom','nostalgia','rebellion','identity','faith','ambition','legacy','loss','hope','party','distance','healing','money','fame','survival','recovery','underdog','gratitude','nature','technology','community','wanderlust'];
+  const right = ['loyalty','healing','ambition','trust','celebration','growth','belonging','perseverance','escape','memory','defiance','self-discovery','doubt','sacrifice','family','remembrance','renewal','vibe','yearning','balance','power','pressure','street wisdom','comeback','come-up','humility','calm','isolation','solidarity','homecoming'];
+  for (let tries=0; tries<12; tries++) {
+    const a = left[Math.floor(Math.random()*left.length)];
+    const b = right[Math.floor(Math.random()*right.length)];
+    if (a !== b) return `${a} & ${b}`;
+  }
+  return 'struggle & perseverance';
+}
+function suggestGenreBlend() {
+  const lib = GENRE_LIBRARY || [];
+  if (!lib.length) return;
+  const pickN = Math.random() < 0.5 ? 2 : 3;
+  const picks = [];
+  const used = new Set();
+  for (let i=0; i<lib.length && picks.length < pickN; i++) {
+    const idx = Math.floor(Math.random()*lib.length);
+    const name = lib[idx]?.name; if (!name || used.has(name.toLowerCase())) continue;
+    used.add(name.toLowerCase()); picks.push(name);
+  }
+  const weights = pickN === 2 ? [70,30] : [60,30,10];
+  state.genreMix.forEach((slot, i) => {
+    slot.genre = picks[i] || '';
+    slot.customGenre = '';
+    slot.weight = picks[i] ? weights[i] : 0;
+  });
+}
 
 
 

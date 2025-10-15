@@ -304,6 +304,25 @@ button:disabled { opacity: 0.6; cursor: default; }
 .instrument-checklist label:hover { border-color: var(--panel-border); background: rgba(0,0,0,0.02); }
 :root[data-theme="dark"] .instrument-checklist label:hover { background: rgba(255,255,255,0.04); }
 
+/* Confetti */
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  width: 8px; height: 12px;
+  border-radius: 2px;
+  opacity: 0.9;
+  pointer-events: none;
+  animation: confetti-fall 1200ms ease-out forwards, confetti-tilt 1200ms linear forwards;
+}
+@keyframes confetti-fall {
+  from { transform: translateY(-20px); }
+  to { transform: translateY(110vh); }
+}
+@keyframes confetti-tilt {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Dark theme fixes for dialog + table contrast */
 :root[data-theme="dark"] #library-dialog { background: var(--panel); color: var(--text); }
 :root[data-theme="dark"] .dialog-header { background: var(--panel); border-bottom: 1px solid var(--panel-border); }
