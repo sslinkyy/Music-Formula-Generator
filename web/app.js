@@ -860,6 +860,8 @@ function setupButtons() {
   // Trophies
   const trophiesBtn = document.getElementById('open-trophies');
   if (trophiesBtn) trophiesBtn.addEventListener('click', () => openLibraryDialog('Trophies', buildTrophiesContent()));
+  const gamesBtn = document.getElementById('open-games');
+  if (gamesBtn) gamesBtn.addEventListener('click', () => openLibraryDialog('Game Hub (Wireframe)', buildGameHubDialog()));
   const guideBtn = document.getElementById('open-guide');
   if (guideBtn) guideBtn.addEventListener('click', () => openLibraryDialog('How to Earn Trophies', buildTrophyGuideContent()));
 
@@ -2530,6 +2532,129 @@ function buildTrophyGuideContent() {
   wrap.appendChild(makeSection('Creative & Actions', ['muse','djBlend','curator','lyricist','composer','promptCopier','briefCopier','sunoCopier','apiCaller']));
   wrap.appendChild(makeSection('Consistency', ['build5','build10','build25','streak3','streak7','readyToRoll','wizardGraduate']));
   return wrap;
+}
+
+// ---------- Game Hub (Wireframe) ----------
+function buildGameHubDialog() {
+  const wrap = document.createElement('div');
+  const p = document.createElement('p');
+  p.className = 'hint';
+  p.textContent = 'Select a mode to experiment. These are wireframes: press Sample to preview how results map into the app.';
+  wrap.appendChild(p);
+  const grid = document.createElement('div');
+  grid.style.display = 'grid'; grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(220px, 1fr))'; grid.style.gap = '12px';
+  const mkCard = (title, desc, sampleFn, key) => {
+    const card = document.createElement('div');
+    card.className = 'panel';
+    card.innerHTML = `<h3 style="margin-top:0">${title}</h3><p class="hint" style="margin:0 0 8px">${desc}</p>`;
+    const row = document.createElement('div'); row.className = 'inline-buttons';
+    const sample = document.createElement('button'); sample.textContent = 'Sample';
+    sample.addEventListener('click', () => {
+      const out = sampleFn();
+      openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
+    });
+    row.appendChild(sample);
+    card.appendChild(row);
+    return card;
+  };
+  grid.appendChild(mkCard('Rhythm Tapper', 'Tap notes across lanes to shape genres, tags, and premise.', sampleRhythmOutput, 'rhythm'));
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid'));
+  grid.appendChild(mkCard('Shooter (concept)', 'Arena shooter mapping hits to influences.', sampleShooterOutput, 'shooter'));
+  wrap.appendChild(grid);
+  return wrap;
+}
+function buildGameSummary(output, modeKey) {
+  const wrap = document.createElement('div');
+  const pre = document.createElement('pre'); pre.className = 'output-block';
+  pre.textContent = JSON.stringify(output, null, 2);
+  wrap.appendChild(pre);
+  const row = document.createElement('div'); row.className = 'inline-buttons';
+  const applyBtn = document.createElement('button'); applyBtn.className = 'btn-primary'; applyBtn.textContent = 'Apply to App';
+  const buildBtn = document.createElement('button'); buildBtn.textContent = 'Apply + Build';
+  row.appendChild(applyBtn); row.appendChild(buildBtn);
+  wrap.appendChild(row);
+  const apply = () => { try { applyGameOutput(output); unlockAchievement('game_'+modeKey, (modeKey+' mode').replace(/^./,c=>c.toUpperCase())); } catch(_){} };
+  applyBtn.addEventListener('click', () => { apply(); rerenderAll(); showToast('Applied from game'); });
+  buildBtn.addEventListener('click', () => { apply(); rerenderAll(); try { document.getElementById('build-prompt').click(); } catch(_){} });
+  return wrap;
+}
+function applyGameOutput(out) {
+  if (!out || typeof out !== 'object') return;
+  // Genres → top N slots
+  const slots = (out.genres || []).slice(0, GENRE_SLOTS);
+  const total = slots.reduce((a,b)=>a + Number(b.influence||0), 0) || 1;
+  state.genreMix.forEach((slot, i) => {
+    const src = slots[i];
+    if (!src) { slot.genre=''; slot.customGenre=''; slot.weight=0; return; }
+    // Try to match to library by name; otherwise (custom)
+    const name = findGenreNameClosest(src.name);
+    if (name) { slot.genre = name; slot.customGenre = ''; }
+    else { slot.genre = '(custom)'; slot.customGenre = String(src.name||''); }
+    slot.weight = Math.round((Number(src.influence||0) / total) * GENRE_SLOT_WEIGHT_TOTAL);
+  });
+  // Premise
+  if (out.premise) { state.premise = '(custom)'; state.customPremise = out.premise; }
+  // Language/Accent
+  if (out.language) state.language = out.language;
+  if (out.accent) state.accent = out.accent;
+  // Style tags / Keywords / Forbidden
+  const uniq = (arr) => Array.from(new Set((arr||[]).map(s => String(s||'').trim()).filter(Boolean)));
+  const tags = uniq(out.styleTags);
+  if (tags.length) state.creativeInputs.styleTags = tags.join(', ');
+  const keys = uniq(out.keywords);
+  if (keys.length) state.creativeInputs.keywords = keys.join(', ');
+  const forb = uniq(out.forbidden);
+  if (forb.length) {
+    const existing = String(state.creativeInputs.forbidden||'').trim();
+    state.creativeInputs.forbidden = uniq((existing?existing.split(','):[]).concat(forb)).join(', ');
+  }
+}
+function findGenreNameClosest(label) {
+  try {
+    const token = String(label||'').toLowerCase();
+    const lib = GENRE_LIBRARY || [];
+    const exact = lib.find(g => (g.name||'').toLowerCase() === token);
+    if (exact) return exact.name;
+    const loose = lib.find(g => (g.name||'').toLowerCase().includes(token));
+    return loose ? loose.name : '';
+  } catch(_) { return ''; }
+}
+// Sample outputs (wireframe-only; no gameplay yet)
+function sampleRhythmOutput() {
+  return {
+    genres: [ { name: 'Drill', influence: 62 }, { name: 'Afrobeats', influence: 38 } ],
+    premise: 'triumph & celebration',
+    styleTags: ['anthemic rap','chant hook','confident bounce'],
+    keywords: ['crowd','lights'],
+    language: 'English',
+    accent: 'Neutral / Standard',
+    forbidden: [],
+    meta: { mode: 'rhythm', difficulty: 'normal', duration: 72, score: 8200, accuracy: 92 }
+  };
+}
+function sampleGridOutput() {
+  return {
+    genres: [ { name: 'Phonk', influence: 55 }, { name: 'Trap', influence: 45 } ],
+    premise: 'hustle & ambition',
+    styleTags: ['retro grit','808 slap','smoky texture'],
+    keywords: ['midnight','engine','city'],
+    language: 'English',
+    accent: 'American English (General)',
+    forbidden: ['brand names'],
+    meta: { mode: 'grid', difficulty: 'easy', duration: 60, score: 5400 }
+  };
+}
+function sampleShooterOutput() {
+  return {
+    genres: [ { name: 'UK Drill', influence: 50 }, { name: 'R&B', influence: 30 }, { name: 'Trap', influence: 20 } ],
+    premise: 'freedom & escape',
+    styleTags: ['dark bounce','silky hook','street cinema'],
+    keywords: ['alley','city lights','engine'],
+    language: 'English',
+    accent: 'British English (London)',
+    forbidden: ['glitch'],
+    meta: { mode: 'shooter', difficulty: 'normal', duration: 75, score: 9100, accuracy: 68 }
+  };
 }
 
 // ---------- Suggestions ----------
