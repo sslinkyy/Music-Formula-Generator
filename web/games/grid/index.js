@@ -166,6 +166,7 @@ export function buildGridGameDialog(onFinish, options = {}) {
       forbidden: [],
       meta: { mode: 'grid', difficulty: (options.difficulty||'normal'), duration: 45, score: 5000 }
     };
+    try { document.dispatchEvent(new CustomEvent('rgf:grid-finished', { detail: output })); } catch(_){}
     if (onFinish) onFinish(output);
   });
   close.addEventListener('click', () => { try { document.getElementById('close-dialog').click(); } catch(_){} });

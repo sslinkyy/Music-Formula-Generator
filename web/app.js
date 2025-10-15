@@ -2860,6 +2860,14 @@ function sampleShooterOutput() {
 }
 
 // ---------- Suggestions ----------
+// Auto-apply from Grid game when it dispatches a completion event
+try {
+  document.addEventListener('rgf:grid-finished', (e) => {
+    const out = e && e.detail; if (!out) return;
+    try { applyGameOutput(out); rerenderAll(); showToast('Applied from Grid'); } catch(_){}
+  });
+} catch(_) {}
+
 function suggestPremise() {
   // Reuse the randomizer pairs used elsewhere
   const left = ['love','heartbreak','hustle','betrayal','triumph','redemption','city pride','struggle','freedom','nostalgia','rebellion','identity','faith','ambition','legacy','loss','hope','party','distance','healing','money','fame','survival','recovery','underdog','gratitude','nature','technology','community','wanderlust'];
