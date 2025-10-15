@@ -2621,6 +2621,11 @@ function resetInputsForGame() {
       state.creativeInputs.keywords = '';
       state.creativeInputs.forbidden = '';
     }
+    // Clear user sections (verbatim lyrics)
+    if (state.userSections) {
+      const keys = ['titleIdea','intro','hook','verse1','verse2','bridge','outro','notes'];
+      keys.forEach(k => { if (k in state.userSections) state.userSections[k] = ''; });
+    }
     // Clear any prior genre analysis
     state.genreAnalysis = null;
     // Persist
