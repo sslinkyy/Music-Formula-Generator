@@ -4,6 +4,8 @@ import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
 import { GENRE_LIBRARY } from './data/genres.js';
 import { buildRhythmGameDialog } from './games/rhythm/index.js';
+import { buildGridGameDialog } from './games/grid/index.js';
+import { buildShooterGameDialog } from './games/shooter/index.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
 // Local UX option lists (duplicated from config for easier patching)
