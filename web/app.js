@@ -860,6 +860,8 @@ function setupButtons() {
   // Trophies
   const trophiesBtn = document.getElementById('open-trophies');
   if (trophiesBtn) trophiesBtn.addEventListener('click', () => openLibraryDialog('Trophies', buildTrophiesContent()));
+  const guideBtn = document.getElementById('open-guide');
+  if (guideBtn) guideBtn.addEventListener('click', () => openLibraryDialog('How to Earn Trophies', buildTrophyGuideContent()));
 
   // Suggest buttons
   const premBtn = document.getElementById('premise-suggest');
@@ -2206,6 +2208,34 @@ function renderWizardBar() {
   const wzNext = document.getElementById('wizard-next');
   if (wzPrev) wzPrev.disabled = wizard.step <= 0;
   if (wzNext) wzNext.textContent = wizard.step >= wizard.steps.length - 1 ? 'Finish' : 'Next';
+  // Gate Next on minimal requirements
+  const info = wizardRequirements();
+  const hintEl = document.getElementById('wizard-hint');
+  if (hintEl) hintEl.textContent = info.hint || '';
+  if (wzNext) wzNext.disabled = !info.ok && wizard.step < wizard.steps.length - 1;
+}
+
+function wizardRequirements() {
+  const current = wizard.steps[wizard.step]?.id;
+  let ok = true;
+  let hint = '';
+  if (current === 'weights') {
+    const sum = Object.values(state.weights).reduce((a,b)=>a+Number(b||0),0);
+    ok = Math.abs(sum - 1) < 0.05;
+    if (!ok) hint = 'Adjust weights to total ~1.00';
+  } else if (current === 'genre') {
+    const any = state.genreMix.some(s => (s.genre||s.customGenre) && (s.weight||0) > 0);
+    ok = any; if (!ok) hint = 'Add at least one genre with weight > 0';
+  } else if (current === 'premise') {
+    const premOk = (state.premise && state.premise.length);
+    const accOk = (state.accent && state.accent.length);
+    ok = premOk && accOk; if (!ok) hint = 'Choose a premise and an accent';
+  } else if (current === 'user') {
+    ok = true; hint = 'Optional: add a title or hook';
+  } else if (current === 'build') {
+    ok = true; hint = '';
+  }
+  return { ok, hint };
 }
 
 // ---------- Prompt history (localStorage) ----------
@@ -2421,6 +2451,29 @@ function buildTrophiesContent() {
     ul.appendChild(li);
   });
   wrap.appendChild(ul);
+  return wrap;
+}
+
+function buildTrophyGuideContent() {
+  const wrap = document.createElement('div');
+  const makeSection = (title, keys) => {
+    const sec = document.createElement('section');
+    const h = document.createElement('h3'); h.textContent = title; h.style.margin = '8px 0'; sec.appendChild(h);
+    const ul = document.createElement('ul'); ul.className = 'trophy-list';
+    keys.forEach(k => {
+      const meta = ACHIEVEMENTS[k] || { label: k };
+      const li = document.createElement('li'); li.className = 'trophy-item';
+      li.innerHTML = `<div class="trophy-icon">${meta.icon || '🏆'}</div><div><div>${meta.label || k}</div><div class="trophy-meta">${meta.desc || ''}</div></div>`;
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    return sec;
+  };
+  wrap.appendChild(makeSection('Getting Started', ['firstPrompt','demoExplorer','apprenticeWizard']));
+  wrap.appendChild(makeSection('Weights & Mix', ['perfectWeights','fusionChef','crateDigger','crateCurator','presetDriver','presetMaestro']));
+  wrap.appendChild(makeSection('Languages & Accents', ['polyglot1','polyglot2','polyglotExplorer','voiceActor','accentExplorer']));
+  wrap.appendChild(makeSection('Creative & Actions', ['muse','djBlend','curator','lyricist','composer','promptCopier','briefCopier','sunoCopier','apiCaller']));
+  wrap.appendChild(makeSection('Consistency', ['build5','build10','build25','streak3','streak7','readyToRoll','wizardGraduate']));
   return wrap;
 }
 
