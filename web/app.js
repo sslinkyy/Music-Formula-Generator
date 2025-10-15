@@ -2696,7 +2696,19 @@ function applyGameOutput(out) {
   // Style tags / Keywords / Forbidden
   const uniq = (arr) => Array.from(new Set((arr||[]).map(s => String(s||'').trim()).filter(Boolean)));
   const tags = uniq(out.styleTags);
-  if (tags.length) state.creativeInputs.styleTags = tags.join(', ');
+  // Analyze current genre mix to augment style tags from the library
+  try {
+    const analysis = analyzeGenreMix(state.genreMix);
+    state.genreAnalysis = analysis.mix.length ? analysis : null;
+    const libTags = String(analysis.styleTagsCsv || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const mergedTags = uniq(tags.concat(libTags));
+    if (mergedTags.length) state.creativeInputs.styleTags = mergedTags.join(', ');
+  } catch (_) {
+    if (tags.length) state.creativeInputs.styleTags = tags.join(', ');
+  }
   const keys = uniq(out.keywords);
   if (keys.length) state.creativeInputs.keywords = keys.join(', ');
   const forb = uniq(out.forbidden);
@@ -2704,6 +2716,18 @@ function applyGameOutput(out) {
     const existing = String(state.creativeInputs.forbidden||'').trim();
     state.creativeInputs.forbidden = uniq((existing?existing.split(','):[]).concat(forb)).join(', ');
   }
+  // Theme from premise (if available)
+  if (out.premise) {
+    state.creativeInputs.theme = out.premise;
+  }
+  // Length target from meta.duration (seconds → minutes, 1 decimal)
+  try {
+    const durSec = Number(out.meta?.duration || 0);
+    if (durSec > 0) {
+      const minutes = Math.max(0.5, Math.round((durSec/60) * 10) / 10);
+      state.creativeInputs.lengthTarget = minutes;
+    }
+  } catch (_) {}
 }
 function findGenreNameClosest(label) {
   try {
