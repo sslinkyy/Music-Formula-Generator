@@ -7,7 +7,8 @@ import { LANGUAGE_OPTIONS } from '../../js/config.js';
 
 export function buildRhythmGameDialog(onFinish, options = {}) {
   const prefsReduce = document.documentElement.getAttribute('data-reduce-motion') === 'true';
-  const lanes = buildLaneMap(); // [{label,color}]
+  let chosenBias = options.preset || 'none';
+  let lanes = buildLaneMap(chosenBias); // [{label,color}]
   const duration = options.durationSec || 60;
   const difficulty = options.difficulty || 'normal';
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
@@ -20,6 +21,11 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   diffSel.title = 'Difficulty';
   diffSel.addEventListener('change', ()=>{});
   controls.appendChild(diffSel);
+  // Preset bias
+  const biasSel = document.createElement('select');
+  ['none','street','club','backpack','streaming'].forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; if(b===chosenBias) o.selected=true; biasSel.appendChild(o); });
+  biasSel.title = 'Preset Bias'; biasSel.addEventListener('change', ()=>{ chosenBias = biasSel.value; lanes = buildLaneMap(chosenBias); });
+  controls.appendChild(biasSel);
   // Sound toggle
   let soundOn = false;
   const soundBtn = document.createElement('button'); soundBtn.textContent = 'Sound: Off';
@@ -44,6 +50,12 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
 
   const hud = document.createElement('div'); hud.className = 'hint'; hud.textContent = 'Keys: D F   J K / Click lanes. Hit notes on the line!';
   hud.style.margin = '6px 0'; wrap.appendChild(hud);
+
+  // Tutorial overlay (first view in dialog)
+  const tut = document.createElement('div');
+  tut.style.padding = '8px 10px'; tut.style.border = '1px solid var(--panel-border)'; tut.style.borderRadius = '10px'; tut.style.marginBottom = '6px';
+  tut.innerHTML = '<strong>Tutorial</strong>:\n<ol style="margin:6px 0 0 18px">\n<li>Hit notes on the line (D/F/J/K or click).</li>\n<li>Long bars add style tags; yellow chips add keywords; red blocks add forbidden words.</li>\n<li>Choose language/accent before you start (top right).</li>\n</ol>';
+  wrap.appendChild(tut);
 
   const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 420; canvas.style.width = '100%'; canvas.style.background = '#0f1115'; canvas.style.borderRadius = '12px';
   wrap.appendChild(canvas);
@@ -74,14 +86,15 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       }
     }
     // sprinkle long notes (style tags), chips (keywords), and hazards (forbidden)
+    const w = biasLaneWeights(lanes, chosenBias);
     for (let t = beatMs*8; t < end; t += beatMs*8) {
-      const lane = (Math.random()*lanes.length)|0; notes.push({ lane, timeMs: t, type: 'long', lenMs: beatMs*2 });
+      const lane = weightedLaneIndex(w); notes.push({ lane, timeMs: t, type: 'long', lenMs: beatMs*2 });
     }
     for (let t = beatMs*10; t < end; t += beatMs*10) {
-      const lane = (Math.random()*lanes.length)|0; notes.push({ lane, timeMs: t, type: 'chip' });
+      const lane = weightedLaneIndex(w); notes.push({ lane, timeMs: t, type: 'chip' });
     }
     for (let t = beatMs*12; t < end; t += beatMs*12) {
-      const lane = (Math.random()*lanes.length)|0; notes.push({ lane, timeMs: t, type: 'hazard' });
+      const lane = weightedLaneIndex(w); notes.push({ lane, timeMs: t, type: 'hazard' });
     }
     notes.sort((a,b) => a.timeMs - b.timeMs);
   }
@@ -204,23 +217,51 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   return wrap;
 }
 
-function buildLaneMap() {
-  // Choose 4 prominent genres from library or fallback labels
-  const lib = (GENRE_LIBRARY || []).slice(0, 12);
-  const picks = [];
+function buildLaneMap(bias='none') {
+  // Choose 4 prominent genres from library or fallback labels, biased by preset
+  const lib = (GENRE_LIBRARY || []).slice(0, 48);
   const colors = ['#4D96FF','#6BCB77','#FFD93D','#FF6B6B','#B084CC','#22D3EE'];
-  function pickBy(pred, fallback) {
-    const found = lib.find(pred);
-    if (found) return found.name;
-    return fallback;
-  }
-  const labels = [
-    pickBy(g=>/drill/i.test(g.name||''),'Drill'),
-    pickBy(g=>/afro/i.test(g.name||''),'Afrobeats'),
-    pickBy(g=>/trap/i.test(g.name||''),'Trap'),
-    pickBy(g=>/(r\s*&\s*b|rnb)/i.test(g.name||'') || /r&b/i.test(g.name||''),'R&B')
-  ];
+  const targetSets = {
+    none: ['Drill','Afrobeats','Trap','R&B'],
+    street: ['Drill','Trap','R&B','Afrobeats'],
+    club: ['Afrobeats','House','EDM','Rap'],
+    backpack: ['Boom Bap','Lo-fi','Rap','R&B'],
+    streaming: ['Pop Rap','Trap','Afrobeats','R&B']
+  };
+  const targets = targetSets[bias] || targetSets.none;
+  const labels = targets.map(name => pickClosestName(lib, name));
   return labels.slice(0,4).map((label,i)=>({ label, color: colors[i%colors.length] }));
+}
+function pickClosestName(lib, desired) {
+  const token = String(desired||'').toLowerCase();
+  let found = lib.find(g => (g.name||'').toLowerCase() === token);
+  if (found) return found.name;
+  found = lib.find(g => (g.name||'').toLowerCase().includes(token.replace(/\s+/g,' ')));
+  if (found) return found.name;
+  // common variants
+  if (token === 'boom bap') { const b = lib.find(g=>/boom\s*bap/i.test(g.name||'')); if (b) return b.name; }
+  if (token === 'lo-fi' || token === 'lofi') { const b = lib.find(g=>/(lo\s*-?fi)/i.test(g.name||'')); if (b) return b.name; }
+  if (token === 'pop rap') { const b = lib.find(g=>/pop\s*rap/i.test(g.name||'')); if (b) return b.name; }
+  if (token === 'edm') { const b = lib.find(g=>/edm/i.test(g.name||'')); if (b) return b.name; }
+  if (token === 'house') { const b = lib.find(g=>/house/i.test(g.name||'')); if (b) return b.name; }
+  if (token === 'r&b' || token === 'rnb') { const b = lib.find(g=>/(r\s*&\s*b|rnb|r&b)/i.test(g.name||'')); if (b) return b.name; }
+  if (token === 'rap') { const b = lib.find(g=>/rap/i.test(g.name||'')); if (b) return b.name; }
+  return desired; // fallback label
+}
+function biasLaneWeights(lanes, bias) {
+  // Return weights per lane index (sum 1)
+  const base = new Array(lanes.length).fill(1/lanes.length);
+  if (bias==='street') return [0.4,0.3,0.2,0.1];
+  if (bias==='club') return [0.35,0.3,0.2,0.15];
+  if (bias==='backpack') return [0.3,0.3,0.25,0.15];
+  if (bias==='streaming') return [0.3,0.25,0.25,0.2];
+  return base;
+}
+function weightedLaneIndex(weights) {
+  const r = Math.random();
+  let acc = 0;
+  for (let i=0;i<weights.length;i++) { acc += weights[i]; if (r <= acc) return i; }
+  return weights.length-1;
 }
 
 function buildOutput(lanes, hits, extras = {}) {
