@@ -20,11 +20,10 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   const startBtn = document.createElement('button'); startBtn.className='btn-primary'; startBtn.textContent='Start';
   const restartBtn = document.createElement('button'); restartBtn.textContent='Restart'; restartBtn.disabled=true;
   const quitBtn = document.createElement('button'); quitBtn.textContent='Quit';
-  const rerollBtn = document.createElement('button'); rerollBtn.textContent='Reroll'; rerollBtn.title='Reroll enemy sets and pickup pools';
   const pauseBtn = document.createElement('button'); pauseBtn.textContent='Pause'; pauseBtn.title='Pause/Resume';
   const sfxBtn = document.createElement('button'); sfxBtn.textContent='SFX: On'; sfxBtn.title='Toggle sounds';
   const vol = document.createElement('input'); vol.type='range'; vol.min='0'; vol.max='1'; vol.step='0.01'; vol.value='0.12'; vol.title='Volume'; vol.style.width='100px';
-  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(rerollBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol);
+  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol);
   wrap.appendChild(controls);
 
   // Canvas
@@ -61,7 +60,6 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   startBtn.addEventListener('click', start);
   restartBtn.addEventListener('click', () => { reset(); start(); });
   quitBtn.addEventListener('click', () => { running=false; try{ if(raf) cancelAnimationFrame(raf);}catch(_){} });
-  rerollBtn.addEventListener('click', () => { enemyKinds = pickEnemyKinds(); showToastLocal('Rerolled enemy sets'); });
   pauseBtn.addEventListener('click', togglePause);
   sfxBtn.addEventListener('click', ()=>{ sfxOn = !sfxOn; sfxBtn.textContent = `SFX: ${sfxOn?'On':'Off'}`; });
   vol.addEventListener('input', ()=>{ sfxVol = Math.max(0, Math.min(1, Number(vol.value)||0)); });

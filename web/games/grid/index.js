@@ -28,11 +28,12 @@ export function buildGridGameDialog(onFinish, options = {}) {
   const footer = document.createElement('div'); footer.className='inline-buttons'; footer.style.marginTop='10px';
   const back = document.createElement('button'); back.textContent='Back'; back.disabled=true;
   const next = document.createElement('button'); next.className='btn-primary'; next.textContent='Next';
+  const reroll = document.createElement('button'); reroll.textContent='Reroll'; reroll.title='Refresh options for this step';
   const close = document.createElement('button'); close.textContent='Close';
-  footer.appendChild(back); footer.appendChild(next); footer.appendChild(close);
+  footer.appendChild(back); footer.appendChild(next); footer.appendChild(reroll); footer.appendChild(close);
   wrap.appendChild(footer);
 
-  const rng = makeRng(Date.now());
+  let rng = makeRng(Date.now());
 
   function setStep(s) {
     state.step = Math.max(0, Math.min(steps.length-1, s));
@@ -151,6 +152,7 @@ export function buildGridGameDialog(onFinish, options = {}) {
   function pickPairs(a,b,n){ const out=[]; for(let i=0;i<n;i++){ out.push([a[Math.floor(rng()*a.length)], b[Math.floor(rng()*b.length)]]); } return out; }
 
   back.addEventListener('click', ()=> setStep(state.step-1));
+  reroll.addEventListener('click', ()=>{ rng = makeRng(Date.now()); renderBoard(); });
   next.addEventListener('click', ()=>{
     if (state.step < steps.length-1) { setStep(state.step+1); return; }
     // Finish: normalize and emit
