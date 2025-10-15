@@ -100,6 +100,15 @@ footer { color: #86868b; font-size: 0.85rem; }
 .header-actions.toolbar { position: sticky; top: 0; }
 :root[data-theme="dark"] .toolbar { background: rgba(11,11,15,0.7); }
 
+/* Readiness meter */
+.readiness { max-width: 1200px; margin: 0.5rem auto 0; padding: 0 1rem; }
+.readiness-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.25rem; }
+.readiness-label { font-size: 0.9rem; color: var(--muted); }
+.readiness-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.readiness-track { height: 8px; border-radius: 6px; background: #ececf1; border: 1px solid var(--panel-border); overflow: hidden; }
+.readiness-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #4caf50, #00c2ff); transition: width 300ms ease; }
+:root[data-theme="dark"] .readiness-track { background: #1f1f27; }
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--panel-border);
@@ -257,6 +266,9 @@ button:disabled { opacity: 0.6; cursor: default; }
   font-size: 0.85rem;
   box-shadow: 0 1px 0 rgba(0,0,0,0.03);
 }
+#onboarding-dialog { width: min(680px, 95vw); }
+.onboarding-steps { margin: 0 0 1rem; padding-left: 1.2rem; }
+.onboarding-steps li { margin: 0.2rem 0; }
 :root[data-theme="dark"] .chip { background: #1e1e26; }
 
 /* Chip remove (inline close) */

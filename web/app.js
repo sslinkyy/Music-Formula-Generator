@@ -794,6 +794,8 @@ function setupButtons() {
   // Hero quick actions
   const heroBrowse = document.getElementById('open-genre-library-hero');
   const heroBuild = document.getElementById('build-prompt-hero');
+  const demoTop = document.getElementById('demo-mode');
+  const demoHero = document.getElementById('demo-mode-hero');
   if (heroBrowse) heroBrowse.addEventListener('click', () => openLibraryDialog('Genre Library', buildGenreLibraryTable()));
   if (heroBuild) heroBuild.addEventListener('click', () => {
     try {
@@ -808,6 +810,9 @@ function setupButtons() {
     showToast('Prompt built');
     try { addPromptHistory(state.outputs.prompt); } catch (_) {}
   });
+  const loadDemo = () => { try { applyDemoPreset(); showToast('Demo loaded'); rerenderAll(); } catch (e) { console.error(e); } };
+  if (demoTop) demoTop.addEventListener('click', loadDemo);
+  if (demoHero) demoHero.addEventListener('click', loadDemo);
 }
 
 function applyPreset(name) {
@@ -1715,6 +1720,11 @@ function init() {
   setupTabs();
   const backBtn = document.getElementById('back-to-inputs');
   if (backBtn) backBtn.addEventListener('click', () => { try { selectTab('inputs'); window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {} });
+  // Onboarding on first run
+  try {
+    const seen = localStorage.getItem(__ONBOARD_KEY);
+    if (!seen) showOnboarding();
+  } catch (_) {}
 }
 
 document.addEventListener('DOMContentLoaded', init);
