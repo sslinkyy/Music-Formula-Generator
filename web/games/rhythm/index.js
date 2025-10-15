@@ -235,6 +235,8 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   }
 
   let raf = 0;
+  // Optional audio playback when using a track
+  let audioCtx = null, sourceNode = null, audioStartTime = 0, audioBufferForPlay = null;
   function loop(ts) {
     if (!t0) t0 = ts; now = ts;
     draw();
@@ -247,15 +249,48 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   function endGame() {
     window.removeEventListener('keydown', keydown);
     canvas.removeEventListener('mousedown', click);
-    const output = buildOutput(lanes, hits, { tagCounts, keywords, forbidden, language: chosenLanguage, accent: chosenAccent, misses, combo: bestCombo, duration });
+    try { if (sourceNode) { sourceNode.stop(); sourceNode.disconnect(); } if (audioCtx) { /* keep ctx for resume */ } } catch(_){}
+    const output = buildOutput(lanes, hits, { tagCounts, keywords, forbidden, language: chosenLanguage, accent: chosenAccent, misses, combo: bestCombo, duration, track: trackMeta });
     if (onFinish) onFinish(output);
   }
   function start() {
-    buildNotes();
-    running = true; t0 = 0; now = 0; hits.fill(0);
-    window.addEventListener('keydown', keydown);
-    canvas.addEventListener('mousedown', click);
-    raf = requestAnimationFrame(loop);
+    // If music selected and analysis available/provided, use beat grid; otherwise synthetic
+    (async () => {
+      try {
+        if (musicSource !== 'none' && (selectedTrack || selectedFile)) {
+          // Prefer manifest bpm/offset when present; else analyze now
+          let bpm = trackMeta?.bpm || null; let offset = trackMeta?.offset || 0; let beatTimes = [];
+          if (!bpm) {
+            const target = selectedFile || (selectedTrack && selectedTrack.url);
+            const res = await analyzeTrack(target, { maxDurationSec: duration });
+            analysis = res; bpm = res.bpm; offset = res.offset; beatTimes = res.beatTimes;
+          }
+          // Fallback: synth if no bpm
+          if (bpm) {
+            buildNotesFromBeats(beatTimes.length ? beatTimes : buildBeatsFromBpm(bpm, offset, duration));
+            // Setup audio playback
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // decode again for playback (simple path)
+            const res = await fetch(selectedTrack.url, { cache: 'no-cache' });
+            const arr = await res.arrayBuffer();
+            audioBufferForPlay = await audioCtx.decodeAudioData(arr.slice(0));
+            sourceNode = audioCtx.createBufferSource();
+            sourceNode.buffer = audioBufferForPlay;
+            sourceNode.connect(audioCtx.destination);
+            audioStartTime = audioCtx.currentTime + 0.05;
+            sourceNode.start(audioStartTime, 0);
+          } else {
+            buildNotes();
+          }
+        } else {
+          buildNotes();
+        }
+      } catch (e) { console.error('Rhythm start error', e); buildNotes(); }
+      running = true; t0 = 0; now = 0; hits.fill(0);
+      window.addEventListener('keydown', keydown);
+      canvas.addEventListener('mousedown', click);
+      raf = requestAnimationFrame(loop);
+    })();
   }
 
   startBtn.addEventListener('click', start);
@@ -340,6 +375,28 @@ function calcAccuracy(hits, misses) {
   const total = totalHits + (misses||0);
   if (total <= 0) return 0;
   return Math.round((totalHits/total)*100);
+}
+
+// Helpers for beat-scheduled notes
+function buildBeatsFromBpm(bpm, offset, durationSec) {
+  const period = 60 / bpm; const beats = [];
+  for (let t = offset; t < durationSec; t += period) beats.push(t);
+  return beats;
+}
+function buildNotesFromBeats(beatTimes) {
+  notes = [];
+  const end = duration; // seconds
+  const w = biasLaneWeights(lanes, chosenBias);
+  // Place short notes on most beats and sprinkle special notes
+  for (let i=0; i<beatTimes.length; i++) {
+    const bt = beatTimes[i]; if (bt > end) break;
+    const lane = weightedLaneIndex(w);
+    notes.push({ lane, timeMs: bt*1000, type: 'short' }); totalNotes[lane]++;
+    if (i % 8 === 0) { const l2 = weightedLaneIndex(w); notes.push({ lane: l2, timeMs: (bt+0.001)*1000, type: 'long', lenMs: 500 }); }
+    if (i % 10 === 5) { const l3 = weightedLaneIndex(w); notes.push({ lane: l3, timeMs: (bt+0.001)*1000, type: 'chip' }); }
+    if (i % 12 === 9) { const l4 = weightedLaneIndex(w); notes.push({ lane: l4, timeMs: (bt+0.001)*1000, type: 'hazard' }); }
+  }
+  notes.sort((a,b)=>a.timeMs-b.timeMs);
 }
 
 function pickLaneTag(label) {
