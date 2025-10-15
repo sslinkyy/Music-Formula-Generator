@@ -53,9 +53,9 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       const avgMs = trimmed.reduce((a,b)=>a+b,0) / Math.max(1, trimmed.length);
       if (avgMs > 0) tappedBPM = Math.round(60000/avgMs);
     }
-    renderTrackInfo();
+    renderTrackInfo(); updateBeatPreviewFromState();
   });
-  const clearTapBtn = document.createElement('button'); clearTapBtn.textContent = 'Clear Tap'; clearTapBtn.addEventListener('click', ()=>{ tappedBPM=null; lastTaps=[]; renderTrackInfo(); });
+  const clearTapBtn = document.createElement('button'); clearTapBtn.textContent = 'Clear Tap'; clearTapBtn.addEventListener('click', ()=>{ tappedBPM=null; lastTaps=[]; renderTrackInfo(); updateBeatPreviewFromState(); });
   const offsetInput = document.createElement('input'); offsetInput.type='number'; offsetInput.step='0.01'; offsetInput.min='-1'; offsetInput.max='1'; offsetInput.value='0'; offsetInput.title='Offset seconds'; offsetInput.style.width='90px';
   controls.appendChild(tapBtn); controls.appendChild(clearTapBtn); controls.appendChild(offsetInput);
   // Track info
@@ -82,10 +82,11 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   ACCENT_LIBRARY.forEach(a=>{ const o=document.createElement('option'); o.value=a.name; o.textContent=a.name; if(a.name===chosenAccent) o.selected=true; accSel.appendChild(o); });
   accSel.title = 'Accent'; accSel.addEventListener('change', ()=>{ chosenAccent = accSel.value; });
   controls.appendChild(accSel);
-  // Start / Quit
+  // Start / Restart / Quit
   const startBtn = document.createElement('button'); startBtn.className = 'btn-primary'; startBtn.textContent = 'Start';
+  const restartBtn = document.createElement('button'); restartBtn.textContent = 'Restart'; restartBtn.disabled = true;
   const quitBtn = document.createElement('button'); quitBtn.textContent = 'Quit';
-  controls.appendChild(startBtn); controls.appendChild(quitBtn);
+  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn);
   wrap.appendChild(controls);
 
   const hud = document.createElement('div'); hud.className = 'hint'; hud.textContent = 'Keys: D F   J K / Click lanes. Hit notes on the line!';
@@ -96,6 +97,32 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   tut.style.padding = '8px 10px'; tut.style.border = '1px solid var(--panel-border)'; tut.style.borderRadius = '10px'; tut.style.marginBottom = '6px';
   tut.innerHTML = '<strong>Tutorial</strong>:\n<ol style="margin:6px 0 0 18px">\n<li>Hit notes on the line (D/F/J/K or click).</li>\n<li>Long bars add style tags; yellow chips add keywords; red blocks add forbidden words.</li>\n<li>Choose language/accent before you start (top right).</li>\n</ol>';
   wrap.appendChild(tut);
+  // Beat preview bar
+  const beatWrap = document.createElement('div');
+  beatWrap.style.margin = '6px 0';
+  const beatLabel = document.createElement('span'); beatLabel.className = 'hint'; beatLabel.textContent = 'Beat preview:'; beatLabel.style.marginRight = '8px';
+  const beatBar = document.createElement('div');
+  beatBar.style.position = 'relative'; beatBar.style.height = '10px'; beatBar.style.background = '#1b1e27'; beatBar.style.border = '1px solid var(--panel-border)'; beatBar.style.borderRadius = '6px'; beatBar.style.width = '280px'; beatBar.style.display = 'inline-block';
+  beatWrap.appendChild(beatLabel); beatWrap.appendChild(beatBar);
+  wrap.appendChild(beatWrap);
+  function updateBeatPreviewFromState() {
+    try {
+      beatBar.innerHTML = '';
+      const bpm = tappedBPM || trackMeta?.bpm || analysis?.bpm || null;
+      if (!bpm) return;
+      const count = 16;
+      for (let i=0;i<=count;i++) {
+        const tick = document.createElement('div');
+        tick.style.position = 'absolute';
+        tick.style.left = `${(i/count)*100}%`;
+        tick.style.top = '0';
+        tick.style.width = '2px';
+        tick.style.height = '100%';
+        tick.style.background = (i % 4 === 0) ? '#4D96FF' : '#9aa3b2';
+        beatBar.appendChild(tick);
+      }
+    } catch(_) {}
+  }
 
   // Populate library tracks
   listTracks().then(tracks => {
@@ -121,7 +148,7 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       trackMeta = { id: selectedTrack.id, title: selectedTrack.title, bpm: entry.bpm||null, offset: entry.offset||null };
       const cached = getCachedAnalysis(selectedTrack.id);
       analysis = cached || null;
-      renderTrackInfo();
+      renderTrackInfo(); updateBeatPreviewFromState();
     } catch(_){}
   });
   fileInput.addEventListener('change', async (e) => {
@@ -130,7 +157,7 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       selectedFile = f; selectedTrack = await loadTrack(f);
       trackMeta = { id: selectedTrack.id, title: selectedTrack.title, bpm: null, offset: null };
       analysis = null;
-      renderTrackInfo();
+      renderTrackInfo(); updateBeatPreviewFromState();
     } catch(_){}
   });
 
@@ -282,6 +309,13 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
     const output = buildOutput(lanes, hits, { tagCounts, keywords, forbidden, language: chosenLanguage, accent: chosenAccent, misses, combo: bestCombo, duration, track: trackMeta });
     if (onFinish) onFinish(output);
   }
+  function stopPlayback() {
+    try { if (sourceNode) { sourceNode.stop(); sourceNode.disconnect(); } } catch(_){}
+    try { window.removeEventListener('keydown', keydown); } catch(_){}
+    try { canvas.removeEventListener('mousedown', click); } catch(_){}
+    try { if (raf) cancelAnimationFrame(raf); } catch(_){}
+    running = false; raf = 0; t0 = 0; now = 0;
+  }
   function start() {
     // If music selected and analysis available/provided, use beat grid; otherwise synthetic
     (async () => {
@@ -323,8 +357,10 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       window.addEventListener('keydown', keydown);
       canvas.addEventListener('mousedown', click);
       raf = requestAnimationFrame(loop);
+      restartBtn.disabled = false;
     })();
   }
+  restartBtn.addEventListener('click', () => { stopPlayback(); start(); });
 
   startBtn.addEventListener('click', start);
   quitBtn.addEventListener('click', () => { try { window.removeEventListener('keydown', keydown); } catch(_){} });
