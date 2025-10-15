@@ -27,6 +27,17 @@ export function setCachedAnalysis(idOrUrl, result) {
   } catch (_) {}
 }
 
+export function setOverride(idOrUrl, bpm, offset) {
+  try {
+    const db = JSON.parse(localStorage.getItem(ANALYSIS_KEY) || '{}');
+    const cur = db[idOrUrl] || {};
+    const next = { ...cur, bpm: bpm ?? cur.bpm ?? null, offset: offset ?? cur.offset ?? 0, overrides: { bpm: bpm ?? null, offset: offset ?? 0 } };
+    db[idOrUrl] = next;
+    localStorage.setItem(ANALYSIS_KEY, JSON.stringify(db));
+    return next;
+  } catch (_) { return null; }
+}
+
 export async function loadTrack(trackEntryOrFile) {
   // Returns a playable URL and simple metadata
   if (!trackEntryOrFile) return null;
