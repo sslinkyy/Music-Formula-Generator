@@ -35,12 +35,13 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
   const hud = document.createElement('div'); hud.className='hint'; hud.textContent = 'Controls: Arrow keys / WASD / swipe. Avoid walls and yourself!'; hud.style.margin='6px 0'; wrap.appendChild(hud);
 
   // State
-  let running=false, tickHandle=0, lastTick=0, emojiMode = !!window.__rgfUseEmojis;
+  let running=false, paused=false, tickHandle=0, lastTick=0, emojiMode = !!window.__rgfUseEmojis;
   let dirX=1, dirY=0, nextDirX=1, nextDirY=0; // unit direction
   let snake = []; // list of {x,y}
   let food = null; // {x,y,type,label}
   let hazard = null; // {x,y}
   let score = 0; let steps = 0; let tags = new Set(); let kws = new Set(); let forb = new Set();
+  const genreCounts = {}; // name -> count collected
   const isMobileUI = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || (Math.min(window.innerWidth, window.innerHeight) < 780);
 
   // Input
@@ -79,18 +80,19 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
 
   // Game control
   function start() {
-    reset(); running=true; restartBtn.disabled=false; schedule(); draw();
+    reset(); running=true; paused=false; restartBtn.disabled=false; schedule(); draw();
   }
   function reset() {
     snake = [ {x:3, y:Math.floor(gridRows/2)}, {x:2,y:Math.floor(gridRows/2)}, {x:1,y:Math.floor(gridRows/2)} ];
     dirX=1; dirY=0; nextDirX=1; nextDirY=0;
     score=0; steps=0; tags.clear(); kws.clear(); forb.clear();
+    Object.keys(genreCounts).forEach(k => delete genreCounts[k]);
     food = spawnFood(); hazard = null;
     lastTick = performance.now();
   }
   function endGame() {
     running=false; if (tickHandle) { clearTimeout(tickHandle); tickHandle=0; }
-    const genres = buildGenresFromScore(score);
+    const genres = buildGenresFromPickups();
     const out = {
       genres,
       premise: samplePremise(),
@@ -104,7 +106,7 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
     if (onFinish) onFinish(out);
   }
   function schedule() {
-    if (!running) return; const now = performance.now(); const elapsed = now - lastTick; const dt = Math.max(0, tickMs - elapsed);
+    if (!running || paused) return; const now = performance.now(); const elapsed = now - lastTick; const dt = Math.max(0, tickMs - elapsed);
     tickHandle = setTimeout(tick, dt);
   }
   function tick() {
@@ -125,9 +127,10 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
       score += 10;
       if (food.type==='tag') tags.add(food.label);
       else if (food.type==='kw') kws.add(food.label);
+      else if (food.type==='genre') { genreCounts[food.label] = (genreCounts[food.label] || 0) + 1; }
       food = spawnFood();
       // Occasionally drop hazard
-      if (!hazard && Math.random() < 0.25) hazard = spawnHazard();
+      if (!hazard && Math.random() < 0.18 + Math.min(0.12, steps/2000)) hazard = spawnHazard();
     } else {
       snake.pop();
     }
@@ -144,8 +147,15 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
 
   // Spawns
   function spawnFood() {
-    const type = Math.random() < 0.6 ? 'tag' : 'kw';
-    const label = type==='tag' ? sampleTag() : sampleKeyword();
+    // Weighted choice among tag/kw/genre, skew more toward genre as score rises
+    const r = Math.random();
+    let type = 'tag';
+    const genreBias = Math.min(0.35, score/300); // up to +35%
+    if (r < 0.45 - genreBias/2) type = 'tag';
+    else if (r < 0.90 - genreBias) type = 'kw';
+    else type = 'genre';
+    let label;
+    if (type==='tag') label = sampleTag(); else if (type==='kw') label = sampleKeyword(); else label = sampleGenreName();
     let x=0,y=0; do { x = (Math.random()*gridCols)|0; y = (Math.random()*gridRows)|0; } while (snake.some(s=>s.x===x&&s.y===y));
     return { x,y,type,label };
   }
@@ -178,7 +188,12 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
     // Draw hazard
     if (hazard) drawCell(hazard.x, hazard.y, '#ff6b6b', '☠️');
     // Draw food
-    if (food) drawCell(food.x, food.y, food.type==='tag'?'#6BCB77':'#B084CC', food.type==='tag'?'🍏':'🔑');
+    if (food) {
+      let color = '#6BCB77', emoji = '🍏';
+      if (food.type==='kw') { color = '#B084CC'; emoji = '🔑'; }
+      if (food.type==='genre') { color = '#FFD93D'; emoji = '🎵'; }
+      drawCell(food.x, food.y, color, emoji);
+    }
     // Draw snake
     snake.forEach((seg, idx) => {
       const emoji = idx===0 ? '🐍' : '🟩';
@@ -186,23 +201,29 @@ export function buildSnakeGameDialog(onFinish, options = {}) {
     });
     // HUD overlay
     ctx.fillStyle = '#9aa3b2'; ctx.font = '12px system-ui';
-    ctx.fillText(`Score: ${score}  Length: ${snake.length}`, 8, 16);
+    const picked = Object.entries(genreCounts).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>`${k}:${v}`).join('  ');
+    ctx.fillText(`Score: ${score}  Length: ${snake.length}${picked?('  Genres '+picked):''}`, 8, 16);
   }
 
   // Output helpers
-  function buildGenresFromScore(sc) {
+  function buildGenresFromPickups() {
+    const entries = Object.entries(genreCounts);
+    if (!entries.length) return buildGenresFallback();
+    const top = entries.sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const sum = top.reduce((a,[,v])=>a+v,0) || 1;
+    return top.map(([name,count]) => ({ name, influence: Math.max(10, Math.round((count/sum)*100)) }));
+  }
+  function buildGenresFallback() {
     const lib = (GENRE_LIBRARY||[]).map(g=>g.name);
-    const pick = (n) => {
-      const arr = ['Trap','R&B','Afrobeats','Drill','House'];
-      const res = [];
-      while (res.length < n && arr.length) {
-        const i = Math.floor(Math.random()*arr.length);
-        res.push(arr.splice(i,1)[0]);
-      }
-      return res.map(name => closest(lib,name));
-    };
-    const names = pick(2 + (sc>80?1:0));
-    const total = names.length; return names.map((n,i)=>({ name:n, influence: Math.round(100/total) }));
+    const base = ['Trap','R&B','Afrobeats','Drill','House'];
+    const shuffled = base.sort(()=>Math.random()-0.5).slice(0,2);
+    return shuffled.map(n => ({ name: closest(lib,n), influence: 50 }));
+  }
+  function sampleGenreName(){
+    const lib = (GENRE_LIBRARY||[]).map(g=>g.name).filter(Boolean);
+    const base = ['Trap','R&B','Afrobeats','Drill','House','Pop Rap','Boom Bap'];
+    const candidates = lib.length ? lib : base;
+    return candidates[(Math.random()*candidates.length)|0];
   }
   function closest(list, name) { const token=(name||'').toLowerCase(); const ex=list.find(n=>(n||'').toLowerCase()===token); if (ex) return ex; const lo=list.find(n=>(n||'').toLowerCase().includes(token)); return lo||name; }
   function sampleTag(){ const pool=['anthemic','modern','energetic','retro grit','warm vinyl','head-nod','street cinema','silky hook']; return pool[(Math.random()*pool.length)|0]; }
