@@ -226,6 +226,14 @@ button:focus-visible {
 button:active { transform: translateY(1px); }
 button:disabled { opacity: 0.6; cursor: default; }
 
+/* Reduce motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+  .panel:hover { transform: none; box-shadow: var(--shadow); }
+}
+:root[data-reduce-motion="true"] * { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+:root[data-reduce-motion="true"] .panel:hover { transform: none; box-shadow: var(--shadow); }
+
 .hint { margin-top: 0.5rem; color: var(--muted); font-size: 0.85rem; }
 
 .table-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem; }

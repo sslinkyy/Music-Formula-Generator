@@ -22,6 +22,15 @@ const __PREF_KEY = 'rgf_prefs_v1';
 
 function getPrefs() { try { return JSON.parse(localStorage.getItem(__PREF_KEY) || '{}'); } catch(_) { return {}; } }
 function setPrefs(p) { try { localStorage.setItem(__PREF_KEY, JSON.stringify(p)); } catch(_) {} }
+function applyMotionPref() {
+  try {
+    const prefs = getPrefs();
+    const val = prefs.reduceMotion ? 'true' : 'false';
+    document.documentElement.setAttribute('data-reduce-motion', val);
+    const motionBtn = document.getElementById('motion-toggle');
+    if (motionBtn) motionBtn.textContent = prefs.reduceMotion ? 'Motion: Off' : 'Motion';
+  } catch(_) {}
+}
 function buildDefaultState() {
   return {
     controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
@@ -823,7 +832,7 @@ function setupButtons() {
   if (resetBtn) resetBtn.addEventListener('click', () => { resetState(); showToast('Reset to defaults'); rerenderAll(); });
   if (themeBtn) themeBtn.addEventListener('click', () => { toggleTheme(); showToast(`Theme: ${getTheme().toUpperCase()}`); });
   const motionBtn = document.getElementById('motion-toggle');
-  if (motionBtn) motionBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.reduceMotion = !prefs.reduceMotion; setPrefs(prefs); showToast(`Motion: ${prefs.reduceMotion ? 'OFF' : 'ON'}`); });
+  if (motionBtn) motionBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.reduceMotion = !prefs.reduceMotion; setPrefs(prefs); applyMotionPref(); showToast(`Motion: ${prefs.reduceMotion ? 'OFF' : 'ON'}`); });
   // Hero quick actions
   const heroBrowse = document.getElementById('open-genre-library-hero');
   const heroBuild = document.getElementById('build-prompt-hero');
@@ -1770,6 +1779,7 @@ function init() {
   renderPromptHistory();
   try { renderReadiness(); } catch (_) {}
   try { renderWizardBar(); } catch (_) {}
+  applyMotionPref();
   setupButtons();
   setupTabs();
   const backBtn = document.getElementById('back-to-inputs');
@@ -2285,25 +2295,36 @@ function renderPromptHistory() {
 const __GAMIFY_KEY = 'rgf_gamify_v1';
 // Known achievements registry for consistent labeling + icons
 const ACHIEVEMENTS = {
-  firstPrompt: { label: 'First Prompt!', icon: '✨' },
-  perfectWeights: { label: 'Perfect Weights', icon: '⚖️' },
-  fusionChef: { label: 'Fusion Chef', icon: '🍲' },
-  build5: { label: '5 Prompts', icon: '5️⃣' },
-  build10: { label: '10 Prompts', icon: '🔟' },
-  build25: { label: '25 Prompts', icon: '🏅' },
-  readyToRoll: { label: 'Ready to Roll', icon: '🚦' },
-  streak3: { label: '3-Day Streak', icon: '📆' },
-  streak7: { label: '7-Day Streak', icon: '🔥' },
-  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙' },
-  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓' },
-  demoExplorer: { label: 'Demo Explorer', icon: '🧭' },
-  muse: { label: 'Muse', icon: '🎭' },
-  djBlend: { label: 'Blend DJ', icon: '🎚️' },
-  curator: { label: 'Curator', icon: '🧰' },
-  promptCopier: { label: 'Prompt Copier', icon: '📋' },
-  briefCopier: { label: 'Brief Copier', icon: '📋' },
-  sunoCopier: { label: 'Suno Copier', icon: '📋' },
-  apiCaller: { label: 'API Caller', icon: '🔗' }
+  firstPrompt: { label: 'First Prompt!', icon: '✨', desc: 'Build your first prompt.' },
+  perfectWeights: { label: 'Perfect Weights', icon: '⚖️', desc: 'Make weights sum to exactly 1.00.' },
+  fusionChef: { label: 'Fusion Chef', icon: '🍲', desc: 'Use 3 or more genres in a mix.' },
+  build5: { label: '5 Prompts', icon: '5️⃣', desc: 'Build 5 prompts total.' },
+  build10: { label: '10 Prompts', icon: '🔟', desc: 'Build 10 prompts total.' },
+  build25: { label: '25 Prompts', icon: '🏅', desc: 'Build 25 prompts total.' },
+  readyToRoll: { label: 'Ready to Roll', icon: '🚦', desc: 'Reach 100% readiness and build.' },
+  streak3: { label: '3-Day Streak', icon: '📆', desc: 'Build prompts 3 days in a row.' },
+  streak7: { label: '7-Day Streak', icon: '🔥', desc: 'Build prompts 7 days in a row.' },
+  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙', desc: 'Turn on Wizard Mode.' },
+  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓', desc: 'Reach the Build step in Wizard Mode.' },
+  demoExplorer: { label: 'Demo Explorer', icon: '🧭', desc: 'Load the demo setup.' },
+  muse: { label: 'Muse', icon: '🎭', desc: 'Use Suggest for Premise.' },
+  djBlend: { label: 'Blend DJ', icon: '🎚️', desc: 'Use Suggest Blend for Genre Mix.' },
+  curator: { label: 'Curator', icon: '🧰', desc: 'Apply a curated Blend Preset.' },
+  promptCopier: { label: 'Prompt Copier', icon: '📋', desc: 'Copy the AI prompt to clipboard.' },
+  briefCopier: { label: 'Brief Copier', icon: '📋', desc: 'Copy the Creative Brief.' },
+  sunoCopier: { label: 'Suno Copier', icon: '📋', desc: 'Copy the Suno blocks.' },
+  apiCaller: { label: 'API Caller', icon: '🔗', desc: 'Call the AI endpoint successfully.' },
+  voiceActor: { label: 'Voice Actor', icon: '🎙️', desc: 'Select a non-neutral accent.' },
+  accentExplorer: { label: 'Accent Explorer', icon: '🌍', desc: 'Use 3 or more different accents.' },
+  polyglot1: { label: 'Polyglot I', icon: '🈴', desc: 'Select a non-English language.' },
+  polyglot2: { label: 'Polyglot II', icon: '🈵', desc: 'Enter a custom language.' },
+  polyglotExplorer: { label: 'Polyglot Explorer', icon: '🈚', desc: 'Use 3 or more different languages.' },
+  presetDriver: { label: 'Preset Driver', icon: '🎛️', desc: 'Apply a weight preset.' },
+  presetMaestro: { label: 'Preset Maestro', icon: '🎛️', desc: 'Apply weight presets 5 times.' },
+  lyricist: { label: 'Lyricist', icon: '✍️', desc: 'Enter any user section (title/intro/hook/etc.).' },
+  composer: { label: 'Composer', icon: '🎼', desc: 'Enter 3 or more user sections.' },
+  crateDigger: { label: 'Crate Digger', icon: '📦', desc: 'Use 5 unique genres across mixes.' },
+  crateCurator: { label: 'Crate Curator', icon: '🗂️', desc: 'Use 10 unique genres across mixes.' }
 };
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
@@ -2389,11 +2410,12 @@ function buildTrophiesContent() {
     const unlocked = !!g[k];
     const li = document.createElement('li'); li.className = 'trophy-item' + (unlocked ? '' : ' locked');
     const when = unlocked ? new Date(g[k].unlockedAt||Date.now()).toLocaleString() : '';
+    const safe = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     li.innerHTML = `
-      <div class="trophy-icon">${meta.icon || '🏆'}</div>
+      <div class="trophy-icon" title="${safe(meta.desc||'')}">${meta.icon || '🏆'}</div>
       <div>
-        <div>${meta.label || k}</div>
-        <div class="trophy-meta">${unlocked ? when : 'Locked'}</div>
+        <div title="${safe(meta.desc||'')}">${meta.label || k}</div>
+        <div class="trophy-meta">${unlocked ? safe(when) : 'Locked'}</div>
       </div>
     `;
     ul.appendChild(li);
