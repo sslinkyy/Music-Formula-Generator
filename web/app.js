@@ -2548,7 +2548,7 @@ function buildGameHubDialog() {
   wrap.appendChild(p);
   const grid = document.createElement('div');
   grid.style.display = 'grid'; grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(220px, 1fr))'; grid.style.gap = '12px';
-  const mkCard = (title, desc, sampleFn, key) => {
+  const mkCard = (title, desc, sampleFn, key, opts = {}) => {
     const card = document.createElement('div');
     card.className = 'panel';
     card.innerHTML = `<h3 style="margin-top:0">${title}</h3><p class="hint" style="margin:0 0 8px">${desc}</p>`;
@@ -2559,12 +2559,38 @@ function buildGameHubDialog() {
       openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
     });
     row.appendChild(sample);
+    if (opts.start) {
+      const start = document.createElement('button'); start.className = 'btn-primary'; start.textContent = 'Start';
+      start.addEventListener('click', () => opts.start());
+      row.appendChild(start);
+    }
     card.appendChild(row);
     return card;
   };
-  grid.appendChild(mkCard('Rhythm Tapper', 'Tap notes across lanes to shape genres, tags, and premise.', sampleRhythmOutput, 'rhythm'));
-  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid'));
-  grid.appendChild(mkCard('Shooter (concept)', 'Arena shooter mapping hits to influences.', sampleShooterOutput, 'shooter'));
+  grid.appendChild(mkCard('Rhythm Tapper', 'Tap notes across lanes to shape genres, tags, and premise.', sampleRhythmOutput, 'rhythm', {
+    start: () => {
+      const content = buildRhythmGameDialog((output) => {
+        openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
+      }, { preset: 'streaming', difficulty: 'normal' });
+      openLibraryDialog('Rhythm Tapper', content);
+    }
+  }));
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
+    start: () => {
+      const content = buildGridGameDialog((output) => {
+        openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
+      }, { difficulty: 'normal' });
+      openLibraryDialog('Grid Picker', content);
+    }
+  }));
+  grid.appendChild(mkCard('Shooter (concept)', 'Arena shooter mapping hits to influences.', sampleShooterOutput, 'shooter', {
+    start: () => {
+      const content = buildShooterGameDialog((output) => {
+        openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
+      }, { durationSec: 60 });
+      openLibraryDialog('Shooter (Concept)', content);
+    }
+  }));
   wrap.appendChild(grid);
   return wrap;
 }
