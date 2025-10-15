@@ -35,6 +35,16 @@ function applyMotionPref() {
     if (motionBtn) motionBtn.textContent = prefs.reduceMotion ? 'Motion: Off' : 'Motion';
   } catch(_) {}
 }
+function applyEmojiPref() {
+  try {
+    const prefs = getPrefs();
+    const use = !!prefs.useEmojis;
+    // Expose to games
+    window.__rgfUseEmojis = use;
+    const btn = document.getElementById('emoji-toggle');
+    if (btn) btn.textContent = use ? 'Emoji: On' : 'Emoji';
+  } catch(_) {}
+}
 function buildDefaultState() {
   return {
     controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
@@ -837,6 +847,8 @@ function setupButtons() {
   if (themeBtn) themeBtn.addEventListener('click', () => { toggleTheme(); showToast(`Theme: ${getTheme().toUpperCase()}`); });
   const motionBtn = document.getElementById('motion-toggle');
   if (motionBtn) motionBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.reduceMotion = !prefs.reduceMotion; setPrefs(prefs); applyMotionPref(); showToast(`Motion: ${prefs.reduceMotion ? 'OFF' : 'ON'}`); });
+  const emojiBtn = document.getElementById('emoji-toggle');
+  if (emojiBtn) emojiBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.useEmojis = !prefs.useEmojis; setPrefs(prefs); applyEmojiPref(); try { document.dispatchEvent(new CustomEvent('rgf:prefs-changed', { detail: prefs })); } catch(_){} showToast(`Emojis: ${prefs.useEmojis ? 'ON' : 'OFF'}`); });
   // Hero quick actions
   const heroBrowse = document.getElementById('open-genre-library-hero');
   const heroBuild = document.getElementById('build-prompt-hero');
@@ -1820,6 +1832,7 @@ function init() {
   try { renderReadiness(); } catch (_) {}
   try { renderWizardBar(); } catch (_) {}
   applyMotionPref();
+  applyEmojiPref();
   setupButtons();
   setupTabs();
   const backBtn = document.getElementById('back-to-inputs');

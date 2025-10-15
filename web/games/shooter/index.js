@@ -23,8 +23,7 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   const pauseBtn = document.createElement('button'); pauseBtn.textContent='Pause'; pauseBtn.title='Pause/Resume';
   const sfxBtn = document.createElement('button'); sfxBtn.textContent='SFX: On'; sfxBtn.title='Toggle sounds';
   const vol = document.createElement('input'); vol.type='range'; vol.min='0'; vol.max='1'; vol.step='0.01'; vol.value='0.12'; vol.title='Volume'; vol.style.width='100px';
-  const styleBtn = document.createElement('button'); styleBtn.textContent='Style: Shapes'; styleBtn.title='Toggle emoji sprites';
-  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol); controls.appendChild(styleBtn);
+  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol);
   wrap.appendChild(controls);
 
   // Canvas (Hi-DPI scaling)
@@ -47,7 +46,7 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   const keys = {}; let mouseDown=false; let shots=0, hits=0, kills=0, bestCombo=0, combo=0, score=0;
   const genreKills = {}; const styleTags = new Set(); const keywords = new Set(); const forbidden = new Set();
   let enemyKinds = pickEnemyKinds();
-  let paused = false, pauseAccum = 0, pauseStart = 0; let sfxOn = true; let sfxVol = 0.12; let gamepadIdx = -1; let emojiMode = false;
+  let paused = false, pauseAccum = 0, pauseStart = 0; let sfxOn = true; let sfxVol = 0.12; let gamepadIdx = -1; let emojiMode = !!window.__rgfUseEmojis;
 
   function start(){ reset(); running=true; t0=0; now=0; pauseAccum=0; paused=false; raf=requestAnimationFrame(loop); restartBtn.disabled=false; }
   function reset(){ enemies.length=0; bullets.length=0; pickups.length=0; hazards.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=player.vy=0; player.hp=hpByDiff[diffSel.value]||3; shots=hits=kills=bestCombo=combo=0; score=0; Object.keys(genreKills).forEach(k=>delete genreKills[k]); styleTags.clear(); keywords.clear(); forbidden.clear(); }
@@ -69,7 +68,8 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   pauseBtn.addEventListener('click', togglePause);
   sfxBtn.addEventListener('click', ()=>{ sfxOn = !sfxOn; sfxBtn.textContent = `SFX: ${sfxOn?'On':'Off'}`; });
   vol.addEventListener('input', ()=>{ sfxVol = Math.max(0, Math.min(1, Number(vol.value)||0)); });
-  styleBtn.addEventListener('click', ()=>{ emojiMode = !emojiMode; styleBtn.textContent = `Style: ${emojiMode?'Emoji':'Shapes'}`; });
+  // React to global prefs changes (emoji toggle)
+  document.addEventListener('rgf:prefs-changed', () => { try { emojiMode = !!window.__rgfUseEmojis; } catch(_){} });
   window.addEventListener('keydown', (e)=>{ if (e.key==='p' || e.key==='P') { togglePause(); e.preventDefault(); return; } keys[e.key]=true; });
   window.addEventListener('keyup', (e)=>{ keys[e.key]=false; }); canvas.addEventListener('mousedown', ()=>{ mouseDown=true; }); canvas.addEventListener('mouseup', ()=>{ mouseDown=false; });
 
