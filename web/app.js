@@ -18,6 +18,10 @@ const __STATE_KEY = 'rgf_state_v1';
 const __THEME_KEY = 'rgf_theme_v1';
 const __HIST_KEY = 'rgf_prompt_history_v1';
 const __ONBOARD_KEY = 'rgf_onboarding_seen_v1';
+const __PREF_KEY = 'rgf_prefs_v1';
+
+function getPrefs() { try { return JSON.parse(localStorage.getItem(__PREF_KEY) || '{}'); } catch(_) { return {}; } }
+function setPrefs(p) { try { localStorage.setItem(__PREF_KEY, JSON.stringify(p)); } catch(_) {} }
 function buildDefaultState() {
   return {
     controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
@@ -486,6 +490,15 @@ function renderAccent() {
   select.addEventListener('change', () => {
     state.accent = select.value;
     updateHiddenDirective();
+    try {
+      const g = getGamify();
+      if (!/neutral/i.test(state.accent)) unlockAchievement('voiceActor','Voice Actor');
+      g.accentsUsed = Array.isArray(g.accentsUsed) ? g.accentsUsed : [];
+      const key = (state.accent||'').toLowerCase();
+      if (key && !g.accentsUsed.includes(key)) g.accentsUsed.push(key);
+      setGamify(g);
+      if (g.accentsUsed.length >= 3) unlockAchievement('accentExplorer','Accent Explorer');
+    } catch(_){}
     try { scheduleSave(); } catch (_) {}
   });
 }
@@ -515,8 +528,20 @@ function renderLanguage() {
     if (isCustom) setTimeout(() => custom.focus(), 0);
   };
   updateCustomVisibility();
-  select.addEventListener('change', () => { state.language = select.value; updateCustomVisibility(); try { scheduleSave(); } catch (_) {} });
-  custom.addEventListener('input', () => { state.customLanguage = custom.value; try { scheduleSave(); } catch (_) {} });
+  select.addEventListener('change', () => {
+    state.language = select.value; updateCustomVisibility();
+    try {
+      const g = getGamify();
+      if ((state.language||'').toLowerCase() !== 'english') unlockAchievement('polyglot1','Polyglot I');
+      g.languagesUsed = Array.isArray(g.languagesUsed) ? g.languagesUsed : [];
+      const langKey = (state.language||'').toLowerCase();
+      if (langKey && !g.languagesUsed.includes(langKey)) g.languagesUsed.push(langKey);
+      setGamify(g);
+      if (g.languagesUsed.length >= 3) unlockAchievement('polyglotExplorer','Polyglot Explorer');
+    } catch(_){}
+    try { scheduleSave(); } catch (_) {}
+  });
+  custom.addEventListener('input', () => { state.customLanguage = custom.value; try { if ((custom.value||'').trim()) unlockAchievement('polyglot2','Polyglot II'); } catch(_){} try { scheduleSave(); } catch (_) {} });
 }
 
 // Utility: clean VBA artifact tokens from structure strings for display
@@ -797,6 +822,8 @@ function setupButtons() {
   if (loadBtn) loadBtn.addEventListener('click', () => { const ok = loadState(); showToast(ok ? 'Loaded settings' : 'No saved settings'); rerenderAll(); });
   if (resetBtn) resetBtn.addEventListener('click', () => { resetState(); showToast('Reset to defaults'); rerenderAll(); });
   if (themeBtn) themeBtn.addEventListener('click', () => { toggleTheme(); showToast(`Theme: ${getTheme().toUpperCase()}`); });
+  const motionBtn = document.getElementById('motion-toggle');
+  if (motionBtn) motionBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.reduceMotion = !prefs.reduceMotion; setPrefs(prefs); showToast(`Motion: ${prefs.reduceMotion ? 'OFF' : 'ON'}`); });
   // Hero quick actions
   const heroBrowse = document.getElementById('open-genre-library-hero');
   const heroBuild = document.getElementById('build-prompt-hero');
@@ -840,6 +867,12 @@ function applyPreset(name) {
   state.weights = { ...preset };
   renderWeights();
   recompute();
+  try {
+    const g = getGamify();
+    g.presetUses = (g.presetUses || 0) + 1; setGamify(g);
+    if (g.presetUses === 1) unlockAchievement('presetDriver','Preset Driver');
+    if (g.presetUses === 5) unlockAchievement('presetMaestro','Preset Maestro');
+  } catch(_){}
 }
 
 function openLibraryDialog(title, content) {
@@ -2049,8 +2082,10 @@ document.addEventListener('input', () => { try { scheduleSave(600); } catch (_) 
 document.addEventListener('change', () => { try { scheduleSave(600); } catch (_) {} });
 
 // Keep derived UI (readiness/wizard bar) in sync with edits
-document.addEventListener('input', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
-document.addEventListener('change', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
+  document.addEventListener('input', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
+  document.addEventListener('change', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
+  document.addEventListener('input', () => { try { checkUserSectionAchievements(); checkGenreAchievements(); } catch(_){} });
+  document.addEventListener('change', () => { try { checkUserSectionAchievements(); checkGenreAchievements(); } catch(_){} });
 
 // ---------- Readiness meter ----------
 function computeReadiness() {
@@ -2077,6 +2112,25 @@ function renderReadiness() {
   const bar = document.getElementById('readiness-bar');
   if (val) val.textContent = `${pct}%`;
   if (bar) bar.style.width = `${pct}%`;
+}
+
+function checkUserSectionAchievements() {
+  try {
+    const sections = state.userSections || {};
+    const nonEmpty = Object.entries(sections).filter(([k,v]) => typeof v === 'string' && v.trim().length > 0).map(([k])=>k);
+    if (nonEmpty.length >= 1) unlockAchievement('lyricist','Lyricist');
+    if (nonEmpty.length >= 3) unlockAchievement('composer','Composer');
+  } catch(_){}
+}
+function checkGenreAchievements() {
+  try {
+    const g = getGamify();
+    g.genresUsed = Array.isArray(g.genresUsed) ? g.genresUsed : [];
+    (state.genreMix||[]).forEach(s => { const key=(s.genre||s.customGenre||'').toLowerCase().trim(); if(key && !g.genresUsed.includes(key)) g.genresUsed.push(key); });
+    setGamify(g);
+    if (g.genresUsed.length >= 5) unlockAchievement('crateDigger','Crate Digger');
+    if (g.genresUsed.length >= 10) unlockAchievement('crateCurator','Crate Curator');
+  } catch(_){}
 }
 
 // ---------- Wizard Mode ----------
@@ -2297,6 +2351,7 @@ function postBuildAchievements() {
   if (streak === 7) unlockAchievement('streak7', '7-Day Streak');
 }
 function fireConfetti(count = 36) {
+  const prefs = getPrefs(); if (prefs.reduceMotion) return;
   const colors = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#B084CC'];
   for (let i=0;i<count;i++) {
     const el = document.createElement('div');
