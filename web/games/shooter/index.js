@@ -26,9 +26,14 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol);
   wrap.appendChild(controls);
 
-  // Canvas
-  const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 420; canvas.style.width='100%'; canvas.style.background='#0f1115'; canvas.style.borderRadius='12px'; wrap.appendChild(canvas);
+  // Canvas (Hi-DPI scaling)
+  const canvas = document.createElement('canvas');
+  const W = 800, H = 420; // logical pixels
+  const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width='100%'; canvas.style.height = H + 'px';
+  canvas.style.background='#0f1115'; canvas.style.borderRadius='12px'; wrap.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+  try { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); } catch(_) { try { ctx.scale(dpr, dpr); } catch(_) {} }
   const hud = document.createElement('div'); hud.className='hint'; hud.textContent = 'Move: WASD/Arrows | Shoot: Space/Click | Avoid hazards'; hud.style.margin='6px 0'; wrap.appendChild(hud);
 
   // State
@@ -36,7 +41,7 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   const rng = makeRng(Date.now());
   const hpByDiff = { easy: 4, normal: 3, hard: 2 };
   const spawnScale = difficulty === 'hard' ? 1.3 : difficulty === 'easy' ? 0.85 : 1.0;
-  const player = { x: canvas.width/2, y: canvas.height/2, vx: 0, vy: 0, speed: 180*speedScale, r: 12, hp: hpByDiff[difficulty] || 3 };
+  const player = { x: W/2, y: H/2, vx: 0, vy: 0, speed: 180*speedScale, r: 12, hp: hpByDiff[difficulty] || 3 };
   const bullets = [], enemies = [], pickups = [], hazards = [], particles = [];
   const keys = {}; let mouseDown=false; let shots=0, hits=0, kills=0, bestCombo=0, combo=0, score=0;
   const genreKills = {}; const styleTags = new Set(); const keywords = new Set(); const forbidden = new Set();
@@ -44,16 +49,16 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   let paused = false, pauseAccum = 0, pauseStart = 0; let sfxOn = true; let sfxVol = 0.12; let gamepadIdx = -1;
 
   function start(){ reset(); running=true; t0=0; now=0; pauseAccum=0; paused=false; raf=requestAnimationFrame(loop); restartBtn.disabled=false; }
-  function reset(){ enemies.length=0; bullets.length=0; pickups.length=0; hazards.length=0; particles.length=0; player.x=canvas.width/2; player.y=canvas.height/2; player.vx=player.vy=0; player.hp=hpByDiff[diffSel.value]||3; shots=hits=kills=bestCombo=combo=0; score=0; Object.keys(genreKills).forEach(k=>delete genreKills[k]); styleTags.clear(); keywords.clear(); forbidden.clear(); }
+  function reset(){ enemies.length=0; bullets.length=0; pickups.length=0; hazards.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=player.vy=0; player.hp=hpByDiff[diffSel.value]||3; shots=hits=kills=bestCombo=combo=0; score=0; Object.keys(genreKills).forEach(k=>delete genreKills[k]); styleTags.clear(); keywords.clear(); forbidden.clear(); }
   function endGame(){ running=false; try{ if(raf) cancelAnimationFrame(raf);}catch(_){} raf=0; const top=Object.entries(genreKills).sort((a,b)=>b[1]-a[1]).slice(0,3); const sum=top.reduce((a,b)=>a+b[1],0)||1; const genres=top.map(([name,count])=>({ name, influence:Math.round((count/sum)*100) })); const out={ genres: genres.length?genres:[{name:'Trap',influence:60},{name:'R&B',influence:40}], premise: samplePremise(), styleTags:Array.from(styleTags).slice(0,8), keywords:Array.from(keywords).slice(0,8), language: lang, accent: acc, forbidden:Array.from(forbidden).slice(0,8), meta:{ mode:'shooter', difficulty: diffSel.value, duration, score: Math.max(0, Math.round(kills*100 + bestCombo*20 - forbidden.size*50)), accuracy: calcAcc(), bestCombo } }; if(onFinish) onFinish(out); }
   function calcAcc(){ const total=shots||1; return Math.round((hits/total)*100); }
   function loop(ts){ if(!t0) t0=ts; now=ts; const elapsed=((now-t0)/1000) - pauseAccum; if (paused) { draw(elapsed); drawPaused(); raf=requestAnimationFrame(loop); return; } update(1/60); draw(elapsed); if (elapsed<duration && running && player.hp>0) raf=requestAnimationFrame(loop); else endGame(); }
   function update(dt){ pollGamepad(); const sp=player.speed*dt; player.vx = (keys['ArrowRight']||keys['d']?1:0) - (keys['ArrowLeft']||keys['a']?1:0); player.vy = (keys['ArrowDown']||keys['s']?1:0) - (keys['ArrowUp']||keys['w']?1:0); const len=Math.hypot(player.vx,player.vy)||1; player.x += (player.vx/len)*sp; player.y += (player.vy/len)*sp; clampPlayer(); if ((keys[' ']||mouseDown) && (now%200<16)) spawnBullet(); if (Math.random() < 0.03*spawnScale) spawnEnemy(); if (Math.random() < 0.015*spawnScale) spawnPickup(); if (Math.random() < 0.01*spawnScale) spawnHazard(); for (let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt; if (b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height) bullets.splice(i,1);} enemies.forEach(e=>{ const dx=player.x-e.x, dy=player.y-e.y; const d=Math.hypot(dx,dy)||1; const v=(60*speedScale)/(0.5+Math.random()); e.x+=(dx/d)*v*dt; e.y+=(dy/d)*v*dt; }); for (let i=enemies.length-1;i>=0;i--){ const e=enemies[i]; let dead=false; for (let j=bullets.length-1;j>=0;j--){ const b=bullets[j]; if (Math.hypot(b.x-e.x,b.y-e.y)<=e.r){ bullets.splice(j,1); dead=true; hits++; playSfx('hit'); spawnBurst(e.x,e.y,colorForKind(e.kind)); break; } } if (dead){ enemies.splice(i,1); kills++; combo++; const mult = 1 + Math.floor(combo/10); score += 100 * mult; bestCombo=Math.max(bestCombo,combo); genreKills[e.kind]=(genreKills[e.kind]||0)+1; if (Math.random()<0.35) spawnPickupAt(e.x,e.y); } } for (let i=hazards.length-1;i>=0;i--){ const h=hazards[i]; h.x+=h.vx*dt; h.y+=h.vy*dt; if (Math.hypot(h.x-player.x,h.y-player.y)<=h.r+player.r){ hazards.splice(i,1); player.hp--; combo=0; score = Math.max(0, score - 50); forbidden.add('hazards'); playSfx('hazard'); spawnBurst(player.x,player.y,'#FF6B6B'); } else if (h.x<0||h.y<0||h.x>canvas.width||h.y>canvas.height) hazards.splice(i,1);} for (let i=pickups.length-1;i>=0;i--){ const p=pickups[i]; if (Math.hypot(p.x-player.x,p.y-player.y)<=18){ pickups.splice(i,1); if (p.type==='tag') styleTags.add(p.label); else if (p.type==='kw') keywords.add(p.label); else if (p.type==='heal') player.hp=Math.min((hpByDiff[diffSel.value]||3),player.hp+1); score += 10; playSfx('pickup'); spawnBurst(p.x,p.y, p.type==='tag'?'#6BCB77':'#B084CC'); } } particles.forEach(pt=>{ pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.life-=dt; }); for(let i=particles.length-1;i>=0;i--) if (particles[i].life<=0) particles.splice(i,1); }
-  function clampPlayer(){ player.x=Math.max(player.r,Math.min(canvas.width-player.r,player.x)); player.y=Math.max(player.r,Math.min(canvas.height-player.r,player.y)); }
+  function clampPlayer(){ player.x=Math.max(player.r,Math.min(W-player.r,player.x)); player.y=Math.max(player.r,Math.min(H-player.r,player.y)); }
   function spawnBullet(){ const ang=(Math.random()*Math.PI*2); const v=320*speedScale; bullets.push({ x: player.x, y: player.y, vx: Math.cos(ang)*v, vy: Math.sin(ang)*v }); shots++; playSfx('shoot'); }
-  function spawnEnemy(){ const side=Math.floor(Math.random()*4); const r=10+Math.random()*10; let x=0,y=0; if(side===0){x=0;y=Math.random()*canvas.height;} else if(side===1){x=canvas.width;y=Math.random()*canvas.height;} else if(side===2){x=Math.random()*canvas.width;y=0;} else {x=Math.random()*canvas.width;y=canvas.height;} const kind = enemyKinds[Math.floor(Math.random()*enemyKinds.length)]; enemies.push({x,y,vx:0,vy:0,r,kind}); }
-  function spawnHazard(){ const r=10+Math.random()*8; const x=Math.random()*canvas.width, y=Math.random()*canvas.height; const ang=Math.random()*Math.PI*2; const v=80*speedScale; hazards.push({ x,y,vx:Math.cos(ang)*v,vy:Math.sin(ang)*v,r }); }
-  function spawnPickup(){ const type = Math.random()<0.6 ? 'tag' : 'kw'; const label = type==='tag' ? sampleTag() : sampleKeyword(); const x=Math.random()*canvas.width, y=Math.random()*canvas.height; pickups.push({ x,y,type,label }); }
+  function spawnEnemy(){ const side=Math.floor(Math.random()*4); const r=10+Math.random()*10; let x=0,y=0; if(side===0){x=0;y=Math.random()*H;} else if(side===1){x=W;y=Math.random()*H;} else if(side===2){x=Math.random()*W;y=0;} else {x=Math.random()*W;y=H;} const kind = enemyKinds[Math.floor(Math.random()*enemyKinds.length)]; enemies.push({x,y,vx:0,vy:0,r,kind}); }
+  function spawnHazard(){ const r=10+Math.random()*8; const x=Math.random()*W, y=Math.random()*H; const ang=Math.random()*Math.PI*2; const v=80*speedScale; hazards.push({ x,y,vx:Math.cos(ang)*v,vy:Math.sin(ang)*v,r }); }
+  function spawnPickup(){ const type = Math.random()<0.6 ? 'tag' : 'kw'; const label = type==='tag' ? sampleTag() : sampleKeyword(); const x=Math.random()*W, y=Math.random()*H; pickups.push({ x,y,type,label }); }
   function spawnPickupAt(x,y){ const type = Math.random()<0.6 ? 'tag' : 'kw'; const label = type==='tag' ? sampleTag() : sampleKeyword(); pickups.push({ x,y,type,label }); }
 
   // Wiring
@@ -66,25 +71,27 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   window.addEventListener('keydown', (e)=>{ if (e.key==='p' || e.key==='P') { togglePause(); e.preventDefault(); return; } keys[e.key]=true; });
   window.addEventListener('keyup', (e)=>{ keys[e.key]=false; }); canvas.addEventListener('mousedown', ()=>{ mouseDown=true; }); canvas.addEventListener('mouseup', ()=>{ mouseDown=false; });
 
-  function draw(elapsed){ ctx.clearRect(0,0,canvas.width,canvas.height); // subtle background grid
-    ctx.strokeStyle='#141824'; ctx.lineWidth=1; for (let x=0;x<canvas.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); } for (let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
-    // player with glow
-    ctx.fillStyle='#4D96FF'; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ffffff20'; ctx.stroke();
+  function draw(elapsed){ ctx.clearRect(0,0,W,H); // subtle background grid
+    ctx.strokeStyle='#141824'; ctx.lineWidth=1; for (let x=0;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); } for (let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    // player with radial glow
+    const pGrad = ctx.createRadialGradient(player.x-player.r*0.4, player.y-player.r*0.4, player.r*0.2, player.x, player.y, player.r);
+    pGrad.addColorStop(0, '#ffffff33'); pGrad.addColorStop(1, '#4D96FF');
+    ctx.fillStyle=pGrad; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ffffff20'; ctx.stroke();
     // particles
     particles.forEach(pt=>{ ctx.fillStyle=pt.color+Math.max(0, Math.min(1, pt.life/pt.maxLife)).toString(16).slice(0,2); ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life/pt.maxLife); ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
     // bullets
     ctx.fillStyle='#FFD93D'; bullets.forEach(b=>{ ctx.fillRect(b.x-2,b.y-2,4,4); });
     // enemies
-    enemies.forEach(e=>{ ctx.fillStyle=colorForKind(e.kind); ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); });
+    enemies.forEach(e=>{ const col=colorForKind(e.kind); const g=ctx.createRadialGradient(e.x-e.r*0.3,e.y-e.r*0.3,e.r*0.2,e.x,e.y,e.r); g.addColorStop(0,'#ffffff26'); g.addColorStop(1,col); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); });
     // pickups
-    pickups.forEach(p=>{ ctx.fillStyle = p.type==='tag'?'#6BCB77':'#B084CC'; ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2); ctx.fill(); });
+    pickups.forEach(p=>{ const col = p.type==='tag'?'#6BCB77':'#B084CC'; const g=ctx.createRadialGradient(p.x-3,p.y-3,2,p.x,p.y,8); g.addColorStop(0,'#ffffff20'); g.addColorStop(1,col); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2); ctx.fill(); });
     // hazards
-    ctx.fillStyle='#FF6B6B'; hazards.forEach(h=>{ ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,Math.PI*2); ctx.fill(); });
+    hazards.forEach(h=>{ const g=ctx.createRadialGradient(h.x-h.r*0.4,h.y-h.r*0.4,h.r*0.2,h.x,h.y,h.r); g.addColorStop(0,'#ffffff10'); g.addColorStop(1,'#FF6B6B'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,Math.PI*2); ctx.fill(); });
     // hud
     const mult = 1 + Math.floor(combo/10);
     ctx.fillStyle='#9aa3b2'; ctx.font='12px system-ui'; ctx.fillText(`Time: ${Math.max(0,(duration-elapsed)|0)}  HP: ${player.hp}  Kills: ${kills}  Combo: ${combo} (x${mult})  Acc: ${calcAcc()}%  Score: ${Math.max(0,Math.round(score))}`, 8, 16); }
 
-  function drawPaused(){ ctx.fillStyle='#00000080'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#ffffff'; ctx.font='bold 20px system-ui'; ctx.fillText('Paused', canvas.width/2 - 34, canvas.height/2); }
+  function drawPaused(){ ctx.fillStyle='#00000080'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#ffffff'; ctx.font='bold 20px system-ui'; ctx.fillText('Paused', W/2 - 34, H/2); }
 
   function togglePause(){
     paused = !paused; pauseBtn.textContent = paused ? 'Resume' : 'Pause';

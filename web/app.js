@@ -6,6 +6,7 @@ import { GENRE_LIBRARY } from './data/genres.js';
 import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
+import { buildSnakeGameDialog } from './games/snake/index.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
 // Local UX option lists (duplicated from config for easier patching)
@@ -2659,6 +2660,17 @@ function buildGameHubDialog() {
         openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
       }, { durationSec: 60 });
       openLibraryDialog('Shooter (Concept)', content);
+    }
+  }));
+  grid.appendChild(mkCard('Snake (prototype)', 'Classic snake with pickups mapping to tags/keywords.', sampleGridOutput, 'snake', {
+    start: () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
+      const content = buildSnakeGameDialog((output) => {
+        openLibraryDialog('Snake \u0007 Summary', buildGameSummary(output, 'snake'));
+      }, { difficulty: 'normal' });
+      openLibraryDialog('Snake (Prototype)', content);
     }
   }));
   wrap.appendChild(grid);
