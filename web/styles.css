@@ -360,6 +360,15 @@ button:disabled { opacity: 0.6; cursor: default; }
 :root[data-theme="dark"] .library-table th { background: var(--panel); color: var(--text); }
 
 @media (max-width: 700px) {
+  /* Make the top toolbar horizontally scrollable with touch momentum */
+  .toolbar { justify-content: flex-start; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 0.35rem; }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar > * { flex: 0 0 auto; }
+  .header-actions .spacer { display: none; }
+  .header-actions .brand { display: none; }
+  .tabs.segmented button { padding: 0.4rem 0.7rem; font-size: 0.9rem; }
+  button { padding: 0.45rem 0.7rem; }
+  .layout { grid-template-columns: 1fr; padding: 0.5rem; }
   .inline-buttons { flex-direction: column; align-items: stretch; }
   .grid-form { grid-template-columns: 1fr; }
 }
