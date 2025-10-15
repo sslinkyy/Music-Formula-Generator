@@ -113,7 +113,7 @@ export function buildGridGameDialog(onFinish, options = {}) {
     const tagGrid = document.createElement('div'); tagGrid.style.display='grid'; tagGrid.style.gridTemplateColumns='repeat(auto-fit,minmax(160px,1fr))'; tagGrid.style.gap='8px'; tagGrid.style.gridColumn='1/-1';
     tags.forEach(t => tagGrid.appendChild(mkCard(t, ()=>toggleTag(t))));
     const kwGrid = document.createElement('div'); kwGrid.style.display='grid'; kwGrid.style.gridTemplateColumns='repeat(auto-fit,minmax(160px,1fr))'; kwGrid.style.gap='8px'; kwGrid.style.gridColumn='1/-1';
-    kws.forEach(k => kwGrid.appendChild(mkCard('⭑ '+k, ()=>toggleKw(k), 'kw')));
+    kws.forEach(k => kwGrid.appendChild(mkCard(k, ()=>toggleKw(k), 'kw')));
     board.appendChild(tagGrid); board.appendChild(kwGrid);
     syncTagKw();
   }
@@ -129,9 +129,9 @@ export function buildGridGameDialog(onFinish, options = {}) {
   }
   function syncTagKw() {
     board.querySelectorAll('.grid-card').forEach(el=>{
-      const name = el.getAttribute('data-name');
+      const name = el.getAttribute('data-name') || '';
       const isKw = el.getAttribute('data-kind')==='kw';
-      if (isKw) el.classList.toggle('selected', state.picks.kws.includes(name.replace(/^\u2b51\s*/,'')));
+      if (isKw) el.classList.toggle('selected', state.picks.kws.includes(name));
       else el.classList.toggle('selected', state.picks.tags.includes(name));
     });
   }
