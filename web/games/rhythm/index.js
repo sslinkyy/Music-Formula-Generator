@@ -288,6 +288,15 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
     const txt = hits.map((h,i)=> `${lanes[i].label}:${Math.round((h/sum)*100)}%`).join('  ');
     ctx.fillText(txt, 8, canvas.height - 36);
     ctx.fillText(`Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}`, 8, canvas.height - 16);
+    // Update VU meter
+    try {
+      if (analyser && vuData) {
+        analyser.getByteTimeDomainData(vuData);
+        let peak = 0; for (let i=0;i<vuData.length;i++){ const v = Math.abs(vuData[i]-128); if (v>peak) peak=v; }
+        const pct = Math.min(100, Math.max(0, Math.round((peak/128)*100)));
+        vuFill.style.width = pct + '%';
+      }
+    } catch(_) {}
   }
 
   let raf = 0;
