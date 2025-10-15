@@ -35,8 +35,37 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   const libSel = document.createElement('select'); libSel.style.display='none'; libSel.title = 'Library Track'; controls.appendChild(libSel);
   // Local file
   const fileInput = document.createElement('input'); fileInput.type='file'; fileInput.accept='audio/*'; fileInput.style.display='none'; controls.appendChild(fileInput);
+  // Tap tempo + offset controls
+  let tappedBPM = null; let lastTaps = [];
+  const tapBtn = document.createElement('button'); tapBtn.textContent = 'Tap Tempo'; tapBtn.title = 'Tap to set BPM';
+  tapBtn.addEventListener('click', () => {
+    const t = performance.now();
+    // Keep recent taps (last 8)
+    lastTaps.push(t);
+    if (lastTaps.length > 8) lastTaps.shift();
+    if (lastTaps.length >= 3) {
+      const intervals = [];
+      for (let i=1;i<lastTaps.length;i++) intervals.push(lastTaps[i]-lastTaps[i-1]);
+      // Drop outliers (trim 20%)
+      intervals.sort((a,b)=>a-b);
+      const start = Math.floor(intervals.length*0.2), end = Math.ceil(intervals.length*0.8);
+      const trimmed = intervals.slice(start, end);
+      const avgMs = trimmed.reduce((a,b)=>a+b,0) / Math.max(1, trimmed.length);
+      if (avgMs > 0) tappedBPM = Math.round(60000/avgMs);
+    }
+    renderTrackInfo();
+  });
+  const clearTapBtn = document.createElement('button'); clearTapBtn.textContent = 'Clear Tap'; clearTapBtn.addEventListener('click', ()=>{ tappedBPM=null; lastTaps=[]; renderTrackInfo(); });
+  const offsetInput = document.createElement('input'); offsetInput.type='number'; offsetInput.step='0.01'; offsetInput.min='-1'; offsetInput.max='1'; offsetInput.value='0'; offsetInput.title='Offset seconds'; offsetInput.style.width='90px';
+  controls.appendChild(tapBtn); controls.appendChild(clearTapBtn); controls.appendChild(offsetInput);
   // Track info
   const trackInfo = document.createElement('span'); trackInfo.className='hint'; trackInfo.style.marginLeft = '6px'; controls.appendChild(trackInfo);
+  function renderTrackInfo() {
+    const bpm = tappedBPM || trackMeta?.bpm || analysis?.bpm || null;
+    const conf = analysis?.confidence ? ` • conf ${analysis.confidence.toFixed(2)}` : '';
+    const name = trackMeta?.title || selectedTrack?.title || '';
+    trackInfo.textContent = bpm ? `Track: ${name} • BPM ${bpm}${conf}` : (name ? `Track: ${name}` : '');
+  }
   // Sound toggle
   let soundOn = false;
   const soundBtn = document.createElement('button'); soundBtn.textContent = 'Sound: Off';
@@ -91,8 +120,8 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       selectedTrack = await loadTrack(entry);
       trackMeta = { id: selectedTrack.id, title: selectedTrack.title, bpm: entry.bpm||null, offset: entry.offset||null };
       const cached = getCachedAnalysis(selectedTrack.id);
-      analysis = cached || null; // Step 1: rely on cached if present
-      trackInfo.textContent = `Track: ${selectedTrack.title}${trackMeta.bpm?` • BPM ${trackMeta.bpm}`:''}`;
+      analysis = cached || null;
+      renderTrackInfo();
     } catch(_){}
   });
   fileInput.addEventListener('change', async (e) => {
@@ -100,8 +129,8 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
       selectedFile = f; selectedTrack = await loadTrack(f);
       trackMeta = { id: selectedTrack.id, title: selectedTrack.title, bpm: null, offset: null };
-      analysis = null; // Step 1: no analysis yet
-      trackInfo.textContent = `Track: ${selectedTrack.title}`;
+      analysis = null;
+      renderTrackInfo();
     } catch(_){}
   });
 
@@ -266,8 +295,12 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
             analysis = res; bpm = res.bpm; offset = res.offset; beatTimes = res.beatTimes;
           }
           // Fallback: synth if no bpm
+          bpm = tappedBPM || bpm;
+          const offOverride = Number(offsetInput.value || 0);
+          offset = isFinite(offOverride) ? offOverride : offset;
           if (bpm) {
-            buildNotesFromBeats(beatTimes.length ? beatTimes : buildBeatsFromBpm(bpm, offset, duration));
+            const beats = beatTimes.length ? beatTimes : buildBeatsFromBpm(bpm, offset, duration);
+            buildNotesFromBeats(beats);
             // Setup audio playback
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             // decode again for playback (simple path)
