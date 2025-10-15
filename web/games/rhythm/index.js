@@ -4,6 +4,7 @@
 import { GENRE_LIBRARY } from '../../data/genres.js';
 import { ACCENT_LIBRARY } from '../../data/accents.js';
 import { LANGUAGE_OPTIONS } from '../../js/config.js';
+import { listTracks, loadTrack, getCachedAnalysis, analyzeTrack } from '../music/manager.js';
 
 export function buildRhythmGameDialog(onFinish, options = {}) {
   const prefsReduce = document.documentElement.getAttribute('data-reduce-motion') === 'true';
@@ -26,6 +27,16 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   ['none','street','club','backpack','streaming'].forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; if(b===chosenBias) o.selected=true; biasSel.appendChild(o); });
   biasSel.title = 'Preset Bias'; biasSel.addEventListener('change', ()=>{ chosenBias = biasSel.value; lanes = buildLaneMap(chosenBias); });
   controls.appendChild(biasSel);
+  // Music source
+  let musicSource = 'none'; let selectedTrack = null; let selectedFile = null; let trackMeta = null; let analysis = null;
+  const musicSel = document.createElement('select'); ['none','library','local'].forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent = 'Music: ' + m; if(m==='none') o.selected=true; musicSel.appendChild(o); });
+  musicSel.title = 'Music Source'; controls.appendChild(musicSel);
+  // Library dropdown
+  const libSel = document.createElement('select'); libSel.style.display='none'; libSel.title = 'Library Track'; controls.appendChild(libSel);
+  // Local file
+  const fileInput = document.createElement('input'); fileInput.type='file'; fileInput.accept='audio/*'; fileInput.style.display='none'; controls.appendChild(fileInput);
+  // Track info
+  const trackInfo = document.createElement('span'); trackInfo.className='hint'; trackInfo.style.marginLeft = '6px'; controls.appendChild(trackInfo);
   // Sound toggle
   let soundOn = false;
   const soundBtn = document.createElement('button'); soundBtn.textContent = 'Sound: Off';
@@ -56,6 +67,43 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   tut.style.padding = '8px 10px'; tut.style.border = '1px solid var(--panel-border)'; tut.style.borderRadius = '10px'; tut.style.marginBottom = '6px';
   tut.innerHTML = '<strong>Tutorial</strong>:\n<ol style="margin:6px 0 0 18px">\n<li>Hit notes on the line (D/F/J/K or click).</li>\n<li>Long bars add style tags; yellow chips add keywords; red blocks add forbidden words.</li>\n<li>Choose language/accent before you start (top right).</li>\n</ol>';
   wrap.appendChild(tut);
+
+  // Populate library tracks
+  listTracks().then(tracks => {
+    try {
+      libSel.innerHTML='';
+      const def = document.createElement('option'); def.value=''; def.textContent='Select track'; libSel.appendChild(def);
+      tracks.forEach(tr => { const o=document.createElement('option'); o.value=tr.id||tr.file; o.textContent = tr.title || tr.file; o.dataset.json = JSON.stringify(tr); libSel.appendChild(o); });
+    } catch(_){}
+  });
+  musicSel.addEventListener('change', async () => {
+    musicSource = musicSel.value;
+    libSel.style.display = musicSource==='library' ? '' : 'none';
+    fileInput.style.display = musicSource==='local' ? '' : 'none';
+    trackMeta = null; selectedTrack = null; selectedFile = null; analysis = null;
+    trackInfo.textContent = '';
+  });
+  libSel.addEventListener('change', async () => {
+    try {
+      const opt = libSel.options[libSel.selectedIndex];
+      if (!opt || !opt.dataset.json) return;
+      const entry = JSON.parse(opt.dataset.json);
+      selectedTrack = await loadTrack(entry);
+      trackMeta = { id: selectedTrack.id, title: selectedTrack.title, bpm: entry.bpm||null, offset: entry.offset||null };
+      const cached = getCachedAnalysis(selectedTrack.id);
+      analysis = cached || null; // Step 1: rely on cached if present
+      trackInfo.textContent = `Track: ${selectedTrack.title}${trackMeta.bpm?` • BPM ${trackMeta.bpm}`:''}`;
+    } catch(_){}
+  });
+  fileInput.addEventListener('change', async (e) => {
+    try {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      selectedFile = f; selectedTrack = await loadTrack(f);
+      trackMeta = { id: selectedTrack.id, title: selectedTrack.title, bpm: null, offset: null };
+      analysis = null; // Step 1: no analysis yet
+      trackInfo.textContent = `Track: ${selectedTrack.title}`;
+    } catch(_){}
+  });
 
   const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 420; canvas.style.width = '100%'; canvas.style.background = '#0f1115'; canvas.style.borderRadius = '12px';
   wrap.appendChild(canvas);
@@ -283,7 +331,7 @@ function buildOutput(lanes, hits, extras = {}) {
     language: extras.language || 'English',
     accent: extras.accent || 'Neutral / Standard',
     forbidden: forb,
-    meta: { mode: 'rhythm', difficulty: 'normal', duration: extras.duration||0, accuracy: calcAccuracy(hits, extras.misses||0), bestCombo: extras.combo||0 }
+    meta: { mode: 'rhythm', difficulty: 'normal', duration: extras.duration||0, accuracy: calcAccuracy(hits, extras.misses||0), bestCombo: extras.combo||0, track: extras.track || null }
   };
 }
 

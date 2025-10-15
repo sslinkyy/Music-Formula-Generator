@@ -1,0 +1,12 @@
+[
+  {
+    "id": "example_track",
+    "title": "Example Track",
+    "artist": "RGF",
+    "file": "music/example.mp3",
+    "bpm": null,
+    "offset": null,
+    "tags": ["trap", "pop rap"]
+  }
+]
+
