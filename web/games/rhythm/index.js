@@ -412,7 +412,7 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
           offset = isFinite(offOverride) ? offOverride : offset;
           if (bpm) {
             const beats = beatTimes.length ? beatTimes : buildBeatsFromBpm(bpm, offset, duration);
-            buildNotesFromBeats(beats);
+            buildNotesFromBeatsLocal(beats);
             // Setup audio playback
             audioCtx = window.__rgfAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
             window.__rgfAudioCtx = audioCtx;
@@ -453,6 +453,27 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   quitBtn.addEventListener('click', () => { try { window.removeEventListener('keydown', keydown); } catch(_){} });
   // clickable lanes (visual)
   canvas.addEventListener('click', click);
+  // Local: populate notes from beats with current lanes/bias and seeded rng
+  function buildNotesFromBeatsLocal(beatTimes) {
+    notes = [];
+    const end = duration; // seconds
+    const w = biasLaneWeights(lanes, chosenBias);
+    for (let i = 0; i < beatTimes.length; i++) {
+      const bt = beatTimes[i]; if (bt > end) break;
+      const lane = weightedLaneIndexLocal(w);
+      const jitter = ((typeof rand==='function'?rand():Math.random()) - 0.5) * 0.02; // +-10ms
+      notes.push({ lane, timeMs: (bt + jitter) * 1000, type: 'short' }); totalNotes[lane]++;
+      if (i % 8 === 0) { const l2 = weightedLaneIndexLocal(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*0.02; notes.push({ lane: l2, timeMs: (bt+j)*1000, type: 'long', lenMs: 500 }); }
+      if (i % 10 === 5) { const l3 = weightedLaneIndexLocal(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*0.02; notes.push({ lane: l3, timeMs: (bt+j)*1000, type: 'chip' }); }
+      if (i % 12 === 9) { const l4 = weightedLaneIndexLocal(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*0.02; notes.push({ lane: l4, timeMs: (bt+j)*1000, type: 'hazard' }); }
+    }
+    notes.sort((a,b)=>a.timeMs-b.timeMs);
+  }
+  function weightedLaneIndexLocal(weights) {
+    const r = (typeof rand==='function'?rand():Math.random());
+    let acc = 0; for (let i=0;i<weights.length;i++){ acc+=weights[i]; if (r<=acc) return i; }
+    return weights.length-1;
+  }
   return wrap;
 }
 
