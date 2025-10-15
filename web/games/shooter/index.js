@@ -23,7 +23,8 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   const pauseBtn = document.createElement('button'); pauseBtn.textContent='Pause'; pauseBtn.title='Pause/Resume';
   const sfxBtn = document.createElement('button'); sfxBtn.textContent='SFX: On'; sfxBtn.title='Toggle sounds';
   const vol = document.createElement('input'); vol.type='range'; vol.min='0'; vol.max='1'; vol.step='0.01'; vol.value='0.12'; vol.title='Volume'; vol.style.width='100px';
-  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol);
+  const styleBtn = document.createElement('button'); styleBtn.textContent='Style: Shapes'; styleBtn.title='Toggle emoji sprites';
+  controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn); controls.appendChild(pauseBtn); controls.appendChild(sfxBtn); controls.appendChild(vol); controls.appendChild(styleBtn);
   wrap.appendChild(controls);
 
   // Canvas (Hi-DPI scaling)
@@ -46,7 +47,7 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   const keys = {}; let mouseDown=false; let shots=0, hits=0, kills=0, bestCombo=0, combo=0, score=0;
   const genreKills = {}; const styleTags = new Set(); const keywords = new Set(); const forbidden = new Set();
   let enemyKinds = pickEnemyKinds();
-  let paused = false, pauseAccum = 0, pauseStart = 0; let sfxOn = true; let sfxVol = 0.12; let gamepadIdx = -1;
+  let paused = false, pauseAccum = 0, pauseStart = 0; let sfxOn = true; let sfxVol = 0.12; let gamepadIdx = -1; let emojiMode = false;
 
   function start(){ reset(); running=true; t0=0; now=0; pauseAccum=0; paused=false; raf=requestAnimationFrame(loop); restartBtn.disabled=false; }
   function reset(){ enemies.length=0; bullets.length=0; pickups.length=0; hazards.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=player.vy=0; player.hp=hpByDiff[diffSel.value]||3; shots=hits=kills=bestCombo=combo=0; score=0; Object.keys(genreKills).forEach(k=>delete genreKills[k]); styleTags.clear(); keywords.clear(); forbidden.clear(); }
@@ -68,25 +69,31 @@ export function buildShooterGameDialog(onFinish, options = {}) {
   pauseBtn.addEventListener('click', togglePause);
   sfxBtn.addEventListener('click', ()=>{ sfxOn = !sfxOn; sfxBtn.textContent = `SFX: ${sfxOn?'On':'Off'}`; });
   vol.addEventListener('input', ()=>{ sfxVol = Math.max(0, Math.min(1, Number(vol.value)||0)); });
+  styleBtn.addEventListener('click', ()=>{ emojiMode = !emojiMode; styleBtn.textContent = `Style: ${emojiMode?'Emoji':'Shapes'}`; });
   window.addEventListener('keydown', (e)=>{ if (e.key==='p' || e.key==='P') { togglePause(); e.preventDefault(); return; } keys[e.key]=true; });
   window.addEventListener('keyup', (e)=>{ keys[e.key]=false; }); canvas.addEventListener('mousedown', ()=>{ mouseDown=true; }); canvas.addEventListener('mouseup', ()=>{ mouseDown=false; });
 
   function draw(elapsed){ ctx.clearRect(0,0,W,H); // subtle background grid
     ctx.strokeStyle='#141824'; ctx.lineWidth=1; for (let x=0;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); } for (let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-    // player with radial glow
-    const pGrad = ctx.createRadialGradient(player.x-player.r*0.4, player.y-player.r*0.4, player.r*0.2, player.x, player.y, player.r);
-    pGrad.addColorStop(0, '#ffffff33'); pGrad.addColorStop(1, '#4D96FF');
-    ctx.fillStyle=pGrad; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ffffff20'; ctx.stroke();
-    // particles
-    particles.forEach(pt=>{ ctx.fillStyle=pt.color+Math.max(0, Math.min(1, pt.life/pt.maxLife)).toString(16).slice(0,2); ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life/pt.maxLife); ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
-    // bullets
-    ctx.fillStyle='#FFD93D'; bullets.forEach(b=>{ ctx.fillRect(b.x-2,b.y-2,4,4); });
-    // enemies
-    enemies.forEach(e=>{ const col=colorForKind(e.kind); const g=ctx.createRadialGradient(e.x-e.r*0.3,e.y-e.r*0.3,e.r*0.2,e.x,e.y,e.r); g.addColorStop(0,'#ffffff26'); g.addColorStop(1,col); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); });
-    // pickups
-    pickups.forEach(p=>{ const col = p.type==='tag'?'#6BCB77':'#B084CC'; const g=ctx.createRadialGradient(p.x-3,p.y-3,2,p.x,p.y,8); g.addColorStop(0,'#ffffff20'); g.addColorStop(1,col); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2); ctx.fill(); });
-    // hazards
-    hazards.forEach(h=>{ const g=ctx.createRadialGradient(h.x-h.r*0.4,h.y-h.r*0.4,h.r*0.2,h.x,h.y,h.r); g.addColorStop(0,'#ffffff10'); g.addColorStop(1,'#FF6B6B'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,Math.PI*2); ctx.fill(); });
+    if (emojiMode) {
+      // Emoji sprites
+      drawEmoji(ctx, '🚀', player.x, player.y, player.r*2.4);
+      particles.forEach(pt=>{ drawEmoji(ctx, '✨', pt.x, pt.y, pt.size*3); });
+      bullets.forEach(b=> drawEmoji(ctx, '•', b.x, b.y, 10));
+      enemies.forEach(e=> drawEmoji(ctx, emojiForKind(e.kind), e.x, e.y, e.r*2.4));
+      pickups.forEach(p=> drawEmoji(ctx, p.type==='tag'?'🏷️':'🔑', p.x, p.y, 18));
+      hazards.forEach(h=> drawEmoji(ctx, '⚠️', h.x, h.y, h.r*2.2));
+    } else {
+      // Shapes with glows
+      const pGrad = ctx.createRadialGradient(player.x-player.r*0.4, player.y-player.r*0.4, player.r*0.2, player.x, player.y, player.r);
+      pGrad.addColorStop(0, '#ffffff33'); pGrad.addColorStop(1, '#4D96FF');
+      ctx.fillStyle=pGrad; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ffffff20'; ctx.stroke();
+      particles.forEach(pt=>{ ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life/pt.maxLife); ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
+      ctx.fillStyle='#FFD93D'; bullets.forEach(b=>{ ctx.fillRect(b.x-2,b.y-2,4,4); });
+      enemies.forEach(e=>{ const col=colorForKind(e.kind); const g=ctx.createRadialGradient(e.x-e.r*0.3,e.y-e.r*0.3,e.r*0.2,e.x,e.y,e.r); g.addColorStop(0,'#ffffff26'); g.addColorStop(1,col); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); });
+      pickups.forEach(p=>{ const col = p.type==='tag'?'#6BCB77':'#B084CC'; const g=ctx.createRadialGradient(p.x-3,p.y-3,2,p.x,p.y,8); g.addColorStop(0,'#ffffff20'); g.addColorStop(1,col); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2); ctx.fill(); });
+      hazards.forEach(h=>{ const g=ctx.createRadialGradient(h.x-h.r*0.4,h.y-h.r*0.4,h.r*0.2,h.x,h.y,h.r); g.addColorStop(0,'#ffffff10'); g.addColorStop(1,'#FF6B6B'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,Math.PI*2); ctx.fill(); });
+    }
     // hud
     const mult = 1 + Math.floor(combo/10);
     ctx.fillStyle='#9aa3b2'; ctx.font='12px system-ui'; ctx.fillText(`Time: ${Math.max(0,(duration-elapsed)|0)}  HP: ${player.hp}  Kills: ${kills}  Combo: ${combo} (x${mult})  Acc: ${calcAcc()}%  Score: ${Math.max(0,Math.round(score))}`, 8, 16); }
@@ -106,6 +113,20 @@ export function buildShooterGameDialog(onFinish, options = {}) {
 
   // SFX using shared AudioContext
   function playSfx(type){ try { if (!sfxOn) return; const C = window.__rgfAudioCtx || new (window.AudioContext||window.webkitAudioContext)(); window.__rgfAudioCtx = C; const o = C.createOscillator(); const g = C.createGain(); o.connect(g).connect(C.destination); let freq=440, dur=0.05, vol=0.06, typeW='sine'; if (type==='shoot'){ freq=660; dur=0.04; vol=0.05; typeW='square'; } else if (type==='hit'){ freq=220; dur=0.06; vol=0.06; typeW='sawtooth'; } else if (type==='pickup'){ freq=880; dur=0.07; vol=0.05; typeW='triangle'; } else if (type==='hazard'){ freq=140; dur=0.12; vol=0.07; typeW='sawtooth'; } vol = vol * (sfxVol||0); g.gain.value=0; const nowT=C.currentTime; const attack=0.005, decay=dur; g.gain.setValueAtTime(0, nowT); g.gain.linearRampToValueAtTime(vol, nowT+attack); g.gain.exponentialRampToValueAtTime(0.0001, nowT+attack+decay); o.type=typeW; o.frequency.setValueAtTime(freq, nowT); o.start(nowT); o.stop(nowT+attack+decay+0.02); } catch(_){} }
+
+  // Emoji helpers
+  function drawEmoji(ctx, ch, x, y, sizePx){
+    const px = Math.max(10, Math.round(sizePx));
+    ctx.save();
+    ctx.font = `${px}px Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, system-ui, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(ch, x, y);
+    ctx.restore();
+  }
+  function emojiForKind(kind){
+    const map = { 'Trap':'💥','R&B':'🎵','Drill':'🛡️','Afrobeats':'🥁','House':'🎧' };
+    return map[kind] || '🎯';
+  }
 
   function showToastLocal(text){ try { const root=document.getElementById('toast-root'); if (!root) return; const el=document.createElement('div'); el.className='toast'; el.textContent=text; root.appendChild(el); setTimeout(()=>{ if (el.parentNode) el.parentNode.removeChild(el); }, 900); } catch(_){} }
 
