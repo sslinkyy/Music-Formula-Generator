@@ -870,6 +870,10 @@ function setupButtons() {
   if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { unlockAchievement('djBlend','Blend DJ'); } catch(_){} try { scheduleSave(); } catch(_){} });
   const genrePresetsBtn = document.getElementById('genre-presets');
   if (genrePresetsBtn) genrePresetsBtn.addEventListener('click', () => openLibraryDialog('Blend Presets', buildGenrePresetDialog()));
+
+  // Wizard Fix It action
+  const wzFix = document.getElementById('wizard-fix');
+  if (wzFix) wzFix.addEventListener('click', () => wizardFixCurrentStep());
 }
 
 function applyPreset(name) {
@@ -2206,6 +2210,7 @@ function renderWizardBar() {
   });
   const wzPrev = document.getElementById('wizard-prev');
   const wzNext = document.getElementById('wizard-next');
+  const wzFix = document.getElementById('wizard-fix');
   if (wzPrev) wzPrev.disabled = wizard.step <= 0;
   if (wzNext) wzNext.textContent = wizard.step >= wizard.steps.length - 1 ? 'Finish' : 'Next';
   // Gate Next on minimal requirements
@@ -2213,29 +2218,79 @@ function renderWizardBar() {
   const hintEl = document.getElementById('wizard-hint');
   if (hintEl) hintEl.textContent = info.hint || '';
   if (wzNext) wzNext.disabled = !info.ok && wizard.step < wizard.steps.length - 1;
+  if (wzFix) {
+    wzFix.hidden = !info.canFix;
+    wzFix.textContent = info.fixLabel || 'Fix It';
+  }
 }
 
 function wizardRequirements() {
   const current = wizard.steps[wizard.step]?.id;
   let ok = true;
   let hint = '';
+  let canFix = false;
+  let fixLabel = '';
   if (current === 'weights') {
     const sum = Object.values(state.weights).reduce((a,b)=>a+Number(b||0),0);
     ok = Math.abs(sum - 1) < 0.05;
-    if (!ok) hint = 'Adjust weights to total ~1.00';
+    if (!ok) { hint = 'Adjust weights to total ~1.00'; canFix = true; fixLabel = 'Normalize Weights'; }
   } else if (current === 'genre') {
     const any = state.genreMix.some(s => (s.genre||s.customGenre) && (s.weight||0) > 0);
-    ok = any; if (!ok) hint = 'Add at least one genre with weight > 0';
+    ok = any; if (!ok) { hint = 'Add at least one genre with weight > 0'; canFix = true; fixLabel = 'Suggest Blend'; }
   } else if (current === 'premise') {
     const premOk = (state.premise && state.premise.length);
     const accOk = (state.accent && state.accent.length);
-    ok = premOk && accOk; if (!ok) hint = 'Choose a premise and an accent';
+    ok = premOk && accOk; if (!ok) { hint = 'Choose a premise and an accent'; canFix = true; fixLabel = 'Auto-Choose'; }
   } else if (current === 'user') {
     ok = true; hint = 'Optional: add a title or hook';
   } else if (current === 'build') {
     ok = true; hint = '';
   }
-  return { ok, hint };
+  return { ok, hint, canFix, fixLabel };
+}
+
+function wizardFixCurrentStep() {
+  const current = wizard.steps[wizard.step]?.id;
+  if (current === 'weights') {
+    normalizeWeights();
+    renderWeights();
+    recompute();
+    showToast('Weights normalized');
+  } else if (current === 'genre') {
+    suggestGenreBlend();
+    renderGenreMix();
+    recompute();
+    showToast('Suggested a starter blend');
+  } else if (current === 'premise') {
+    // Ensure premise and accent are set
+    if (!state.premise || state.premise === '(auto)') {
+      const s = suggestPremise();
+      state.premise = '(custom)';
+      state.customPremise = s;
+      renderPremise();
+    }
+    if (!state.accent) {
+      try { state.accent = ACCENT_LIBRARY[0]?.name || state.accent; } catch(_){}
+      renderAccent();
+    }
+    updateHiddenDirective();
+    showToast('Filled in premise and accent');
+  }
+  // Refresh gating
+  renderWizardBar();
+  try { scheduleSave(); } catch(_){}
+}
+
+function normalizeWeights() {
+  const keys = Object.keys(state.weights || {});
+  const vals = keys.map(k => Number(state.weights[k] || 0));
+  const sum = vals.reduce((a,b)=>a+b,0);
+  if (sum <= 0) {
+    const equal = 1 / (keys.length || 1);
+    keys.forEach(k => { state.weights[k] = +(equal.toFixed(4)); });
+    return;
+  }
+  keys.forEach((k,i) => { state.weights[k] = +( (vals[i] / sum).toFixed(4) ); });
 }
 
 // ---------- Prompt history (localStorage) ----------
