@@ -71,6 +71,9 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   const soundBtn = document.createElement('button'); soundBtn.textContent = 'Sound: Off';
   soundBtn.addEventListener('click', ()=>{ soundOn=!soundOn; soundBtn.textContent = `Sound: ${soundOn?'On':'Off'}`; });
   controls.appendChild(soundBtn);
+  // Choose lanes panel toggle
+  const chooseBtn = document.createElement('button'); chooseBtn.textContent = 'Choose Lanes';
+  controls.appendChild(chooseBtn);
   // Language / Accent quick selectors
   let chosenLanguage = 'English';
   let chosenAccent = 'Neutral / Standard';
@@ -88,6 +91,45 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   const quitBtn = document.createElement('button'); quitBtn.textContent = 'Quit';
   controls.appendChild(startBtn); controls.appendChild(restartBtn); controls.appendChild(quitBtn);
   wrap.appendChild(controls);
+  // Inline lane picker container
+  const lanePicker = document.createElement('div');
+  lanePicker.style.display = 'none';
+  lanePicker.style.margin = '8px 0';
+  lanePicker.style.padding = '8px';
+  lanePicker.style.border = '1px solid var(--panel-border)';
+  lanePicker.style.borderRadius = '8px';
+  const pickerRow = document.createElement('div'); pickerRow.className = 'inline-buttons'; pickerRow.style.flexWrap='wrap';
+  const laneSelects = [];
+  const buildLaneOptions = () => {
+    const names = (GENRE_LIBRARY||[]).slice(0,200).map(g=>g.name).filter(Boolean);
+    const base = ['Drill','Afrobeats','Trap','R&B','Pop Rap','Boom Bap','House','EDM','Lo-fi','Rap'];
+    return base.concat(names).filter((v,i,a)=>a.indexOf(v)===i);
+  };
+  const optHtml = () => ['(custom)'].concat(buildLaneOptions()).map(n=>`<option value="${n}">${n}</option>`).join('');
+  for (let i=0;i<4;i++) {
+    const wrapSel = document.createElement('label'); wrapSel.className='field'; wrapSel.innerHTML = `<span>Lane ${i+1}</span>`;
+    const sel = document.createElement('select'); sel.innerHTML = optHtml(); sel.value = lanes[i]?.label || '';
+    const custom = document.createElement('input'); custom.type='text'; custom.placeholder='Custom'; custom.style.marginLeft='6px'; custom.style.display='none';
+    const syncVis = () => { const isC = (sel.value||'').toLowerCase()==='(custom)'; custom.style.display = isC? '' : 'none'; };
+    sel.addEventListener('change', syncVis); syncVis();
+    wrapSel.appendChild(sel); wrapSel.appendChild(custom);
+    pickerRow.appendChild(wrapSel); laneSelects.push({ sel, custom });
+  }
+  const pickerActions = document.createElement('div'); pickerActions.className='inline-buttons'; pickerActions.style.marginTop='8px';
+  const savePick = document.createElement('button'); savePick.textContent='Save'; savePick.className='btn-primary';
+  const cancelPick = document.createElement('button'); cancelPick.textContent='Cancel';
+  pickerActions.appendChild(savePick); pickerActions.appendChild(cancelPick);
+  lanePicker.appendChild(pickerRow); lanePicker.appendChild(pickerActions);
+  wrap.appendChild(lanePicker);
+  chooseBtn.addEventListener('click', ()=>{ lanePicker.style.display = lanePicker.style.display==='none' ? '' : 'none'; });
+  cancelPick.addEventListener('click', ()=>{ lanePicker.style.display='none'; });
+  savePick.addEventListener('click', ()=>{
+    const colors = lanes.map(l=>l.color);
+    const labels = laneSelects.map(({sel, custom},i)=> (sel.value||'') === '(custom)' ? (custom.value||`Lane ${i+1}`) : sel.value);
+    lanes = labels.slice(0,4).map((label,i)=>({ label, color: colors[i%colors.length] }));
+    lanePicker.style.display='none';
+    try { updateBeatPreviewFromState(); } catch(_){}
+  });
 
   const hud = document.createElement('div'); hud.className = 'hint'; hud.textContent = 'Keys: D F   J K / Click lanes. Hit notes on the line!';
   hud.style.margin = '6px 0'; wrap.appendChild(hud);
@@ -163,6 +205,14 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
 
   const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 420; canvas.style.width = '100%'; canvas.style.background = '#0f1115'; canvas.style.borderRadius = '12px';
   wrap.appendChild(canvas);
+  // VU meter
+  const vuWrap = document.createElement('div'); vuWrap.style.margin = '8px 0'; vuWrap.style.display='flex'; vuWrap.style.alignItems='center';
+  const vuLabel = document.createElement('span'); vuLabel.className='hint'; vuLabel.textContent='Audio:'; vuLabel.style.marginRight='8px';
+  const vuBar = document.createElement('div'); vuBar.style.height='8px'; vuBar.style.flex='1'; vuBar.style.background='#1b1e27'; vuBar.style.border='1px solid var(--panel-border)'; vuBar.style.borderRadius='6px'; vuBar.style.position='relative';
+  const vuFill = document.createElement('div'); vuFill.style.position='absolute'; vuFill.style.left='0'; vuFill.style.top='0'; vuFill.style.bottom='0'; vuFill.style.width='0%'; vuFill.style.background='#6BCB77'; vuFill.style.borderRadius='6px';
+  const vuStatus = document.createElement('span'); vuStatus.className='hint'; vuStatus.textContent='Stopped'; vuStatus.style.marginLeft='8px';
+  vuBar.appendChild(vuFill); vuWrap.appendChild(vuLabel); vuWrap.appendChild(vuBar); vuWrap.appendChild(vuStatus);
+  wrap.appendChild(vuWrap);
 
   const ctx = canvas.getContext('2d');
   let running = false, t0 = 0, now = 0;
@@ -186,19 +236,20 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
     const end = duration * 1000;
     for (let lane = 0; lane < lanes.length; lane++) {
       for (let t = (lane * beatMs) % (beatMs * 2); t < end; t += beatMs * 2) {
-        notes.push({ lane, timeMs: t, type: 'short' }); totalNotes[lane]++;
+        const j = ((typeof rand==='function'?rand():Math.random())-0.5) * 20; // +-10ms
+        notes.push({ lane, timeMs: t + j, type: 'short' }); totalNotes[lane]++;
       }
     }
     // sprinkle long notes (style tags), chips (keywords), and hazards (forbidden)
     const w = biasLaneWeights(lanes, chosenBias);
     for (let t = beatMs*8; t < end; t += beatMs*8) {
-      const lane = weightedLaneIndex(w); notes.push({ lane, timeMs: t, type: 'long', lenMs: beatMs*2 });
+      const lane = weightedLaneIndex(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*20; notes.push({ lane, timeMs: t + j, type: 'long', lenMs: beatMs*2 });
     }
     for (let t = beatMs*10; t < end; t += beatMs*10) {
-      const lane = weightedLaneIndex(w); notes.push({ lane, timeMs: t, type: 'chip' });
+      const lane = weightedLaneIndex(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*20; notes.push({ lane, timeMs: t + j, type: 'chip' });
     }
     for (let t = beatMs*12; t < end; t += beatMs*12) {
-      const lane = weightedLaneIndex(w); notes.push({ lane, timeMs: t, type: 'hazard' });
+      const lane = weightedLaneIndex(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*20; notes.push({ lane, timeMs: t + j, type: 'hazard' });
     }
     notes.sort((a,b) => a.timeMs - b.timeMs);
   }
@@ -301,7 +352,18 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
 
   let raf = 0;
   // Optional audio playback when using a track
-  let audioCtx = null, sourceNode = null, audioStartTime = 0, audioBufferForPlay = null;
+  let audioCtx = null, sourceNode = null, audioStartTime = 0, audioBufferForPlay = null, analyser = null, vuData = null;
+  // Seeded RNG per round
+  let rand = Math.random;
+  const makeRng = (seed0) => {
+    let seed = (seed0>>>0) || 0xA5A5A5A5;
+    return function() {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
   function loop(ts) {
     if (!t0) t0 = ts; now = ts;
     draw();
@@ -314,7 +376,11 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
   function endGame() {
     window.removeEventListener('keydown', keydown);
     canvas.removeEventListener('mousedown', click);
-    try { if (sourceNode) { sourceNode.stop(); sourceNode.disconnect(); } if (audioCtx) { /* keep ctx for resume */ } } catch(_){}
+    try {
+      if (sourceNode) { sourceNode.stop(); sourceNode.disconnect(); }
+      if (audioCtx) { audioCtx.suspend?.(); }
+      vuStatus.textContent = 'Stopped';
+    } catch(_){}
     const output = buildOutput(lanes, hits, { tagCounts, keywords, forbidden, language: chosenLanguage, accent: chosenAccent, misses, combo: bestCombo, duration, track: trackMeta });
     if (onFinish) onFinish(output);
   }
@@ -323,12 +389,15 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
     try { window.removeEventListener('keydown', keydown); } catch(_){}
     try { canvas.removeEventListener('mousedown', click); } catch(_){}
     try { if (raf) cancelAnimationFrame(raf); } catch(_){}
-    running = false; raf = 0; t0 = 0; now = 0;
+    try { if (audioCtx) { audioCtx.suspend?.(); } } catch(_){}
+    running = false; raf = 0; t0 = 0; now = 0; vuStatus.textContent='Stopped'; vuFill.style.width='0%';
   }
   function start() {
     // If music selected and analysis available/provided, use beat grid; otherwise synthetic
     (async () => {
       try {
+        // Seed RNG for this round (stable within a run)
+        rand = makeRng(Date.now());
         if (musicSource !== 'none' && (selectedTrack || selectedFile)) {
           // Prefer manifest bpm/offset when present; else analyze now
           let bpm = trackMeta?.bpm || null; let offset = trackMeta?.offset || 0; let beatTimes = [];
@@ -345,7 +414,8 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
             const beats = beatTimes.length ? beatTimes : buildBeatsFromBpm(bpm, offset, duration);
             buildNotesFromBeats(beats);
             // Setup audio playback
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx = window.__rgfAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            window.__rgfAudioCtx = audioCtx;
             try { await audioCtx.resume(); } catch(_) {}
             // Decode track: prefer local file buffer when available
             let arr;
@@ -358,9 +428,11 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
             audioBufferForPlay = await audioCtx.decodeAudioData(arr.slice(0));
             sourceNode = audioCtx.createBufferSource();
             sourceNode.buffer = audioBufferForPlay;
-            sourceNode.connect(audioCtx.destination);
+            analyser = audioCtx.createAnalyser(); analyser.fftSize = 512; vuData = new Uint8Array(analyser.fftSize);
+            sourceNode.connect(analyser); analyser.connect(audioCtx.destination);
             audioStartTime = audioCtx.currentTime + 0.05;
             sourceNode.start(audioStartTime, 0);
+            vuStatus.textContent = 'Playing';
           } else {
             buildNotes();
           }
@@ -425,7 +497,7 @@ function biasLaneWeights(lanes, bias) {
   return base;
 }
 function weightedLaneIndex(weights) {
-  const r = Math.random();
+  const r = (typeof rand==='function'?rand():Math.random());
   let acc = 0;
   for (let i=0;i<weights.length;i++) { acc += weights[i]; if (r <= acc) return i; }
   return weights.length-1;
@@ -437,7 +509,9 @@ function buildOutput(lanes, hits, extras = {}) {
   // Simple premise suggestion from curated pairs
   const left = ['love','heartbreak','hustle','betrayal','triumph','redemption','city pride','struggle','freedom','nostalgia','rebellion','identity','faith','ambition','legacy','loss','hope','party','distance','healing','money','fame','survival','recovery','underdog','gratitude','nature','technology','community','wanderlust'];
   const right = ['loyalty','healing','ambition','trust','celebration','growth','belonging','perseverance','escape','memory','defiance','self-discovery','doubt','sacrifice','family','remembrance','renewal','vibe','yearning','balance','power','pressure','street wisdom','comeback','come-up','humility','calm','isolation','solidarity','homecoming'];
-  const premise = `${left[(Math.random()*left.length)|0]} & ${right[(Math.random()*right.length)|0]}`;
+  const r1 = (typeof rand==='function'?rand():Math.random());
+  const r2 = (typeof rand==='function'?rand():Math.random());
+  const premise = `${left[((r1)*left.length)|0]} & ${right[((r2)*right.length)|0]}`;
   // Build style tags from tagCounts (sorted by freq)
   const tags = Object.entries(extras.tagCounts||{}).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k])=>k);
   const kws = (extras.keywords||[]).slice(0,8);
@@ -475,10 +549,11 @@ function buildNotesFromBeats(beatTimes) {
   for (let i=0; i<beatTimes.length; i++) {
     const bt = beatTimes[i]; if (bt > end) break;
     const lane = weightedLaneIndex(w);
-    notes.push({ lane, timeMs: bt*1000, type: 'short' }); totalNotes[lane]++;
-    if (i % 8 === 0) { const l2 = weightedLaneIndex(w); notes.push({ lane: l2, timeMs: (bt+0.001)*1000, type: 'long', lenMs: 500 }); }
-    if (i % 10 === 5) { const l3 = weightedLaneIndex(w); notes.push({ lane: l3, timeMs: (bt+0.001)*1000, type: 'chip' }); }
-    if (i % 12 === 9) { const l4 = weightedLaneIndex(w); notes.push({ lane: l4, timeMs: (bt+0.001)*1000, type: 'hazard' }); }
+    const jitter = ((typeof rand==='function'?rand():Math.random()) - 0.5) * 0.02; // +-10ms
+    notes.push({ lane, timeMs: (bt+jitter)*1000, type: 'short' }); totalNotes[lane]++;
+    if (i % 8 === 0) { const l2 = weightedLaneIndex(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*0.02; notes.push({ lane: l2, timeMs: (bt+j)*1000, type: 'long', lenMs: 500 }); }
+    if (i % 10 === 5) { const l3 = weightedLaneIndex(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*0.02; notes.push({ lane: l3, timeMs: (bt+j)*1000, type: 'chip' }); }
+    if (i % 12 === 9) { const l4 = weightedLaneIndex(w); const j=((typeof rand==='function'?rand():Math.random())-0.5)*0.02; notes.push({ lane: l4, timeMs: (bt+j)*1000, type: 'hazard' }); }
   }
   notes.sort((a,b)=>a.timeMs-b.timeMs);
 }
@@ -491,15 +566,15 @@ function pickLaneTag(label) {
     'R&B': ['silky hook','smooth vibe','melodic runs']
   };
   const list = map[label] || ['anthemic','modern','energetic'];
-  return list[(Math.random()*list.length)|0];
+  return list[(((typeof rand==='function'?rand():Math.random())*list.length)|0)];
 }
 function pickKeyword() {
   const pool = ['crowd','lights','stage','engine','midnight','street','city','radio','festival','basement'];
-  return pool[(Math.random()*pool.length)|0];
+  return pool[(((typeof rand==='function'?rand():Math.random())*pool.length)|0)];
 }
 function pickForbidden() {
   const pool = ['glow','glitch','pulse','brand names'];
-  return pool[(Math.random()*pool.length)|0];
+  return pool[(((typeof rand==='function'?rand():Math.random())*pool.length)|0)];
 }
 
 function beep(enabled, freq=440) {
