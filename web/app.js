@@ -2412,7 +2412,11 @@ const ACHIEVEMENTS = {
   lyricist: { label: 'Lyricist', icon: '✍️', desc: 'Enter any user section (title/intro/hook/etc.).' },
   composer: { label: 'Composer', icon: '🎼', desc: 'Enter 3 or more user sections.' },
   crateDigger: { label: 'Crate Digger', icon: '📦', desc: 'Use 5 unique genres across mixes.' },
-  crateCurator: { label: 'Crate Curator', icon: '🗂️', desc: 'Use 10 unique genres across mixes.' }
+  crateCurator: { label: 'Crate Curator', icon: '🗂️', desc: 'Use 10 unique genres across mixes.' },
+  rhythmFirst: { label: 'Rhythm First Round', icon: '🥁', desc: 'Finish a Rhythm Tapper round.' },
+  rhythmAce: { label: 'Rhythm Ace', icon: '🎯', desc: 'Finish Rhythm with ≥90% accuracy.' },
+  comboMaster: { label: 'Combo Master', icon: '🔗', desc: 'Reach a 30+ combo in Rhythm.' },
+  hazardAvoider: { label: 'Hazard Avoider', icon: '🛡️', desc: 'Finish Rhythm with 0 hazards collected.' }
 };
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
@@ -2574,7 +2578,25 @@ function buildGameSummary(output, modeKey) {
   const buildBtn = document.createElement('button'); buildBtn.textContent = 'Apply + Build';
   row.appendChild(applyBtn); row.appendChild(buildBtn);
   wrap.appendChild(row);
-  const apply = () => { try { applyGameOutput(output); unlockAchievement('game_'+modeKey, (modeKey+' mode').replace(/^./,c=>c.toUpperCase())); } catch(_){} };
+  const apply = () => {
+    try {
+      applyGameOutput(output);
+      unlockAchievement('game_'+modeKey, (modeKey+' mode').replace(/^./,c=>c.toUpperCase()));
+      if (modeKey === 'rhythm') {
+        // Rhythm-specific achievements
+        unlockAchievement('rhythmFirst','Rhythm First Round');
+        const acc = Number(output?.meta?.accuracy || 0);
+        const combo = Number(output?.meta?.bestCombo || 0);
+        const hazards = Array.isArray(output?.forbidden) ? output.forbidden.length : 0;
+        if (acc >= 90) unlockAchievement('rhythmAce','Rhythm Ace');
+        if (combo >= 30) unlockAchievement('comboMaster','Combo Master');
+        if (hazards === 0) unlockAchievement('hazardAvoider','Hazard Avoider');
+        // Also leverage existing language/accent achievements
+        if ((output.language||'').toLowerCase() !== 'english') unlockAchievement('polyglot1','Polyglot I');
+        if ((output.accent||'').toLowerCase().includes('english') === false) unlockAchievement('voiceActor','Voice Actor');
+      }
+    } catch(_){}
+  };
   applyBtn.addEventListener('click', () => { apply(); rerenderAll(); showToast('Applied from game'); });
   buildBtn.addEventListener('click', () => { apply(); rerenderAll(); try { document.getElementById('build-prompt').click(); } catch(_){} });
   return wrap;
