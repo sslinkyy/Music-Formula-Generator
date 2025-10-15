@@ -694,6 +694,7 @@ function setupButtons() {
       try {
         await copyToClipboard(text);
         flashButton(copyBtn, 'Copied!', 900);
+        try { unlockAchievement('promptCopier','Prompt Copier'); } catch(_){}
       } catch (err) {
         console.error('Copy failed', err);
         flashButton(copyBtn, 'Copy failed', 1200);
@@ -712,6 +713,7 @@ function setupButtons() {
       try {
         await copyToClipboard(text);
         flashButton(copyBriefBtn, 'Copied!', 900);
+        try { unlockAchievement('briefCopier','Brief Copier'); } catch(_){}
       } catch (err) {
         console.error('Copy failed', err);
         flashButton(copyBriefBtn, 'Copy failed', 1200);
@@ -730,6 +732,7 @@ function setupButtons() {
       try {
         await copyToClipboard(text);
         flashButton(copySunoBtn, 'Copied!', 900);
+        try { unlockAchievement('sunoCopier','Suno Copier'); } catch(_){}
       } catch (err) {
         console.error('Copy failed', err);
         flashButton(copySunoBtn, 'Copy failed', 1200);
@@ -745,6 +748,7 @@ function setupButtons() {
     try {
       const result = await callAI();
       state.outputs.aiResponse = result;
+      try { unlockAchievement('apiCaller','API Caller'); } catch(_){}
     } catch (error) {
       state.outputs.aiResponse = `API error: ${error.message}`;
     } finally {
@@ -814,8 +818,8 @@ function setupButtons() {
     try { postBuildAchievements(); } catch (_) {}
   });
   const loadDemo = () => { try { applyDemoPreset(); showToast('Demo loaded'); rerenderAll(); } catch (e) { console.error(e); } };
-  if (demoTop) demoTop.addEventListener('click', loadDemo);
-  if (demoHero) demoHero.addEventListener('click', loadDemo);
+  if (demoTop) demoTop.addEventListener('click', () => { loadDemo(); try { unlockAchievement('demoExplorer','Demo Explorer'); } catch(_){} });
+  if (demoHero) demoHero.addEventListener('click', () => { loadDemo(); try { unlockAchievement('demoExplorer','Demo Explorer'); } catch(_){} });
 
   // Trophies
   const trophiesBtn = document.getElementById('open-trophies');
@@ -823,9 +827,9 @@ function setupButtons() {
 
   // Suggest buttons
   const premBtn = document.getElementById('premise-suggest');
-  if (premBtn) premBtn.addEventListener('click', () => { const s = suggestPremise(); state.premise = '(custom)'; state.customPremise = s; renderPremise(); showToast('Premise suggested'); try { scheduleSave(); } catch(_){} });
+  if (premBtn) premBtn.addEventListener('click', () => { const s = suggestPremise(); state.premise = '(custom)'; state.customPremise = s; renderPremise(); showToast('Premise suggested'); try { unlockAchievement('muse','Muse'); } catch(_){} try { scheduleSave(); } catch(_){} });
   const genreBtn = document.getElementById('genre-suggest');
-  if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { scheduleSave(); } catch(_){} });
+  if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { unlockAchievement('djBlend','Blend DJ'); } catch(_){} try { scheduleSave(); } catch(_){} });
   const genrePresetsBtn = document.getElementById('genre-presets');
   if (genrePresetsBtn) genrePresetsBtn.addEventListener('click', () => openLibraryDialog('Blend Presets', buildGenrePresetDialog()));
 }
@@ -2095,6 +2099,7 @@ function setWizardActive(active) {
     document.querySelectorAll('.panel-group > section').forEach(sec => sec.classList.remove('wizard-hidden','wizard-highlight'));
     return;
   }
+  try { unlockAchievement('apprenticeWizard','Apprentice Wizard'); } catch(_){}
   gotoWizardStep(0);
 }
 function gotoWizardStep(idx) {
@@ -2115,6 +2120,7 @@ function gotoWizardStep(idx) {
     try { selectTab('outputs'); } catch (_) {}
     const btn = document.getElementById('build-prompt');
     if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.classList.add('wizard-highlight'); setTimeout(() => btn.classList.remove('wizard-highlight'), 1500); }
+    try { unlockAchievement('wizardGraduate','Wizard Graduate'); } catch(_){}
   } else {
     try { selectTab('inputs'); } catch (_) {}
     const target = sections[targetIndex]; if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2242,12 +2248,20 @@ function postBuildAchievements() {
   const g = getGamify();
   // First Prompt
   if (!g.firstPrompt) unlockAchievement('firstPrompt', 'First Prompt!');
+  // Builds counter milestones
+  g.totalBuilds = (g.totalBuilds || 0) + 1;
+  setGamify(g);
+  if (g.totalBuilds === 5) unlockAchievement('build5','5 Prompts');
+  if (g.totalBuilds === 10) unlockAchievement('build10','10 Prompts');
+  if (g.totalBuilds === 25) unlockAchievement('build25','25 Prompts');
   // Perfect Weights
   const wsum = Object.values(state.weights).reduce((a,b)=>a+Number(b||0),0);
   if (Math.abs(wsum - 1) < 0.0001) unlockAchievement('perfectWeights', 'Perfect Weights');
   // Fusion Chef (3+ genres weighted)
   const genresUsed = state.genreMix.filter(s => (s.genre||s.customGenre) && (s.weight||0) > 0).length;
   if (genresUsed >= 3) unlockAchievement('fusionChef', 'Fusion Chef');
+  // Readiness 100%
+  try { const ready = computeReadiness(); if (ready >= 100) unlockAchievement('readyToRoll','Ready to Roll'); } catch(_){}
   // Streaks (calendar days)
   const today = new Date(); const dayKey = today.toISOString().slice(0,10);
   const last = g.lastBuildDay; let streak = g.streak || 0;
@@ -2327,7 +2341,18 @@ const GENRE_BLEND_PRESETS = [
   { id: 'phonk-trap', label: 'Phonk + Trap', items: [ ['phonk', 60], ['trap', 40] ], desc: 'Retro memphis grit + modern slap' },
   { id: 'lofi-boombap', label: 'Lo-fi + Boom Bap', items: [ ['lo-fi', 55], ['boom', 45] ], desc: 'Warm, dusty, head-nod' },
   { id: 'edm-pop-rap', label: 'EDM Pop + Rap', items: [ ['edm', 50], ['pop', 25], ['rap', 25] ], desc: 'Festival-friendly energy' },
-  { id: 'rnb-trap-soul', label: 'R&B + Trap Soul', items: [ ['r&b', 60], ['trap', 40] ], desc: 'Smooth melodies + modern drums' }
+  { id: 'rnb-trap-soul', label: 'R&B + Trap Soul', items: [ ['r&b', 60], ['trap', 40] ], desc: 'Smooth melodies + modern drums' },
+  { id: 'hyperpop-trap', label: 'Hyperpop + Trap', items: [ ['hyperpop', 50], ['trap', 50] ], desc: 'Glitched hooks + hard drums' },
+  { id: 'afrotrap', label: 'Afrotrap + Rap', items: [ ['afrotrap', 60], ['rap', 40] ], desc: 'Afrobeats bounce, trap drums' },
+  { id: 'jersey-rap', label: 'Jersey Club + Rap', items: [ ['jersey', 60], ['rap', 40] ], desc: 'Bouncy kicks + rap energy' },
+  { id: 'drill-rnb', label: 'UK Drill + R&B', items: [ ['drill', 60], ['r&b', 40] ], desc: 'Contrast: gritty verses, silky hooks' },
+  { id: 'dancehall-rap', label: 'Dancehall + Rap', items: [ ['dancehall', 60], ['rap', 40] ], desc: 'Island groove + bars' },
+  { id: 'reggaeton-rap', label: 'Reggaeton + Rap', items: [ ['reggaeton', 50], ['rap', 50] ], desc: 'Dem bow + rap verses' },
+  { id: 'synthwave-rap', label: 'Synthwave + Rap', items: [ ['synthwave', 60], ['rap', 40] ], desc: 'Retro pads + modern cadences' },
+  { id: 'altrock-rap', label: 'Alt Rock + Rap', items: [ ['alt rock', 50], ['rap', 50] ], desc: 'Guitars + hip-hop drums' },
+  { id: 'lofi-trap', label: 'Lo-fi + Trap', items: [ ['lo-fi', 50], ['trap', 50] ], desc: 'Chill texture + punchy rhythm' },
+  { id: 'phonk-dnb', label: 'Phonk + DnB', items: [ ['phonk', 50], ['dnb', 50] ], desc: 'Memphis flavor at 170+' },
+  { id: 'house-rap', label: 'House + Rap', items: [ ['house', 50], ['rap', 50] ], desc: 'Four-on-the-floor + verses' }
 ];
 function buildGenrePresetDialog() {
   const wrap = document.createElement('div');
@@ -2367,6 +2392,18 @@ function applyGenrePreset(preset) {
       const b = lib.find(g => /(lo\s*-?fi)/i.test(g.name||''));
       if (b) return b.name;
     }
+    if (token === 'r&b' || token === 'rnb') {
+      const b = lib.find(g => /(r\s*&\s*b|rnb)/i.test(g.name||''));
+      if (b) return b.name;
+    }
+    if (token === 'dnb' || token === 'drum and bass') {
+      const b = lib.find(g => /(drum\s*&?\s*bass|dnb)/i.test(g.name||''));
+      if (b) return b.name;
+    }
+    if (token === 'alt rock' || token === 'alternative rock') {
+      const b = lib.find(g => /(alt|alternative)\s*rock/i.test(g.name||''));
+      if (b) return b.name;
+    }
     return null;
   };
   const items = preset.items.slice(0, state.genreMix.length);
@@ -2381,6 +2418,7 @@ function applyGenrePreset(preset) {
   });
   renderGenreMix();
   recompute();
+  try { unlockAchievement('curator','Curator'); } catch(_){}
   // Also mirror the Apply Genre Mix behavior
   try {
     const analysis = analyzeGenreMix(state.genreMix);
