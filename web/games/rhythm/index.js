@@ -381,7 +381,7 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
       if (audioCtx) { audioCtx.suspend?.(); }
       vuStatus.textContent = 'Stopped';
     } catch(_){}
-    try { startBtn.disabled = false; } catch(_){}
+    try { startBtn.disabled = false; startBtn.textContent = 'Start'; } catch(_){}
     const output = buildOutput(lanes, hits, { tagCounts, keywords, forbidden, language: chosenLanguage, accent: chosenAccent, misses, combo: bestCombo, duration, track: trackMeta });
     if (onFinish) onFinish(output);
   }
@@ -392,12 +392,12 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
     try { if (raf) cancelAnimationFrame(raf); } catch(_){}
     try { if (audioCtx) { audioCtx.suspend?.(); } } catch(_){}
     running = false; raf = 0; t0 = 0; now = 0; vuStatus.textContent='Stopped'; vuFill.style.width='0%';
-    try { startBtn.disabled = false; } catch(_){}
+    try { startBtn.disabled = false; startBtn.textContent = 'Start'; } catch(_){}
   }
   function start() {
     // Prevent starting multiple concurrent runs (e.g., spacebar on focused button)
     if (running) { return; }
-    try { startBtn.disabled = true; } catch(_){}
+    try { startBtn.disabled = true; startBtn.textContent = 'Playing…'; } catch(_){}
     // If music selected and analysis available/provided, use beat grid; otherwise synthetic
     (async () => {
       try {
