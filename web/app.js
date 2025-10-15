@@ -2229,6 +2229,28 @@ function renderPromptHistory() {
 
 // ---------- Achievements + Confetti ----------
 const __GAMIFY_KEY = 'rgf_gamify_v1';
+// Known achievements registry for consistent labeling + icons
+const ACHIEVEMENTS = {
+  firstPrompt: { label: 'First Prompt!', icon: '✨' },
+  perfectWeights: { label: 'Perfect Weights', icon: '⚖️' },
+  fusionChef: { label: 'Fusion Chef', icon: '🍲' },
+  build5: { label: '5 Prompts', icon: '5️⃣' },
+  build10: { label: '10 Prompts', icon: '🔟' },
+  build25: { label: '25 Prompts', icon: '🏅' },
+  readyToRoll: { label: 'Ready to Roll', icon: '🚦' },
+  streak3: { label: '3-Day Streak', icon: '📆' },
+  streak7: { label: '7-Day Streak', icon: '🔥' },
+  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙' },
+  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓' },
+  demoExplorer: { label: 'Demo Explorer', icon: '🧭' },
+  muse: { label: 'Muse', icon: '🎭' },
+  djBlend: { label: 'Blend DJ', icon: '🎚️' },
+  curator: { label: 'Curator', icon: '🧰' },
+  promptCopier: { label: 'Prompt Copier', icon: '📋' },
+  briefCopier: { label: 'Brief Copier', icon: '📋' },
+  sunoCopier: { label: 'Suno Copier', icon: '📋' },
+  apiCaller: { label: 'API Caller', icon: '🔗' }
+};
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
 }
@@ -2238,9 +2260,10 @@ function setGamify(obj) {
 function unlockAchievement(key, label) {
   const g = getGamify();
   if (g[key]) return false;
-  g[key] = { unlockedAt: Date.now(), label };
+  const meta = ACHIEVEMENTS[key] || {};
+  g[key] = { unlockedAt: Date.now(), label: label || meta.label || key };
   setGamify(g);
-  showToast(`Unlocked: ${label}`);
+  showToast(`Unlocked: ${g[key].label}`);
   try { fireConfetti(); } catch(_) {}
   return true;
 }
@@ -2288,16 +2311,36 @@ function fireConfetti(count = 36) {
 }
 function buildTrophiesContent() {
   const g = getGamify();
-  const list = Object.values(g).filter(v => v && v.label).sort((a,b)=>a.unlockedAt-b.unlockedAt);
   const wrap = document.createElement('div');
-  if (!list.length) { wrap.innerHTML = '<p class="hint">No achievements yet. Build your first prompt!</p>'; return wrap; }
-  const ul = document.createElement('ul');
-  ul.style.listStyle = 'none'; ul.style.padding = '0'; ul.style.margin = '0';
-  list.forEach(item => {
-    const li = document.createElement('li');
-    li.style.padding = '6px 0';
-    const when = new Date(item.unlockedAt||Date.now()).toLocaleString();
-    li.innerHTML = `<span>🏆 ${item.label}</span> <span class="hint" style="margin-left:8px">${when}</span>`;
+  // Progress header
+  const knownKeys = Object.keys(ACHIEVEMENTS);
+  const unlockedKeys = knownKeys.filter(k => g[k]);
+  const pct = Math.round((unlockedKeys.length / knownKeys.length) * 100);
+  const header = document.createElement('div');
+  header.className = 'trophies-header';
+  const ring = document.createElement('div');
+  ring.className = 'progress-ring';
+  ring.style.background = `conic-gradient(var(--accent) ${pct}%, #e6e6ec 0)`;
+  ring.innerHTML = `<span>${pct}%</span>`;
+  const summary = document.createElement('div');
+  summary.innerHTML = `<div><strong>Trophies</strong></div><div class="trophy-meta">${unlockedKeys.length} / ${knownKeys.length} unlocked</div>`;
+  header.appendChild(ring); header.appendChild(summary);
+  wrap.appendChild(header);
+
+  // Full list with lock state
+  const ul = document.createElement('ul'); ul.className = 'trophy-list';
+  knownKeys.forEach(k => {
+    const meta = ACHIEVEMENTS[k] || { label: k, icon: '🏆' };
+    const unlocked = !!g[k];
+    const li = document.createElement('li'); li.className = 'trophy-item' + (unlocked ? '' : ' locked');
+    const when = unlocked ? new Date(g[k].unlockedAt||Date.now()).toLocaleString() : '';
+    li.innerHTML = `
+      <div class="trophy-icon">${meta.icon || '🏆'}</div>
+      <div>
+        <div>${meta.label || k}</div>
+        <div class="trophy-meta">${unlocked ? when : 'Locked'}</div>
+      </div>
+    `;
     ul.appendChild(li);
   });
   wrap.appendChild(ul);
