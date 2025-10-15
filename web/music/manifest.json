@@ -1,12 +1,20 @@
 [
   {
-    "id": "example_track",
-    "title": "Example Track",
-    "artist": "RGF",
-    "file": "music/example.mp3",
+    "id": "Fading Away (alt rock)",
+    "title": "Fading Away (alt rock)",
+    "artist": "",
+    "file": "music/Fading Away (alt rock).mp3",
     "bpm": null,
     "offset": null,
-    "tags": ["trap", "pop rap"]
+    "tags": []
+  },
+  {
+    "id": "This Love",
+    "title": "This Love",
+    "artist": "",
+    "file": "music/This Love.wav",
+    "bpm": null,
+    "offset": null,
+    "tags": []
   }
 ]
-
