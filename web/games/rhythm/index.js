@@ -337,9 +337,15 @@ export function buildRhythmGameDialog(onFinish, options = {}) {
             buildNotesFromBeats(beats);
             // Setup audio playback
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            // decode again for playback (simple path)
-            const res = await fetch(selectedTrack.url, { cache: 'no-cache' });
-            const arr = await res.arrayBuffer();
+            try { await audioCtx.resume(); } catch(_) {}
+            // Decode track: prefer local file buffer when available
+            let arr;
+            if (selectedFile) {
+              arr = await selectedFile.arrayBuffer();
+            } else {
+              const res = await fetch(selectedTrack.url, { cache: 'no-cache' });
+              arr = await res.arrayBuffer();
+            }
             audioBufferForPlay = await audioCtx.decodeAudioData(arr.slice(0));
             sourceNode = audioCtx.createBufferSource();
             sourceNode.buffer = audioBufferForPlay;
