@@ -17,6 +17,7 @@ const __INSTRUMENT_OPTIONS = [
 const __STATE_KEY = 'rgf_state_v1';
 const __THEME_KEY = 'rgf_theme_v1';
 const __HIST_KEY = 'rgf_prompt_history_v1';
+const __ONBOARD_KEY = 'rgf_onboarding_seen_v1';
 function buildDefaultState() {
   return {
     controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
@@ -1716,6 +1717,8 @@ function init() {
   renderOutputs();
   updateHiddenDirective();
   renderPromptHistory();
+  try { renderReadiness(); } catch (_) {}
+  try { renderWizardBar(); } catch (_) {}
   setupButtons();
   setupTabs();
   const backBtn = document.getElementById('back-to-inputs');
@@ -2026,6 +2029,100 @@ function scheduleSave(delay = 400) {
 // Generic listeners to catch most changes without touching every handler
 document.addEventListener('input', () => { try { scheduleSave(600); } catch (_) {} });
 document.addEventListener('change', () => { try { scheduleSave(600); } catch (_) {} });
+
+// Keep derived UI (readiness/wizard bar) in sync with edits
+document.addEventListener('input', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
+document.addEventListener('change', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
+
+// ---------- Readiness meter ----------
+function computeReadiness() {
+  let score = 0;
+  let total = 0;
+  // Weights sum close to 1
+  total += 1; const wsum = Object.values(state.weights).reduce((a,b)=>a+Number(b||0),0); if (Math.abs(wsum-1) < 0.02) score += 1; else if (Math.abs(wsum-1) < 0.08) score += 0.6; else score += 0.2;
+  // At least one genre with weight
+  total += 1; const anyGenre = state.genreMix.some(s => (s.genre||s.customGenre) && (s.weight||0)>0); score += anyGenre ? 1 : 0.1;
+  // Premise picked
+  total += 1; const premOk = (state.premise && state.premise.length); score += premOk ? 1 : 0.2;
+  // Accent picked
+  total += 1; const accOk = (state.accent && state.accent.length); score += accOk ? 1 : 0.2;
+  // Some creative input
+  total += 1; const creativeOk = (state.creativeInputs.styleTags || state.creativeInputs.keywords); score += creativeOk ? 1 : 0.3;
+  // User sections optional but bonus if title/hook provided
+  total += 1; const hookOk = (state.userSections.hook && state.userSections.hook.trim().length>0) || (state.userSections.titleIdea && state.userSections.titleIdea.trim().length>0); score += hookOk ? 1 : 0.5;
+  const pct = Math.max(0, Math.min(100, Math.round((score/total)*100)));
+  return pct;
+}
+function renderReadiness() {
+  const pct = computeReadiness();
+  const val = document.getElementById('readiness-value');
+  const bar = document.getElementById('readiness-bar');
+  if (val) val.textContent = `${pct}%`;
+  if (bar) bar.style.width = `${pct}%`;
+}
+
+// ---------- Wizard Mode ----------
+const wizard = {
+  active: false,
+  step: 0,
+  steps: [
+    { id: 'weights', matcher: (h3) => /weights/i.test(h3.textContent || '') },
+    { id: 'genre', matcher: (h3) => /genre mix/i.test(h3.textContent || '') },
+    { id: 'premise', matcher: (h3) => /premise.*phonetics/i.test(h3.textContent || '') },
+    { id: 'user', matcher: (h3) => /user sections/i.test(h3.textContent || '') },
+    { id: 'build', matcher: (h3) => /scores|outputs/i.test(h3.textContent || '') }
+  ]
+};
+function setWizardActive(active) {
+  wizard.active = !!active;
+  const bar = document.getElementById('wizard-bar');
+  if (bar) bar.hidden = !wizard.active;
+  if (!wizard.active) {
+    document.querySelectorAll('.panel-group > section').forEach(sec => sec.classList.remove('wizard-hidden','wizard-highlight'));
+    return;
+  }
+  gotoWizardStep(0);
+}
+function gotoWizardStep(idx) {
+  wizard.step = Math.max(0, Math.min(wizard.steps.length - 1, idx));
+  renderWizardBar();
+  const sections = Array.from(document.querySelectorAll('#scoring-panel .panel-group > section'));
+  const h3s = sections.map(sec => sec.querySelector('h3'));
+  let targetIndex = -1;
+  for (let i=0;i<h3s.length;i++) {
+    const h3 = h3s[i]; if (!h3) continue;
+    if (wizard.steps[wizard.step].matcher(h3)) { targetIndex = i; break; }
+  }
+  sections.forEach((sec, i) => {
+    if (i === targetIndex) { sec.classList.remove('wizard-hidden'); sec.classList.add('wizard-highlight'); }
+    else { sec.classList.add('wizard-hidden'); sec.classList.remove('wizard-highlight'); }
+  });
+  if (wizard.steps[wizard.step].id === 'build') {
+    try { selectTab('outputs'); } catch (_) {}
+    const btn = document.getElementById('build-prompt');
+    if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.classList.add('wizard-highlight'); setTimeout(() => btn.classList.remove('wizard-highlight'), 1500); }
+  } else {
+    try { selectTab('inputs'); } catch (_) {}
+    const target = sections[targetIndex]; if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+function renderWizardBar() {
+  const bar = document.getElementById('wizard-bar');
+  const toggle = document.getElementById('wizard-toggle');
+  if (toggle) toggle.textContent = wizard.active ? 'Wizard: On' : 'Wizard';
+  if (!bar) return;
+  bar.hidden = !wizard.active;
+  const steps = Array.from(bar.querySelectorAll('.wizard-step'));
+  steps.forEach(el => {
+    const stepNum = Number(el.getAttribute('data-step'));
+    el.classList.toggle('active', stepNum === wizard.step);
+    el.classList.toggle('done', stepNum < wizard.step);
+  });
+  const wzPrev = document.getElementById('wizard-prev');
+  const wzNext = document.getElementById('wizard-next');
+  if (wzPrev) wzPrev.disabled = wizard.step <= 0;
+  if (wzNext) wzNext.textContent = wizard.step >= wizard.steps.length - 1 ? 'Finish' : 'Next';
+}
 
 // ---------- Prompt history (localStorage) ----------
 function getPromptHistory() {

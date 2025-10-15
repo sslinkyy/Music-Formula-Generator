@@ -21,6 +21,7 @@
       <button type="button" id="tab-ai" role="tab" aria-selected="false">AI</button>
     </div>
     <div class="spacer"></div>
+    <button type="button" id="wizard-toggle" title="Toggle Wizard Mode">Wizard</button>
     <button type="button" id="demo-mode" title="Load demo settings">Demo</button>
     <button type="button" id="collapse-all" title="Collapse all sections">Collapse</button>
     <button type="button" id="expand-all" title="Expand all sections">Expand</button>
@@ -37,6 +38,21 @@
       <span class="readiness-value" id="readiness-value">0%</span>
     </div>
     <div class="readiness-track"><div class="readiness-bar" id="readiness-bar" style="width:0%"></div></div>
+  </div>
+
+  <!-- Wizard progress bar -->
+  <div id="wizard-bar" class="wizard-bar" hidden>
+    <div class="wizard-steps" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+      <div class="wizard-step" data-step="0"><span>Preset & Weights</span></div>
+      <div class="wizard-step" data-step="1"><span>Genre Mix</span></div>
+      <div class="wizard-step" data-step="2"><span>Premise & Accent</span></div>
+      <div class="wizard-step" data-step="3"><span>User Sections</span></div>
+      <div class="wizard-step" data-step="4"><span>Build</span></div>
+    </div>
+    <div class="wizard-actions">
+      <button type="button" id="wizard-prev">Back</button>
+      <button type="button" id="wizard-next" class="btn-primary">Next</button>
+    </div>
   </div>
 
   <section class="hero">
