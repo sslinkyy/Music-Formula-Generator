@@ -214,12 +214,16 @@ function renderDerivedInputs() {
 // --- Artist parsing helpers ---
 function findArtistProfile(name) {
   try {
-    const token = String(name||'').trim().toLowerCase();
-    if (!token) return null;
+    const q = __normalizeName(name);
+    if (!q) return null;
     const lib = ARTIST_PROFILES || [];
-    let best = lib.find(a => (a.name||'').toLowerCase() === token);
+    let best = lib.find(a => __normalizeName(a.name||'') === q);
     if (best) return best;
-    best = lib.find(a => (a.name||'').toLowerCase().includes(token));
+    best = lib.find(a => Array.isArray(a.aliases) && a.aliases.some(al => __normalizeName(al) === q));
+    if (best) return best;
+    best = lib.find(a => __normalizeName(a.name||'').includes(q));
+    if (best) return best;
+    best = lib.find(a => Array.isArray(a.aliases) && a.aliases.some(al => __normalizeName(al).includes(q)));
     return best || null;
   } catch(_) { return null; }
 }
