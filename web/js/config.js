@@ -19,6 +19,19 @@ export const DEFAULT_WEIGHTS = {
   perf: 0.12
 };
 
+export const CREATIVE_FIELDS = [
+  { id: 'artistReference', label: 'Artist reference (e.g., Drake)', defaultValue: '' },
+  { id: 'theme', label: 'Theme', defaultValue: '' },
+  { id: 'keywords', label: 'Keywords (comma-separated)', defaultValue: '' },
+  { id: 'mustInclude', label: 'Must-include words/phrases', defaultValue: '' },
+  // Pre-populate common overused words to avoid; editable by user
+  { id: 'forbidden', label: 'Forbidden words/phrases', defaultValue: 'glow, glitch, pulse' },
+  { id: 'styleTags', label: 'Style/Mood tags (comma-separated)', defaultValue: 'anthemic rap, chant hook, pocket-tight flow' },
+  { id: 'specificInstruments', label: 'Specific instruments (select or type)', defaultValue: '' },
+  { id: 'lengthTarget', label: 'Length target (min)', defaultValue: 3 },
+  { id: 'audienceNotes', label: 'Audience notes', defaultValue: '' },
+  { id: 'externalDirectives', label: 'External directives (one per line)', defaultValue: '' }
+];
 export const WEIGHT_PRESETS = {
   street: { core: 0.27, tech: 0.21, anthem: 0.16, style: 0.14, group: 0.14, perf: 0.08 },
   club: { core: 0.21, tech: 0.1, anthem: 0.28, style: 0.12, group: 0.12, perf: 0.17 },
@@ -126,7 +139,6 @@ export const DEFAULT_AI_SETTINGS = {
   responseFormat: '{"type":"text"}'
 };
 
-\n  { id: 'artistReference', label: 'Artist reference (e.g., Drake)', defaultValue: '' },\n
   { id: 'theme', label: 'Theme', defaultValue: '' },
   { id: 'keywords', label: 'Keywords (comma-separated)', defaultValue: '' },
   { id: 'mustInclude', label: 'Must-include words/phrases', defaultValue: '' },
