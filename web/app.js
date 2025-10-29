@@ -1066,7 +1066,8 @@ function setupButtons() {
         try { selectTab('outputs'); } catch (_) {}
         showToast('Prompt built');
         try { addPromptHistory(state.outputs.prompt); } catch (_) {}
-        try { postBuildAchievements(); } catch (_) {} else {
+        try { postBuildAchievements(); } catch (_) {}
+      } else {
         gotoWizardStep(wizard.step + 1);
       }
     });
@@ -3356,6 +3357,7 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleSave(); } catch(_){}
 }
+
 
 
 
