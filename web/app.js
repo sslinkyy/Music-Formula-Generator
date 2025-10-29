@@ -7,7 +7,7 @@ import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
-\nimport { ARTIST_PROFILES } from './data/artists.js';
+import { ARTIST_PROFILES } from './data/artists.js';
 
 // Local UX option lists (duplicated from config for easier patching)
 const __LANGUAGE_OPTIONS = [
