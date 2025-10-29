@@ -2547,7 +2547,8 @@ function gotoWizardStep(idx) {
     try { selectTab('outputs'); } catch (_) {}
     const btn = document.getElementById('build-prompt');
     if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.classList.add('wizard-highlight'); setTimeout(() => btn.classList.remove('wizard-highlight'), 1500); }
-    try { unlockAchievement('wizardGraduate','Wizard Graduate'); } catch(_){} else {
+    try { unlockAchievement('wizardGraduate','Wizard Graduate'); } catch(_) {}
+    } else {
     try { selectTab('inputs'); } catch (_) {}
     const target = sections[targetIndex]; if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -3357,6 +3358,7 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleSave(); } catch(_){}
 }
+
 
 
 
