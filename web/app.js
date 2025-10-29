@@ -539,6 +539,15 @@ function renderCreativeInputs() {
       wrapperDiv.appendChild(actions);
       input = wrapperDiv;
     }
+    } else {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.value = state.creativeInputs[field.id] || '';
+      input.addEventListener('input', () => {
+        state.creativeInputs[field.id] = input.value;
+        try { scheduleSave(); } catch (_) {}
+      });
+    }
     wrapper.appendChild(input);
     container.appendChild(wrapper);
   });
