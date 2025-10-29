@@ -507,6 +507,9 @@ function renderCreativeInputs() {
         updateFromUI();
       });
       renderChips(current);
+      wrapperDiv.appendChild(checklist);
+      wrapperDiv.appendChild(custom);
+      wrapperDiv.appendChild(chips);
 
       
       // Action row: Suggest instruments from current genre mix
@@ -535,7 +538,8 @@ function renderCreativeInputs() {
       actions.appendChild(suggestBtn);
       wrapperDiv.appendChild(actions);
       input = wrapperDiv;
-    
+    }
+    wrapper.appendChild(input);
     container.appendChild(wrapper);
   });
 }
@@ -3347,6 +3351,8 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleSave(); } catch(_){}
 }
+
+
 
 
 
