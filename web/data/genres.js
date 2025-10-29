@@ -1082,7 +1082,7 @@ export const GENRE_LIBRARY = [
     "hookPlan": " Percussive chant hook with kick-driven urgency.",
     "flowPlan": " Short clipped lines; leave space for beat drops.",
     "rhymePlan": " Rhymes emphasize rhythm, night energy, call-outs."
-  }
+  },
   {
     "name": "Jersey Club",
     "tempo": " 130-150 bpm feel",
