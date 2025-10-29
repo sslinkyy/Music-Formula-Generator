@@ -987,7 +987,7 @@ function setupButtons() {
       if (!state.outputs.brief || state.outputs.brief.includes('Creative brief will appear')) {
         state.outputs.brief = summary;
         renderOutputs();
-      } else {
+      }} else {
       state.outputs.brief = 'Add at least one genre (and optional weights) before applying the mix.';
       renderOutputs();
     }
