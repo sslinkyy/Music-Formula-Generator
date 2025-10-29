@@ -538,7 +538,6 @@ function renderCreativeInputs() {
       actions.appendChild(suggestBtn);
       wrapperDiv.appendChild(actions);
       input = wrapperDiv;
-    }
     } else {
       input = document.createElement('input');
       input.type = 'text';
@@ -988,8 +987,7 @@ function setupButtons() {
       if (!state.outputs.brief || state.outputs.brief.includes('Creative brief will appear')) {
         state.outputs.brief = summary;
         renderOutputs();
-      }
-    } else {
+      } else {
       state.outputs.brief = 'Add at least one genre (and optional weights) before applying the mix.';
       renderOutputs();
     }
@@ -1068,8 +1066,7 @@ function setupButtons() {
         try { selectTab('outputs'); } catch (_) {}
         showToast('Prompt built');
         try { addPromptHistory(state.outputs.prompt); } catch (_) {}
-        try { postBuildAchievements(); } catch (_) {}
-      } else {
+        try { postBuildAchievements(); } catch (_) {} else {
         gotoWizardStep(wizard.step + 1);
       }
     });
@@ -2549,8 +2546,7 @@ function gotoWizardStep(idx) {
     try { selectTab('outputs'); } catch (_) {}
     const btn = document.getElementById('build-prompt');
     if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.classList.add('wizard-highlight'); setTimeout(() => btn.classList.remove('wizard-highlight'), 1500); }
-    try { unlockAchievement('wizardGraduate','Wizard Graduate'); } catch(_){}
-  } else {
+    try { unlockAchievement('wizardGraduate','Wizard Graduate'); } catch(_){} else {
     try { selectTab('inputs'); } catch (_) {}
     const target = sections[targetIndex]; if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -3360,6 +3356,7 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleSave(); } catch(_){}
 }
+
 
 
 
