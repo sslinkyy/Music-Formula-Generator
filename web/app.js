@@ -8,6 +8,7 @@ import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
 import { ARTIST_PROFILES } from './data/artists.js';
+import { ACCENT_LIBRARY } from './data/accents.js';
 
 // Local UX option lists (duplicated from config for easier patching)
 const __LANGUAGE_OPTIONS = [
