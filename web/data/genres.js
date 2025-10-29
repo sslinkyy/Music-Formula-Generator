@@ -1,4 +1,4 @@
-// Auto-generated from VBA module by scripts/extract_web_data.py
+﻿// Auto-generated from VBA module by scripts/extract_web_data.py
 export const GENRE_LIBRARY = [
   {
     "name": "Street Rap",
@@ -1082,5 +1082,321 @@ export const GENRE_LIBRARY = [
     "hookPlan": " Percussive chant hook with kick-driven urgency.",
     "flowPlan": " Short clipped lines; leave space for beat drops.",
     "rhymePlan": " Rhymes emphasize rhythm, night energy, call-outs."
+  }
+  },
+  {
+    "name": "Jersey Club",
+    "tempo": " 130-150 bpm feel",
+    "styleTags": " bouncy kick pattern, bed squeak, chopped vocals, call-and-response, breaks",
+    "structure": " Intro 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Break 8 a-' Hook 8",
+    "exclude": " ballad, lo-fi",
+    "sfx": " bed squeak, clap stack, spinback",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.18,
+      "anthem": 0.24,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.08
+    },
+    "hookPlan": " Chopped-vocal hook with chant stabs every 2 bars.",
+    "flowPlan": " Energetic short phrases; dance callouts in breaks.",
+    "rhymePlan": " Simple end rhymes; movement and party imagery."
+  },
+  {
+    "name": "UK Garage",
+    "tempo": " 128-136 bpm feel",
+    "styleTags": " 2-step shuffle, swung hats, organ bass, chopped vocals, soulful bop",
+    "structure": " Intro 8 a-' Verse 12 a-' Hook 8 a-' Break 8 a-' Hook 8 a-' Outro 8",
+    "exclude": " metal, trap",
+    "sfx": " vinyl crackle, crowd whoop, filter sweep",
+    "weights": {
+      "core": 0.19,
+      "tech": 0.16,
+      "anthem": 0.22,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.11
+    },
+    "hookPlan": " Soulful refrain over 2-step drums; ad-lib flips.",
+    "flowPlan": " Talk-sing verses; quick cadence fill into hook.",
+    "rhymePlan": " Light internals; nightlife and romance imagery."
+  },
+  {
+    "name": "Grime",
+    "tempo": " 136-144 bpm feel",
+    "styleTags": " square wave bass, sparse drums, aggressive bars, UK street tone",
+    "structure": " Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8",
+    "exclude": " house, edm big room",
+    "sfx": " siren whoop, sub drop, ad-lib bruv",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.22,
+      "anthem": 0.16,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.12
+    },
+    "hookPlan": " Aggressive chant hook with crew responses.",
+    "flowPlan": " Rapid cadences and reload bars; breath cuts.",
+    "rhymePlan": " Dense internals, UK slang, clash energy."
+  },
+  {
+    "name": "Jungle",
+    "tempo": " 160-175 bpm feel",
+    "styleTags": " amen breaks, sub bass, rave stabs, MC toasts, chopped vocals",
+    "structure": " Intro 8 a-' Drop 16 a-' Breakdown 8 a-' Drop 16 a-' Outro 8",
+    "exclude": " country, ballad",
+    "sfx": " airhorn, laser, rewind",
+    "weights": {
+      "core": 0.18,
+      "tech": 0.22,
+      "anthem": 0.18,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.14
+    },
+    "hookPlan": " Rave chant hook; crowd shouts over breaks.",
+    "flowPlan": " MC toasts between drops; halftime flirt in breakdown.",
+    "rhymePlan": " Minimal internals; rave culture phrases and hype."
+  },
+  {
+    "name": "Tech House",
+    "tempo": " 124-128 bpm feel",
+    "styleTags": " rolling bassline, tight hats, minimal vox, crisp groove, club focus",
+    "structure": " Intro 16 a-' Groove 32 a-' Break 8 a-' Hook 16 a-' Outro 16",
+    "exclude": " trap, boom bap",
+    "sfx": " filter sweep, clap build, sub impact",
+    "weights": {
+      "core": 0.16,
+      "tech": 0.2,
+      "anthem": 0.22,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.14
+    },
+    "hookPlan": " Minimal vocal hook as rhythmic mantra.",
+    "flowPlan": " Speak-sing phrases tucked into pocket; space for groove.",
+    "rhymePlan": " Sparse rhymes; percussive wording."
+  },
+  {
+    "name": "Breakbeat",
+    "tempo": " 125-135 bpm feel",
+    "styleTags": " broken drums, bass stabs, rave chords, chopped vox, energy swings",
+    "structure": " Intro 8 a-' Hook 8 a-' Groove 16 a-' Break 8 a-' Hook 8",
+    "exclude": " country, ballad",
+    "sfx": " snare roll, riser, zap",
+    "weights": {
+      "core": 0.18,
+      "tech": 0.2,
+      "anthem": 0.22,
+      "style": 0.18,
+      "group": 0.1,
+      "perf": 0.12
+    },
+    "hookPlan": " Chopped vocal hook with rave stabs.",
+    "flowPlan": " Short hype bars; leave space for breaks.",
+    "rhymePlan": " Punchy rhyme bursts; party images."
+  },
+  {
+    "name": "Moombahton",
+    "tempo": " 100-110 bpm feel",
+    "styleTags": " dembow groove, dutch lead, tropical textures, chant-ready",
+    "structure": " Intro 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Break 8 a-' Hook 8",
+    "exclude": " metal, dnb",
+    "sfx": " air horn, riser, clap delay",
+    "weights": {
+      "core": 0.19,
+      "tech": 0.16,
+      "anthem": 0.26,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.11
+    },
+    "hookPlan": " Sticky dembow chant with chopped vox replies.",
+    "flowPlan": " Bouncy cadence; Spanish/Spanglish flips welcome.",
+    "rhymePlan": " Simple end rhymes; dancefloor imagery."
+  },
+  {
+    "name": "Baile Funk",
+    "tempo": " 90-110 bpm feel",
+    "styleTags": " tamborzão drums, call-and-response, gritty textures, favela party energy",
+    "structure": " Intro 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Groove 16 a-' Hook 8",
+    "exclude": " ballad, lo-fi",
+    "sfx": " whistle, crowd chant, fx riser",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.18,
+      "anthem": 0.22,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.08
+    },
+    "hookPlan": " Call-and-response hook with crowd shouts.",
+    "flowPlan": " Direct cadence; playful taunts and commands.",
+    "rhymePlan": " Simple percussive rhymes; local slang."
+  },
+  {
+    "name": "Bossa Nova",
+    "tempo": " 74-96 bpm feel",
+    "styleTags": " nylon guitar, jazz chords, soft brushes, intimate vocals, warm room",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4",
+    "exclude": " dubstep, hyperpop",
+    "sfx": " brush swish, room clap, soft breath",
+    "weights": {
+      "core": 0.18,
+      "tech": 0.12,
+      "anthem": 0.2,
+      "style": 0.22,
+      "group": 0.16,
+      "perf": 0.12
+    },
+    "hookPlan": " Gentle melodic refrain with jazz color tones.",
+    "flowPlan": " Smooth phrasing; speak-sing intimacy; light scat option.",
+    "rhymePlan": " Soft internals; nature and romance images."
+  }
+  , {
+    "name": "UK Funky",
+    "tempo": " 124-130 bpm feel",
+    "styleTags": " syncopated kicks, swung hats, percussive stabs, party chants, UK club",
+    "structure": " Intro 8 a-' Hook 8 a-' Groove 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " boom bap, metal",
+    "sfx": " whistle, clap build, riser",
+    "weights": { "core": 0.18, "tech": 0.18, "anthem": 0.24, "style": 0.2, "group": 0.12, "perf": 0.08 },
+    "hookPlan": " Call-and-response chant hook with percussive breaks.",
+    "flowPlan": " Short phrases, dance callouts; leave space for groove.",
+    "rhymePlan": " Simple, percussive rhymes; club imagery."
+  }
+  , {
+    "name": "Future Garage",
+    "tempo": " 120-134 bpm feel",
+    "styleTags": " ghostly vox, shuffled drums, warm pads, ambient textures, late-night",
+    "structure": " Intro 8 a-' Verse 12 a-' Hook 8 a-' Break 8 a-' Hook 8 a-' Outro 8",
+    "exclude": " metal, hyperpop",
+    "sfx": " vinyl hiss, breath, reverse swell",
+    "weights": { "core": 0.18, "tech": 0.18, "anthem": 0.2, "style": 0.22, "group": 0.12, "perf": 0.1 },
+    "hookPlan": " Soft refrain with chopped vox textures.",
+    "flowPlan": " Talk-sing; intimate; float over pads.",
+    "rhymePlan": " Sparse internals; mood-first language."
+  }
+  , {
+    "name": "Footwork",
+    "tempo": " 150-165 bpm feel",
+    "styleTags": " chopped vocals, rapid drums, bass hits, jitter swing, experimental",
+    "structure": " Intro 4 a-' Groove 16 a-' Break 8 a-' Groove 16 a-' Outro 8",
+    "exclude": " ballad, country",
+    "sfx": " vocal chop, zap, riser",
+    "weights": { "core": 0.18, "tech": 0.22, "anthem": 0.18, "style": 0.2, "group": 0.1, "perf": 0.12 },
+    "hookPlan": " Mantra hook cut into chops.",
+    "flowPlan": " Minimal lines; rhythm-forward stabs.",
+    "rhymePlan": " Percussive phrasing over fast grid."
+  }
+  , {
+    "name": "Juke",
+    "tempo": " 150-165 bpm feel",
+    "styleTags": " chopped calls, bass stabs, syncopation, dance commands",
+    "structure": " Intro 4 a-' Hook 8 a-' Groove 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " ballad, country",
+    "sfx": " vocal chop, clap, riser",
+    "weights": { "core": 0.18, "tech": 0.2, "anthem": 0.22, "style": 0.18, "group": 0.1, "perf": 0.12 },
+    "hookPlan": " Command hook with chopped replies.",
+    "flowPlan": " Short hype bursts; space for dance.",
+    "rhymePlan": " Simple end rhymes, repetition."
+  }
+  , {
+    "name": "Liquid DnB",
+    "tempo": " 170-176 bpm feel",
+    "styleTags": " lush pads, rolling breaks, warm bass, melodic toplines",
+    "structure": " Intro 8 a-' Drop 16 a-' Breakdown 8 a-' Drop 16",
+    "exclude": " metal, country",
+    "sfx": " riser, sweep, vocal ahh",
+    "weights": { "core": 0.18, "tech": 0.2, "anthem": 0.2, "style": 0.2, "group": 0.1, "perf": 0.12 },
+    "hookPlan": " Airy refrain with echo tail.",
+    "flowPlan": " Smooth phrasing; halftime flourish in breakdown.",
+    "rhymePlan": " Soft internals; uplifting imagery."
+  }
+  , {
+    "name": "Neurofunk",
+    "tempo": " 170-176 bpm feel",
+    "styleTags": " reese bass, techy drums, dark energy, precise edits",
+    "structure": " Intro 8 a-' Drop 16 a-' Break 8 a-' Drop 16",
+    "exclude": " ballad, pop",
+    "sfx": " laser, sub impact, riser",
+    "weights": { "core": 0.2, "tech": 0.24, "anthem": 0.16, "style": 0.16, "group": 0.1, "perf": 0.14 },
+    "hookPlan": " Minimal vocal tag before heavy drop.",
+    "flowPlan": " Tight cadence; leave space for bass.",
+    "rhymePlan": " Sparse rhymes; gritty tone."
+  }
+  , {
+    "name": "Synth Pop",
+    "tempo": " 100-128 bpm feel",
+    "styleTags": " glossy synths, tight drums, earworm hooks, retro-modern",
+    "structure": " Verse 8 a-' Pre 4 a-' Hook 8 a-' Verse 8 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " metal, drill",
+    "sfx": " clap, riser, breath pop",
+    "weights": { "core": 0.19, "tech": 0.16, "anthem": 0.27, "style": 0.18, "group": 0.1, "perf": 0.1 },
+    "hookPlan": " Big memorable hook with synth lead support.",
+    "flowPlan": " Clean phrasing; rhythmic pre-chorus lift.",
+    "rhymePlan": " Bright language; color motifs."
+  }
+  , {
+    "name": "Shoegaze",
+    "tempo": " 70-110 bpm feel",
+    "styleTags": " washed guitars, airy vox, dense reverb, wall of sound",
+    "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Outro 8",
+    "exclude": " trap, drill",
+    "sfx": " reverse swell, room clap, breath",
+    "weights": { "core": 0.18, "tech": 0.12, "anthem": 0.22, "style": 0.26, "group": 0.12, "perf": 0.1 },
+    "hookPlan": " Dreamy refrain with sustained vowels.",
+    "flowPlan": " Legato phrasing; guitar bed.",
+    "rhymePlan": " Soft internals; imagery-first."
+  }
+  , {
+    "name": "Ambient Pop",
+    "tempo": " 70-110 bpm feel",
+    "styleTags": " soft pads, intimate vocal, slow builds, cinematic glow",
+    "structure": " Intro 8 a-' Verse 12 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " drill, metal",
+    "sfx": " breath, swell, trailer boom",
+    "weights": { "core": 0.18, "tech": 0.14, "anthem": 0.22, "style": 0.24, "group": 0.12, "perf": 0.1 },
+    "hookPlan": " Gentle refrain; stacked harmonies in last 4 bars.",
+    "flowPlan": " Intimate delivery; widen in hook.",
+    "rhymePlan": " Minimal; mood-centric."
+  }
+  , {
+    "name": "Eurodance",
+    "tempo": " 130-145 bpm feel",
+    "styleTags": " bright leads, piano stabs, four-on-the-floor, catchy chants",
+    "structure": " Intro 8 a-' Hook 16 a-' Break 8 a-' Hook 16 a-' Outro 8",
+    "exclude": " boom bap, trap",
+    "sfx": " snare roll, sweep up, sub impact",
+    "weights": { "core": 0.16, "tech": 0.16, "anthem": 0.3, "style": 0.16, "group": 0.1, "perf": 0.12 },
+    "hookPlan": " Anthem chant with bright lead doubling.",
+    "flowPlan": " Short phrases; dance command tags.",
+    "rhymePlan": " Simple; festival language."
+  }
+  , {
+    "name": "Hard Trance",
+    "tempo": " 136-148 bpm feel",
+    "styleTags": " driving bass, supersaw leads, long builds, euphoric drops",
+    "structure": " Intro 16 a-' Build 16 a-' Drop 16 a-' Break 8 a-' Drop 16",
+    "exclude": " boom bap, country",
+    "sfx": " snare roll, riser, whoosh",
+    "weights": { "core": 0.16, "tech": 0.18, "anthem": 0.3, "style": 0.16, "group": 0.08, "perf": 0.12 },
+    "hookPlan": " Simple shouted tag before drop.",
+    "flowPlan": " Speak-sing in breaks; leave drops instrumental.",
+    "rhymePlan": " Minimal; energy words."
+  }
+  , {
+    "name": "Minimal Techno",
+    "tempo": " 124-130 bpm feel",
+    "styleTags": " sparse elements, micro-variations, tight low-end, hypnotic",
+    "structure": " Intro 16 a-' Groove 32 a-' Break 8 a-' Groove 32 a-' Outro 16",
+    "exclude": " boom bap, trap",
+    "sfx": " filter sweep, zap, room clap",
+    "weights": { "core": 0.18, "tech": 0.22, "anthem": 0.16, "style": 0.2, "group": 0.12, "perf": 0.12 },
+    "hookPlan": " Minimal vocal mantra if any.",
+    "flowPlan": " Sparse talk-sing; leave air for groove.",
+    "rhymePlan": " Percussive words; minimal rhyme."
   }
 ];

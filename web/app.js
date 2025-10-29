@@ -1,4 +1,4 @@
-import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
+﻿import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
 import { computeScores } from './js/scoring.js';
 import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
@@ -7,7 +7,7 @@ import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
-import { ACCENT_LIBRARY } from './data/accents.js';
+\nimport { ARTIST_PROFILES } from './data/artists.js';
 
 // Local UX option lists (duplicated from config for easier patching)
 const __LANGUAGE_OPTIONS = [
@@ -87,6 +87,8 @@ const state = {
 };
 // Reduce immediate repeats when auto-picking premise
 let __lastPremise = '';
+// Recent genre memory to diversify suggestions
+let __recentGenrePicks = [];
 function formatNumber(value, digits = 2) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '';
   return value.toFixed(digits);
@@ -208,6 +210,122 @@ function renderDerivedInputs() {
     container.appendChild(label);
   });
 }
+// --- Artist parsing helpers ---
+function findArtistProfile(name) {
+  try {
+    const token = String(name||'').trim().toLowerCase();
+    if (!token) return null;
+    const lib = ARTIST_PROFILES || [];
+    let best = lib.find(a => (a.name||'').toLowerCase() === token);
+    if (best) return best;
+    best = lib.find(a => (a.name||'').toLowerCase().includes(token));
+    return best || null;
+  } catch(_) { return null; }
+}
+function __findGenreMatch(label) {
+  try {
+    const token = String(label||'').trim().toLowerCase();
+    const lib = GENRE_LIBRARY || [];
+    let best = lib.find(g => (g.name||'').toLowerCase() === token);
+    if (best) return best.name;
+    best = lib.find(g => (g.name||'').toLowerCase().includes(token));
+    if (best) return best.name;
+    if (token === 'boom' || token === 'boom bap') {
+      const b = lib.find(g => /boom\s*bap/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token === 'lo-fi' || token === 'lofi' || token === 'lo fi') {
+      const b = lib.find(g => /(lo\s*-?fi)/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token === 'r&b' || token === 'rnb') {
+      const b = lib.find(g => /(r\s*&\s*b|rnb)/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token === 'dnb' || token === 'drum and bass' || token === 'drum & bass') {
+      const b = lib.find(g => /(drum\s*&?\s*bass|dnb)/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token.includes('uk garage') || token === 'garage' || token === 'ukg') {
+      const b = lib.find(g => /garage/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token.includes('tech house')) {
+      const b = lib.find(g => /tech\s*house/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token.includes('alt rock') || token.includes('alternative rock')) {
+      const b = lib.find(g => /(alt|alternative)\s*rock/i.test(g.name||'')); if (b) return b.name;
+    }
+    if (token === 'edm') {
+      const b = lib.find(g => /EDM/i.test(g.name||'')); if (b) return b.name;
+    }
+    return null;
+  } catch(_) { return null; }
+}
+function applyArtistProfile(profile) {
+  try {
+    if (!profile) return false;
+    // Accent
+    if (profile.accent) {
+      state.accent = profile.accent;
+      try { updateHiddenDirective(); } catch(_){}
+    }
+    // Genres -> genreMix
+    if (Array.isArray(profile.genres)) {
+      const items = profile.genres.slice(0, state.genreMix.length);
+      state.genreMix.forEach((slot, i) => {
+        const it = items[i];
+        if (!it) { slot.genre=''; slot.customGenre=''; slot.weight=0; return; }
+        const [label, w] = it;
+        const match = __findGenreMatch(label);
+        if (match) { slot.genre = match; slot.customGenre=''; }
+        else { slot.genre='(custom)'; slot.customGenre = String(label); }
+        slot.weight = Number(w)||0;
+      });
+      renderGenreMix();
+    }
+    // Merge style tags
+    if (profile.styleTags) {
+      const cur = String(state.creativeInputs.styleTags||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const add = String(profile.styleTags||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const merged = Array.from(new Map([...cur,...add].map(s=>[s.toLowerCase(),s])).values());
+      state.creativeInputs.styleTags = merged.join(', ');
+      try { renderCreativeInputs(); } catch(_){}
+    }
+    // Merge keywords
+    if (profile.keywords) {
+      const cur = String(state.creativeInputs.keywords||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const add = String(profile.keywords||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const merged = Array.from(new Map([...cur,...add].map(s=>[s.toLowerCase(),s])).values());
+      state.creativeInputs.keywords = merged.join(', ');
+    }
+    // Merge instruments
+    if (Array.isArray(profile.instruments)) {
+      const cur = String(state.creativeInputs.specificInstruments||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const merged = Array.from(new Map([...cur, ...profile.instruments].map(s=>[s.toLowerCase(),s])).values());
+      state.creativeInputs.specificInstruments = merged.join(', ');
+      try { renderCreativeInputs(); } catch(_){}
+    }
+    // Optional exclude
+    if (profile.exclude) {
+      const cur = String(state.creativeInputs.forbidden||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const add = String(profile.exclude||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const merged = Array.from(new Map([...cur,...add].map(s=>[s.toLowerCase(),s])).values());
+      state.creativeInputs.forbidden = merged.join(', ');
+    }
+    // Re-run analysis to refresh style tags from genres
+    try {
+      const analysis = analyzeGenreMix(state.genreMix);
+      state.genreAnalysis = analysis.mix.length ? analysis : null;
+      if (analysis.styleTagsCsv) {
+        // Merge library-derived tags too
+        const cur = String(state.creativeInputs.styleTags||'').split(',').map(s=>s.trim()).filter(Boolean);
+        const add = String(analysis.styleTagsCsv||'').split(',').map(s=>s.trim()).filter(Boolean);
+        const merged = Array.from(new Map([...cur,...add].map(s=>[s.toLowerCase(),s])).values());
+        state.creativeInputs.styleTags = merged.join(', ');
+      }
+    } catch(_){}
+    renderOutputs();
+    showToast(`Applied artist cues: ${profile.name}`); try { rerenderAll(); } catch(_){}
+    try { scheduleSave(); } catch(_){}
+    return true;
+  } catch(e) { console.error('applyArtistProfile failed', e); return false; }
+}
 function renderCreativeInputs() {
   const container = document.getElementById('creative-inputs');
   container.innerHTML = '';
@@ -292,7 +410,28 @@ function renderCreativeInputs() {
       wrapperDiv.appendChild(chips);
       wrapperDiv.appendChild(text);
       input = wrapperDiv;
-    } else if (field.id === 'specificInstruments') {
+        } else if (field.id === 'artistReference') {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      const text = document.createElement('input');
+      text.type = 'text';
+      text.placeholder = 'Type an artist (e.g., Drake)';
+      text.value = state.creativeInputs[field.id] || '';
+      text.style.flex = '1';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Parse';
+      btn.addEventListener('click', () => {
+        const name = (text.value||'').trim();
+        state.creativeInputs[field.id] = name;
+        const prof = findArtistProfile(name);
+        if (!prof) { showToast('No artist profile found'); return; }
+        applyArtistProfile(prof);
+      });
+      row.appendChild(text);
+      row.appendChild(btn);
+      input = row;} else if (field.id === 'specificInstruments') {
       // Checkbox list + chips + custom input for multi-select UX
       const wrapperDiv = document.createElement('div');
       wrapperDiv.className = 'instrument-picker';
@@ -369,20 +508,34 @@ function renderCreativeInputs() {
       });
       renderChips(current);
 
-      wrapperDiv.appendChild(checklist);
-      wrapperDiv.appendChild(custom);
-      wrapperDiv.appendChild(chips);
-      input = wrapperDiv;
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.value = state.creativeInputs[field.id] || '';
-      input.addEventListener('input', () => {
-        state.creativeInputs[field.id] = input.value;
-        try { scheduleSave(); } catch (_) {}
+      
+      // Action row: Suggest instruments from current genre mix
+      const actions = document.createElement('div');
+      actions.className = 'inline-buttons';
+      actions.style.marginTop = '8px';
+      const suggestBtn = document.createElement('button');
+      suggestBtn.type = 'button';
+      suggestBtn.textContent = 'Suggest';
+      suggestBtn.addEventListener('click', () => {
+        try {
+          const analysis = state.genreAnalysis || analyzeGenreMix(state.genreMix);
+          const list = deriveInstrumentsFromMix(analysis);
+          state.creativeInputs[field.id] = list.join(', ');
+          // Sync UI: check predefined boxes and fill custom
+          const cbs = Array.from(checklist.querySelectorAll('input[type="checkbox"]'));
+          cbs.forEach(cb => { cb.checked = list.includes(cb.value); });
+          const extras = list.filter(x => !__INSTRUMENT_OPTIONS.includes(x));
+          custom.value = extras.join(', ');
+          renderChips(list);
+          try { scheduleSave(); } catch(_){}
+        } catch (e) {
+          console.error('Suggest instruments failed', e);
+        }
       });
-    }
-    wrapper.appendChild(input);
+      actions.appendChild(suggestBtn);
+      wrapperDiv.appendChild(actions);
+      input = wrapperDiv;
+    
     container.appendChild(wrapper);
   });
 }
@@ -477,7 +630,7 @@ function renderPremise() {
     custom = document.createElement('input');
     custom.type = 'text';
     custom.id = 'premise-custom-input';
-    custom.placeholder = 'Type custom premise…';
+    custom.placeholder = 'Type custom premiseâ€¦';
     custom.value = state.customPremise || '';
     custom.style.minWidth = '220px';
     custom.style.marginLeft = '8px';
@@ -570,7 +723,7 @@ function renderLanguage() {
 // Utility: clean VBA artifact tokens from structure strings for display
 function cleanStructureDisplay(text) {
   return String(text || '')
-    .replace(/\s*a-[\'’]\s*/g, ' | ')
+    .replace(/\s*a-[\'â€™]\s*/g, ' | ')
     .replace(/\s+\|\s+/g, ' | ')
     .trim();
 }
@@ -612,14 +765,14 @@ function renderComputed() {
     ];
   } else {
     entries = [
-      { label: 'Core', value: '—' },
-      { label: 'Tech', value: '—' },
-      { label: 'Anthem', value: '—' },
-      { label: 'StyleSig', value: '—' },
-      { label: 'Group', value: '—' },
-      { label: 'Perf', value: '—' },
-      { label: 'Regularizer', value: '—' },
-      { label: 'Final Score', value: '—' }
+      { label: 'Core', value: 'â€”' },
+      { label: 'Tech', value: 'â€”' },
+      { label: 'Anthem', value: 'â€”' },
+      { label: 'StyleSig', value: 'â€”' },
+      { label: 'Group', value: 'â€”' },
+      { label: 'Perf', value: 'â€”' },
+      { label: 'Regularizer', value: 'â€”' },
+      { label: 'Final Score', value: 'â€”' }
     ];
   }
   // Build grid with meters for numeric values
@@ -981,8 +1134,8 @@ function buildGenreLibraryTable() {
   const splitStructure = (text) => {
     const raw = String(text || '').trim();
     if (!raw) return [];
-    // Split on the VBA artifact token a-' or a-’ and clean pieces
-    return raw.split(/\s*a-[\'’]\s*/i).map(s => s.trim()).filter(Boolean);
+    // Split on the VBA artifact token a-' or a-â€™ and clean pieces
+    return raw.split(/\s*a-[\'â€™]\s*/i).map(s => s.trim()).filter(Boolean);
   };
   const splitCsv = (text) => String(text || '')
     .split(',')
@@ -1120,7 +1273,7 @@ function buildCreativeBrief() {
 
   const lines = [
     'Creative Brief (Auto-generated)',
-    '',
+    '`',
     `Final Score: ${formatNumber(computed.final.clamped, 1)}`,
     `Feel: ${analysis.tempoHint || tempo}`,
     `Structure: ${cleanStructureDisplay(analysis.structureHint || structure)}`,
@@ -1185,6 +1338,17 @@ function buildSunoBlocks() {
 
   lyrics = applyPhoneticSpelling(lyrics, phonetic.label);
 
+  // Build production block (tempo, structure, sidechain, mastering, instruments)
+  const __instListPB = deriveInstrumentsFromMix(analysis);
+  const __prodPB = buildProductionDirectives(analysis);
+  const __structurePB = cleanStructureDisplay(analysis.structureHint || '');
+  const __productionLines = [];
+  if (__structurePB) __productionLines.push('Structure: ' + __structurePB);
+  if (__instListPB && __instListPB.length) __productionLines.push('Instruments: ' + __instListPB.join(', '));
+  if (__prodPB && __prodPB.tempoLine) __productionLines.push(__prodPB.tempoLine);
+  if (__prodPB && Array.isArray(__prodPB.sidechain) && __prodPB.sidechain.length) { __productionLines.push('Sidechain:'); __prodPB.sidechain.forEach(s => __productionLines.push('- ' + s)); }
+  if (__prodPB && Array.isArray(__prodPB.mastering) && __prodPB.mastering.length) { __productionLines.push('Mastering:'); __prodPB.mastering.forEach(s => __productionLines.push('- ' + s)); }
+
   const title = state.userSections.titleIdea?.trim() || suggestTitle(computed.final.clamped);
   const blocksText = [
     '```',
@@ -1197,14 +1361,133 @@ function buildSunoBlocks() {
     exclude,
     '```',
     '```',
-    lyrics.join('\n'),
+    __productionLines.join('\\n'),
+    '```',
+    '```',
+    lyrics.join('\\n'),
     '```'
   ].join('\n');
 
   return { blocksText };
 }
 
-function buildPromptText() {
+// --- Instrument and production helpers ---
+function __pickInstrumentsForGenre(nameLower) {
+  const k = String(nameLower||'').toLowerCase();
+  const M = {
+    'drill': ['drum kit','trap hats','snare','kick','808 bass','synth lead','fx riser','vocal chop'],
+    'trap': ['drum kit','trap hats','snare','kick','808 bass','synth lead','fx riser'],
+    'boom bap': ['drum kit','snare','kick','piano','rhodes','strings'],
+    'lo-fi': ['drum kit','snare','kick','rhodes','piano','synth pad'],
+    'phonk': ['drum kit','snare','kick','808 bass','synth lead','strings'],
+    'r&b': ['drum kit','snare','kick','rhodes','piano','strings','choir'],
+    'pop': ['drum kit','snare','kick','piano','synth pad','synth lead','fx riser'],
+    'indie pop': ['drum kit','snare','kick','electric guitar','piano','synth pad'],
+    'house': ['drum kit','claps','snare','kick','synth pad','synth lead','pluck synth','arp','fx riser'],
+    'afro house': ['drum kit','claps','snare','kick','synth pad','vocal chop'],
+    'tech house': ['drum kit','claps','snare','kick','synth pad','pluck synth','fx riser'],
+    'edm': ['drum kit','claps','snare','kick','synth lead','synth pad','fx riser','vocal chop'],
+    'eurodance': ['drum kit','claps','snare','kick','piano','synth lead','synth pad','fx riser'],
+    'trance': ['drum kit','claps','snare','kick','synth lead','synth pad','fx riser'],
+    'hard trance': ['drum kit','claps','snare','kick','synth lead','synth pad','fx riser'],
+    'techno': ['drum kit','snare','kick','synth pad','pluck synth','fx riser'],
+    'minimal techno': ['drum kit','snare','kick','synth pad','fx riser'],
+    'dnb': ['drum kit','snare','kick','synth lead','synth pad','fx riser','strings'],
+    'liquid dnb': ['drum kit','snare','kick','strings','piano','synth pad'],
+    'neurofunk': ['drum kit','snare','kick','synth lead','synth pad','fx riser'],
+    'jungle': ['drum kit','snare','kick','synth lead','strings','fx riser'],
+    'breakbeat': ['drum kit','snare','kick','synth lead','fx riser','strings'],
+    'uk garage': ['drum kit','claps','snare','kick','piano','rhodes','vocal chop','synth pad'],
+    'future garage': ['drum kit','snare','kick','piano','synth pad','vocal chop'],
+    'uk funky': ['drum kit','claps','snare','kick','synth pad','vocal chop'],
+    'grime': ['drum kit','trap hats','snare','kick','808 bass','synth lead','fx riser'],
+    'jersey': ['drum kit','claps','snare','kick','trap hats','vocal chop','pluck synth','fx riser','808 bass'],
+    'afrobeats': ['drum kit','claps','snare','kick','rhodes','synth pad','vocal chop'],
+    'dancehall': ['drum kit','claps','snare','kick','synth pad','vocal chop'],
+    'reggaeton': ['drum kit','claps','snare','kick','synth lead','vocal chop'],
+    'moombahton': ['drum kit','claps','snare','kick','synth lead','synth pad','vocal chop','fx riser'],
+    'baile': ['drum kit','claps','snare','kick','808 bass','vocal chop'],
+    'alt rock': ['drum kit','snare','kick','electric guitar','strings'],
+    'rock': ['drum kit','snare','kick','electric guitar','strings'],
+    'metal': ['drum kit','snare','kick','electric guitar','strings'],
+    'synth pop': ['drum kit','snare','kick','piano','synth pad','synth lead','strings'],
+    'shoegaze': ['drum kit','snare','kick','electric guitar','strings','synth pad'],
+    'ambient pop': ['drum kit','snare','kick','rhodes','synth pad','strings','choir'],
+    'footwork': ['drum kit','snare','kick','808 bass','vocal chop','synth pad'],
+    'juke': ['drum kit','snare','kick','808 bass','vocal chop','synth pad']
+  };
+  for (const key of Object.keys(M)) {
+    if (k.includes(key)) return M[key];
+  }
+  return ['drum kit','snare','kick','piano','synth pad'];
+}function deriveInstrumentsFromMix(analysis) {
+  try {
+    const mix = (analysis && analysis.mix) ? analysis.mix : [];
+    const tally = new Map();
+    for (const item of mix) {
+      const base = __pickInstrumentsForGenre(item.name.toLowerCase());
+      base.forEach(inst => {
+        const w = (item.weight || 0) + (Math.random()*0.05);
+        tally.set(inst, (tally.get(inst)||0) + w);
+      });
+    }
+    // Default when no mix selected
+    if (!tally.size) {
+      ['drum kit','snare','kick','808 bass','synth pad','synth lead','fx riser'].forEach((inst,i)=> tally.set(inst, 1 - i*0.05));
+    }
+    const ranked = Array.from(tally.entries()).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+    // Add a bit of variety
+    const cap = 8;
+    const pick = ranked.slice(0, cap);
+    if (Math.random() < 0.4 && !pick.includes('vocal chop')) pick.push('vocal chop');
+    return pick.slice(0, cap);
+  } catch(_) { return []; }
+}
+function extractTempoInfo(tempoHint) {
+  const raw = String(tempoHint||'');
+  const first = raw.split('|')[0] || raw;
+  const clean = first.replace(/^\s*\d+%\s*/, '').trim();
+  const m = clean.match(/(\d{2,3})\s*-\s*(\d{2,3})|((\d{2,3}))\s*bpm/i);
+  if (m) {
+    const a = m[1] ? parseInt(m[1],10) : (m[4] ? parseInt(m[4],10) : NaN);
+    const b = m[2] ? parseInt(m[2],10) : a;
+    if (!Number.isNaN(a) && !Number.isNaN(b)) {
+      const mid = Math.round((a+b)/2);
+      return { range: a===b?`${a} bpm`:`${a}-${b} bpm`, mid };
+    }
+  }
+  return { range: clean.replace(/feel/i,'feel').trim(), mid: NaN };
+}
+function buildProductionDirectives(analysis) {
+  const names = (analysis && analysis.mix) ? analysis.mix.map(m=>m.name.toLowerCase()) : [];
+  const tempoInfo = extractTempoInfo(analysis && analysis.tempoHint);
+  // Sidechain heuristics
+  const cluby = ['house','techno','tech house','edm','trance','uk garage','garage','dnb','drum and bass','jungle','breakbeat','moombahton'];
+  const urban = ['trap','drill','grime','phonk','boom bap','r&b','rap'];
+  const has = (toks) => names.some(n => toks.some(t => n.includes(t)));
+  const sidechain = [];
+  if (has(cluby)) {
+    sidechain.push('Sidechain pads/leads to kick (medium), bass subtle duck to kick');
+  }
+  if (has(['dnb','drum and bass','jungle'])) {
+    sidechain.push('Preserve transient snap; minimal bus ducking');
+  }
+  if (has(urban)) {
+    sidechain.push('Minimal sidechain; duck long reverbs/delays to vocals');
+  }
+  if (!sidechain.length) sidechain.push('Tasteful ducking on long tails for clarity');
+  const mastering = [
+    'Master bus: gentle glue 1.5:1, slow attack, auto release',
+    'True peak: -1.0 dBTP; streaming target: ~-14 LUFS; optional club alt: ~-9 LUFS',
+    'Low cut 20–30 Hz on mix bus; bass mono below ~120 Hz',
+    'Avoid clipping; preserve dynamics; tasteful stereo width'
+  ];
+  return {
+    tempoLine: tempoInfo.mid ? `Tempo: follow feel; ~${tempoInfo.mid} BPM (${tempoInfo.range})` : `Tempo: ${tempoInfo.range}`,
+    sidechain,
+    mastering
+  };
+}function buildPromptText() {
   if (!state.computed || !state.computed.blocks) {
     recompute();
   }
@@ -1287,6 +1570,7 @@ function buildPromptText() {
   lines.push("- Alternate voices / ad-libs go in (parentheses): (yeah), (echo), (crowd: ay!).");
   lines.push("- Any noises/SFX go in bracketed asterisks: [* cheer *], [* breath *], [* bass drop *].");
   lines.push("- The Style block is a single bracketed list of tags separated by pipes (example: [anthemic rap | chant hook | evolving chorus | confident bounce]).");
+  lines.push("- Include key instruments and any mix cues (e.g., sidechain) as tags in the Style block.");
   lines.push("- Exclude block is lowercase nouns, comma-separated.");
   lines.push("- Begin lyrics with: [Producer Tag] iMob Worldwide!");
   lines.push("- 3+ minutes; evolving choruses; stage cues in [brackets]; call-and-response via (parentheses).");
@@ -1325,6 +1609,21 @@ function buildPromptText() {
   if (state.creativeInputs.lengthTarget) lines.push(`Length target (minutes): ${state.creativeInputs.lengthTarget}`);
   if (state.creativeInputs.audienceNotes) lines.push(`Audience notes: ${state.creativeInputs.audienceNotes}`);
   lines.push(`Premise focus: ${resolvePremise()}`);
+  if (state.creativeInputs.artistReference) lines.push(`Artist reference: ${state.creativeInputs.artistReference} (parsed cues applied if available)`);
+  // Instrumentation and production guidance
+  try {
+    const __analysis = analysis || (state.genreAnalysis || analyzeGenreMix(state.genreMix));
+    const __instList = deriveInstrumentsFromMix(__analysis);
+    if (__instList && __instList.length) lines.push('Instruments (guidance): ' + __instList.join(', '));
+    const __prod = buildProductionDirectives(__analysis);
+    if (__prod && __prod.tempoLine) lines.push(__prod.tempoLine);
+    if (__prod && Array.isArray(__prod.sidechain) && __prod.sidechain.length) {
+      lines.push('Sidechain:'); __prod.sidechain.forEach(s => lines.push('- ' + s));
+    }
+    if (__prod && Array.isArray(__prod.mastering) && __prod.mastering.length) {
+      lines.push('Mastering:'); __prod.mastering.forEach(s => lines.push('- ' + s));
+    }
+  } catch(_) {}
   lines.push("");
   // External directives (user-specified), one-per-line
   const extraDirectives = String(state.creativeInputs.externalDirectives || '')
@@ -1384,7 +1683,7 @@ function buildPhoneticCheatsheet(label) {
       'Crisp consonants; careful enunciation.'
     ],
     'british english (london)': [
-      'Glottal stops (bottle ? bo’ul).',
+      'Glottal stops (bottle ? boâ€™ul).',
       'TH-fronting (think ? fink).',
       'L-vocalisation (milk ? miwk).'
     ],
@@ -1812,7 +2111,7 @@ function init() {
   try { loadState(); } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
-  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
+  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = 'Ã—'; } catch (_) {}
   renderConstants();
   renderControls();
   renderWeights();
@@ -2425,7 +2724,7 @@ function renderPromptHistory() {
     <div class="history-item" data-idx="${idx}" style="border:1px solid var(--panel-border); border-radius:10px; padding:0.6rem; margin:0.5rem 0; background: var(--panel);">
       <div class="history-head" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
         <div style="font-size:.9rem; color: var(--muted);">
-          <strong>${safe(item.language)}</strong> • ${safe(item.accent)}${item.score?` • Score ${safe(item.score)}`:''}${item.mix?` • ${safe(item.mix)}`:''}
+          <strong>${safe(item.language)}</strong> â€¢ ${safe(item.accent)}${item.score?` â€¢ Score ${safe(item.score)}`:''}${item.mix?` â€¢ ${safe(item.mix)}`:''}
           <div style="font-size:.8rem;">${safe(fmt(item.ts))}</div>
         </div>
         <div style="display:flex; gap:.4rem;">
@@ -2458,40 +2757,40 @@ function renderPromptHistory() {
 const __GAMIFY_KEY = 'rgf_gamify_v1';
 // Known achievements registry for consistent labeling + icons
 const ACHIEVEMENTS = {
-  firstPrompt: { label: 'First Prompt!', icon: '✨', desc: 'Build your first prompt.' },
-  perfectWeights: { label: 'Perfect Weights', icon: '⚖️', desc: 'Make weights sum to exactly 1.00.' },
-  fusionChef: { label: 'Fusion Chef', icon: '🍳', desc: 'Use 3 or more genres in a mix.' },
-  build5: { label: '5 Prompts', icon: '5️⃣', desc: 'Build 5 prompts total.' },
-  build10: { label: '10 Prompts', icon: '🔟', desc: 'Build 10 prompts total.' },
-  build25: { label: '25 Prompts', icon: '🏆', desc: 'Build 25 prompts total.' },
-  readyToRoll: { label: 'Ready to Roll', icon: '🚀', desc: 'Reach 100% readiness and build.' },
-  streak3: { label: '3-Day Streak', icon: '📆', desc: 'Build prompts 3 days in a row.' },
-  streak7: { label: '7-Day Streak', icon: '📅', desc: 'Build prompts 7 days in a row.' },
-  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙', desc: 'Turn on Wizard Mode.' },
-  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓', desc: 'Reach the Build step in Wizard Mode.' },
-  demoExplorer: { label: 'Demo Explorer', icon: '🧪', desc: 'Load the demo setup.' },
-  muse: { label: 'Muse', icon: '🎨', desc: 'Use Suggest for Premise.' },
-  djBlend: { label: 'Blend DJ', icon: '🎛️', desc: 'Use Suggest Blend for Genre Mix.' },
-  curator: { label: 'Curator', icon: '🗂️', desc: 'Apply a curated Blend Preset.' },
-  promptCopier: { label: 'Prompt Copier', icon: '📋', desc: 'Copy the AI prompt to clipboard.' },
-  briefCopier: { label: 'Brief Copier', icon: '📝', desc: 'Copy the Creative Brief.' },
-  sunoCopier: { label: 'Suno Copier', icon: '🔊', desc: 'Copy the Suno blocks.' },
-  apiCaller: { label: 'API Caller', icon: '🔌', desc: 'Call the AI endpoint successfully.' },
-  voiceActor: { label: 'Voice Actor', icon: '🎙️', desc: 'Select a non-neutral accent.' },
-  accentExplorer: { label: 'Accent Explorer', icon: '🧭', desc: 'Use 3 or more different accents.' },
-  polyglot1: { label: 'Polyglot I', icon: '🌐', desc: 'Select a non-English language.' },
-  polyglot2: { label: 'Polyglot II', icon: '🌍', desc: 'Enter a custom language.' },
-  polyglotExplorer: { label: 'Polyglot Explorer', icon: '🗺️', desc: 'Use 3 or more different languages.' },
-  presetDriver: { label: 'Preset Driver', icon: '🎚️', desc: 'Apply a weight preset.' },
-  presetMaestro: { label: 'Preset Maestro', icon: '🏅', desc: 'Apply weight presets 5 times.' },
-  lyricist: { label: 'Lyricist', icon: '✍️', desc: 'Enter any user section (title/intro/hook/etc.).' },
-  composer: { label: 'Composer', icon: '🎼', desc: 'Enter 3 or more user sections.' },
-  crateDigger: { label: 'Crate Digger', icon: '📦', desc: 'Use 5 unique genres across mixes.' },
-  crateCurator: { label: 'Crate Curator', icon: '🧰', desc: 'Use 10 unique genres across mixes.' },
-  rhythmFirst: { label: 'Rhythm First Round', icon: '🥁', desc: 'Finish a Rhythm Tapper round.' },
-  rhythmAce: { label: 'Rhythm Ace', icon: '💯', desc: 'Finish Rhythm with =90% accuracy.' },
-  comboMaster: { label: 'Combo Master', icon: '🔥', desc: 'Reach a 30+ combo in Rhythm.' },
-  hazardAvoider: { label: 'Hazard Avoider', icon: '🛡️', desc: 'Finish Rhythm with 0 hazards collected.' }
+  firstPrompt: { label: 'First Prompt!', icon: 'âœ¨', desc: 'Build your first prompt.' },
+  perfectWeights: { label: 'Perfect Weights', icon: 'âš–ï¸', desc: 'Make weights sum to exactly 1.00.' },
+  fusionChef: { label: 'Fusion Chef', icon: 'ðŸ³', desc: 'Use 3 or more genres in a mix.' },
+  build5: { label: '5 Prompts', icon: '5ï¸âƒ£', desc: 'Build 5 prompts total.' },
+  build10: { label: '10 Prompts', icon: 'ðŸ”Ÿ', desc: 'Build 10 prompts total.' },
+  build25: { label: '25 Prompts', icon: 'ðŸ†', desc: 'Build 25 prompts total.' },
+  readyToRoll: { label: 'Ready to Roll', icon: 'ðŸš€', desc: 'Reach 100% readiness and build.' },
+  streak3: { label: '3-Day Streak', icon: 'ðŸ“†', desc: 'Build prompts 3 days in a row.' },
+  streak7: { label: '7-Day Streak', icon: 'ðŸ“…', desc: 'Build prompts 7 days in a row.' },
+  apprenticeWizard: { label: 'Apprentice Wizard', icon: 'ðŸ§™', desc: 'Turn on Wizard Mode.' },
+  wizardGraduate: { label: 'Wizard Graduate', icon: 'ðŸŽ“', desc: 'Reach the Build step in Wizard Mode.' },
+  demoExplorer: { label: 'Demo Explorer', icon: 'ðŸ§ª', desc: 'Load the demo setup.' },
+  muse: { label: 'Muse', icon: 'ðŸŽ¨', desc: 'Use Suggest for Premise.' },
+  djBlend: { label: 'Blend DJ', icon: 'ðŸŽ›ï¸', desc: 'Use Suggest Blend for Genre Mix.' },
+  curator: { label: 'Curator', icon: 'ðŸ—‚ï¸', desc: 'Apply a curated Blend Preset.' },
+  promptCopier: { label: 'Prompt Copier', icon: 'ðŸ“‹', desc: 'Copy the AI prompt to clipboard.' },
+  briefCopier: { label: 'Brief Copier', icon: 'ðŸ“', desc: 'Copy the Creative Brief.' },
+  sunoCopier: { label: 'Suno Copier', icon: 'ðŸ”Š', desc: 'Copy the Suno blocks.' },
+  apiCaller: { label: 'API Caller', icon: 'ðŸ”Œ', desc: 'Call the AI endpoint successfully.' },
+  voiceActor: { label: 'Voice Actor', icon: 'ðŸŽ™ï¸', desc: 'Select a non-neutral accent.' },
+  accentExplorer: { label: 'Accent Explorer', icon: 'ðŸ§­', desc: 'Use 3 or more different accents.' },
+  polyglot1: { label: 'Polyglot I', icon: 'ðŸŒ', desc: 'Select a non-English language.' },
+  polyglot2: { label: 'Polyglot II', icon: 'ðŸŒ', desc: 'Enter a custom language.' },
+  polyglotExplorer: { label: 'Polyglot Explorer', icon: 'ðŸ—ºï¸', desc: 'Use 3 or more different languages.' },
+  presetDriver: { label: 'Preset Driver', icon: 'ðŸŽšï¸', desc: 'Apply a weight preset.' },
+  presetMaestro: { label: 'Preset Maestro', icon: 'ðŸ…', desc: 'Apply weight presets 5 times.' },
+  lyricist: { label: 'Lyricist', icon: 'âœï¸', desc: 'Enter any user section (title/intro/hook/etc.).' },
+  composer: { label: 'Composer', icon: 'ðŸŽ¼', desc: 'Enter 3 or more user sections.' },
+  crateDigger: { label: 'Crate Digger', icon: 'ðŸ“¦', desc: 'Use 5 unique genres across mixes.' },
+  crateCurator: { label: 'Crate Curator', icon: 'ðŸ§°', desc: 'Use 10 unique genres across mixes.' },
+  rhythmFirst: { label: 'Rhythm First Round', icon: 'ðŸ¥', desc: 'Finish a Rhythm Tapper round.' },
+  rhythmAce: { label: 'Rhythm Ace', icon: 'ðŸ’¯', desc: 'Finish Rhythm with =90% accuracy.' },
+  comboMaster: { label: 'Combo Master', icon: 'ðŸ”¥', desc: 'Reach a 30+ combo in Rhythm.' },
+  hazardAvoider: { label: 'Hazard Avoider', icon: 'ðŸ›¡ï¸', desc: 'Finish Rhythm with 0 hazards collected.' }
 };
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
@@ -2631,7 +2930,7 @@ function buildGameHubDialog() {
     const sample = document.createElement('button'); sample.textContent = 'Sample';
     sample.addEventListener('click', () => {
       const out = sampleFn();
-      openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
+      openLibraryDialog(`${title} â€¢ Summary`, buildGameSummary(out, key));
     });
     row.appendChild(sample);
     if (opts.start) {
@@ -2648,18 +2947,18 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildRhythmGameDialog((output) => {
-        openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
+        openLibraryDialog('Rhythm â€¢ Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('Rhythm Tapper', content);
     }
   }));
-  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3â€“4 turns to compose your blend.', sampleGridOutput, 'grid', {
     start: () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildGridGameDialog((output) => {
-        openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
+        openLibraryDialog('Grid â€¢ Summary', buildGameSummary(output, 'grid'));
       }, { difficulty: 'normal' });
       openLibraryDialog('Grid Picker', content);
     }
@@ -2670,7 +2969,7 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildShooterGameDialog((output) => {
-        openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
+        openLibraryDialog('Shooter â€¢ Summary', buildGameSummary(output, 'shooter'));
       }, { durationSec: 60 });
       openLibraryDialog('Shooter (Concept)', content);
     }
@@ -2907,20 +3206,30 @@ function suggestPremise() {
 function suggestGenreBlend() {
   const lib = GENRE_LIBRARY || [];
   if (!lib.length) return;
-  const pickN = Math.random() < 0.5 ? 2 : 3;
+  const pickN = Math.random() < 0.5 ? 2 : (Math.random() < 0.85 ? 3 : 4);
   const picks = [];
   const used = new Set();
-  for (let i=0; i<lib.length && picks.length < pickN; i++) {
-    const idx = Math.floor(Math.random()*lib.length);
-    const name = lib[idx]?.name; if (!name || used.has(name.toLowerCase())) continue;
-    used.add(name.toLowerCase()); picks.push(name);
+  const recent = Array.isArray(__recentGenrePicks) ? __recentGenrePicks : [];
+  let guard = 0;
+  while (picks.length < pickN && guard < 500) {
+    guard++;
+    const idx = Math.floor(Math.random() * lib.length);
+    const name = lib[idx]?.name;
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (used.has(key)) continue;
+    if (recent.includes(key) && Math.random() < 0.75) continue;
+    used.add(key);
+    picks.push(name);
   }
-  const weights = pickN === 2 ? [70,30] : [60,30,10];
+  const weights = pickN === 2 ? [70, 30] : (pickN === 3 ? [60, 30, 10] : [50, 25, 15, 10]);
   state.genreMix.forEach((slot, i) => {
     slot.genre = picks[i] || '';
     slot.customGenre = '';
-    slot.weight = picks[i] ? weights[i] : 0;
+    slot.weight = picks[i] ? (weights[i] || 0) : 0;
   });
+  const combined = recent.concat(picks.map(n => n.toLowerCase()));
+  __recentGenrePicks = combined.slice(-14);
 }
 
 // ---------- Curated Genre Blend Presets ----------
@@ -2941,7 +3250,15 @@ const GENRE_BLEND_PRESETS = [
   { id: 'lofi-trap', label: 'Lo-fi + Trap', items: [ ['lo-fi', 50], ['trap', 50] ], desc: 'Chill texture + punchy rhythm' },
   { id: 'phonk-dnb', label: 'Phonk + DnB', items: [ ['phonk', 50], ['dnb', 50] ], desc: 'Memphis flavor at 170+' },
   { id: 'house-rap', label: 'House + Rap', items: [ ['house', 50], ['rap', 50] ], desc: 'Four-on-the-floor + verses' }
-];
+  , { id: 'ukg-rnb', label: 'UK Garage + R&B', items: [ ['uk garage', 60], ['r&b', 40] ], desc: '2-step + soulful hooks' }
+  , { id: 'grime-drill', label: 'Grime + Drill', items: [ ['grime', 60], ['drill', 40] ], desc: 'Aggressive UK energy' }
+  , { id: 'jungle-dnb', label: 'Jungle + DnB', items: [ ['jungle', 50], ['dnb', 50] ], desc: 'Old-school breaks + modern drive' }
+  , { id: 'techhouse-pop', label: 'Tech House + Pop', items: [ ['tech house', 60], ['pop', 40] ], desc: 'Club groove, vocal focus' }
+  , { id: 'moombah-reggaeton', label: 'Moombahton + Reggaeton', items: [ ['moombahton', 60], ['reggaeton', 40] ], desc: 'Dembow + Dutch lead' }
+  , { id: 'baile-trap', label: 'Baile Funk + Trap', items: [ ['baile', 60], ['trap', 40] ], desc: 'Favela drums + 808s' }
+  , { id: 'bossa-indie', label: 'Bossa Nova + Indie Pop', items: [ ['bossa', 60], ['indie pop', 40] ], desc: 'Warm acoustic + indie vibe' }
+  , { id: 'breakbeat-rap', label: 'Breakbeat + Rap', items: [ ['breakbeat', 60], ['rap', 40] ], desc: 'Broken drums + bars' }
+  , { id: 'jersey-rnb', label: 'Jersey Club + R&B', items: [ ['jersey', 60], ['r&b', 40] ], desc: 'Bouncy kicks + silky hooks' }];
 function buildGenrePresetDialog() {
   const wrap = document.createElement('div');
   const table = document.createElement('table');
@@ -3030,6 +3347,23 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleSave(); } catch(_){}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

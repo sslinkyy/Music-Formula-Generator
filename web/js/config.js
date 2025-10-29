@@ -126,7 +126,7 @@ export const DEFAULT_AI_SETTINGS = {
   responseFormat: '{"type":"text"}'
 };
 
-export const CREATIVE_FIELDS = [
+\n  { id: 'artistReference', label: 'Artist reference (e.g., Drake)', defaultValue: '' },\n
   { id: 'theme', label: 'Theme', defaultValue: '' },
   { id: 'keywords', label: 'Keywords (comma-separated)', defaultValue: '' },
   { id: 'mustInclude', label: 'Must-include words/phrases', defaultValue: '' },
@@ -183,4 +183,5 @@ export const INSTRUMENT_OPTIONS = [
   'vocal chop',
   'fx riser'
 ];
+
 
