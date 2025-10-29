@@ -327,7 +327,38 @@ function applyArtistProfile(profile) {
     return true;
   } catch(e) { console.error('applyArtistProfile failed', e); return false; }
 }
-function renderCreativeInputs() {
+function __normalizeName(s) {
+  try { return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim(); } catch(_) { return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim(); }
+}
+function __tokenize(s) { return __normalizeName(s).split(' ').filter(Boolean); }
+function __scoreArtist(query, candidate) {
+  const qt = __tokenize(query);
+  const ct = __tokenize(candidate);
+  if (!qt.length || !ct.length) return 0;
+  const set = new Set(ct);
+  let hits = 0; qt.forEach(t => { if (set.has(t)) hits++; });
+  const frac = hits / Math.max(qt.length, ct.length);
+  // Also reward substring includes
+  const qn = __normalizeName(query);
+  const cn = __normalizeName(candidate);
+  const incl = cn.includes(qn) || qn.includes(cn) ? 0.2 : 0;
+  return Math.min(1, frac + incl);
+}
+function suggestArtistProfiles(name, limit=5) {
+  try {
+    const lib = ARTIST_PROFILES || [];
+    const scored = lib.map(p => {
+      const base = __scoreArtist(name, p.name||'');
+      let best = base;
+      if (Array.isArray(p.aliases)) {
+        p.aliases.forEach(a => { const sc = __scoreArtist(name, a); if (sc > best) best = sc; });
+      }
+      return { p, s: best };
+    }).filter(x => x.s > 0);
+    scored.sort((a,b)=> b.s - a.s);
+    return scored.slice(0, limit).map(x => x.p);
+  } catch(_) { return []; }
+}function renderCreativeInputs() {
   const container = document.getElementById('creative-inputs');
   container.innerHTML = '';
   CREATIVE_FIELDS.forEach(field => {
@@ -423,6 +454,26 @@ function renderCreativeInputs() {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = 'Parse';
+      // Suggestion container
+      const sugg = document.createElement('div');
+      sugg.className = 'chips';
+      sugg.style.marginTop = '6px';
+      row.appendChild(sugg);
+      function renderSuggestions(q){
+        try {
+          sugg.innerHTML='';
+          const choices = suggestArtistProfiles(q, 5);
+          if (!choices.length) return;
+          choices.forEach(p => {
+            const chip = document.createElement('button');
+            chip.type='button'; chip.className='chip';
+            chip.textContent = p.name;
+            chip.addEventListener('click', () => { applyArtistProfile(p); });
+            sugg.appendChild(chip);
+          });
+        } catch(_){}
+      }
+      text.addEventListener('input', () => renderSuggestions(text.value));
       btn.addEventListener('click', () => {
         const name = (text.value||'').trim();
         state.creativeInputs[field.id] = name;
@@ -3359,6 +3410,7 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleSave(); } catch(_){}
 }
+
 
 
 
