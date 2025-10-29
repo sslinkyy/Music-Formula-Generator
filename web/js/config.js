@@ -139,17 +139,6 @@ export const DEFAULT_AI_SETTINGS = {
   responseFormat: '{"type":"text"}'
 };
 
-  { id: 'theme', label: 'Theme', defaultValue: '' },
-  { id: 'keywords', label: 'Keywords (comma-separated)', defaultValue: '' },
-  { id: 'mustInclude', label: 'Must-include words/phrases', defaultValue: '' },
-  // Pre-populate common overused words to avoid; editable by user
-  { id: 'forbidden', label: 'Forbidden words/phrases', defaultValue: 'glow, glitch, pulse' },
-  { id: 'styleTags', label: 'Style/Mood tags (comma-separated)', defaultValue: 'anthemic rap, chant hook, pocket-tight flow' },
-  { id: 'specificInstruments', label: 'Specific instruments (select or type)', defaultValue: '' },
-  { id: 'lengthTarget', label: 'Length target (min)', defaultValue: 3 },
-  { id: 'audienceNotes', label: 'Audience notes', defaultValue: '' },
-  { id: 'externalDirectives', label: 'External directives (one per line)', defaultValue: '' }
-];
 
 // Languages available for lyric output (plus custom)
 export const LANGUAGE_OPTIONS = [
