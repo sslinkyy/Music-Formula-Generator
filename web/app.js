@@ -2801,6 +2801,7 @@ document.addEventListener('DOMContentLoaded', setupDropdowns);
 
 function setupDropdowns() {
   const dropdowns = document.querySelectorAll('.dropdown');
+  let touchHandled = false;
 
   dropdowns.forEach(dropdown => {
     const toggle = dropdown.querySelector('.dropdown-toggle');
@@ -2810,7 +2811,6 @@ function setupDropdowns() {
 
     // Toggle dropdown handler
     const toggleDropdown = (e) => {
-      e.preventDefault();
       e.stopPropagation();
 
       // Close other dropdowns
@@ -2824,24 +2824,52 @@ function setupDropdowns() {
       dropdown.classList.toggle('open');
     };
 
-    // Handle both click and touch events
-    toggle.addEventListener('click', toggleDropdown);
+    // Handle click events (desktop)
+    toggle.addEventListener('click', (e) => {
+      if (touchHandled) {
+        touchHandled = false;
+        return;
+      }
+      toggleDropdown(e);
+    });
+
+    // Handle touch events (mobile)
+    toggle.addEventListener('touchstart', (e) => {
+      touchHandled = true;
+      e.stopPropagation();
+    });
+
     toggle.addEventListener('touchend', (e) => {
-      e.preventDefault(); // Prevent click from firing after touchend
+      e.preventDefault();
+      e.stopPropagation();
       toggleDropdown(e);
     });
 
     // Close dropdown when clicking/tapping a menu item
     const menuButtons = menu.querySelectorAll('button');
     menuButtons.forEach(button => {
-      const closeDropdown = () => {
+      const closeDropdown = (e) => {
+        if (e) e.stopPropagation();
         dropdown.classList.remove('open');
       };
 
-      button.addEventListener('click', closeDropdown);
+      button.addEventListener('click', (e) => {
+        if (touchHandled) {
+          touchHandled = false;
+          return;
+        }
+        closeDropdown(e);
+      });
+
+      button.addEventListener('touchstart', (e) => {
+        touchHandled = true;
+        e.stopPropagation();
+      });
+
       button.addEventListener('touchend', (e) => {
-        e.preventDefault(); // Prevent click from firing after touchend
-        closeDropdown();
+        e.preventDefault();
+        e.stopPropagation();
+        closeDropdown(e);
       });
     });
   });
@@ -2855,8 +2883,19 @@ function setupDropdowns() {
     }
   };
 
-  document.addEventListener('click', closeAllDropdowns);
-  document.addEventListener('touchend', closeAllDropdowns);
+  document.addEventListener('click', (e) => {
+    if (touchHandled) {
+      touchHandled = false;
+      return;
+    }
+    closeAllDropdowns(e);
+  });
+
+  document.addEventListener('touchend', (e) => {
+    setTimeout(() => {
+      closeAllDropdowns(e);
+    }, 0);
+  });
 
   // Close dropdowns on escape key
   document.addEventListener('keydown', (e) => {
