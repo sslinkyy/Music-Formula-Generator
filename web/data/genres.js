@@ -249,6 +249,7 @@ export const GENRE_LIBRARY = [
   },
   {
     "name": "Rock",
+    "category": "Rock",
     "tempo": " 120-150 bpm feel",
     "styleTags": " driven guitars, shout-along hook, live kit energy, power chords",
     "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
@@ -268,6 +269,7 @@ export const GENRE_LIBRARY = [
   },
   {
     "name": "Metal",
+    "category": "Rock",
     "tempo": " 140-190 bpm feel",
     "styleTags": " down-tuned riffs, double-kick, aggressive delivery, gang shouts",
     "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Breakdown 8 a-' Hook 8",
@@ -287,6 +289,7 @@ export const GENRE_LIBRARY = [
   },
   {
     "name": "Country",
+    "category": "Country",
     "tempo": " 88-108 bpm feel",
     "styleTags": " story-first lyrics, twang, acoustic layers, big choruses",
     "structure": " Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
@@ -303,6 +306,26 @@ export const GENRE_LIBRARY = [
     "hookPlan": " Story-driven chorus with heartfelt payoff line.",
     "flowPlan": " Narrative verses; double-time pickup into chorus.",
     "rhymePlan": " Rhyme couplets with vivid hometown details."
+  },
+  {
+    "name": "Hickhop",
+    "category": "Country",
+    "tempo": " 82-96 bpm feel",
+    "styleTags": " country-rap fusion, twangy phrasing, 808 bounce, storytelling, chant hooks",
+    "structure": " Intro 2 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Bridge 4 a-' Hook 8",
+    "exclude": " edm, drill",
+    "sfx": " yeehaw crowd, clap, slide whoop",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.15,
+      "anthem": 0.22,
+      "style": 0.16,
+      "group": 0.15,
+      "perf": 0.10
+    },
+    "hookPlan": " Catchy chant hook blending country phrases with rap cadence.",
+    "flowPlan": " Speak-sing rap with a light twang; add melodic pickup into hooks.",
+    "rhymePlan": " Simple internals with rustic imagery and playful punch lines."
   },
   {
     "name": "Folk",
@@ -458,6 +481,7 @@ export const GENRE_LIBRARY = [
   },
   {
     "name": "Pop Punk",
+    "category": "Rock",
     "tempo": " 150-170 bpm feel",
     "styleTags": " driving guitars, shout-along hooks, energetic drums, youthful angst, gang vocals",
     "structure": " Intro 2 a-' Verse 8 a-' Pre 4 a-' Hook 8 a-' Verse 8 a-' Pre 4 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
@@ -477,6 +501,7 @@ export const GENRE_LIBRARY = [
   },
   {
     "name": "Alt Rock",
+    "category": "Rock",
     "tempo": " 118-136 bpm feel",
     "styleTags": " crunchy guitars, dynamic quiet-loud leaps, introspective lyrics, soaring choruses",
     "structure": " Intro 4 a-' Verse 12 a-' Pre 4 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
@@ -496,6 +521,7 @@ export const GENRE_LIBRARY = [
   },
   {
     "name": "Metalcore",
+    "category": "Rock",
     "tempo": " 140-180 bpm feel",
     "styleTags": " breakdowns, scream-clean blend, double-kick barrages, emotional catharsis, melodic leads",
     "structure": " Intro 2 a-' Verse 16 a-' Hook 8 a-' Breakdown 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
@@ -1399,3 +1425,29 @@ export const GENRE_LIBRARY = [
     "rhymePlan": " Percussive words; minimal rhyme."
   }
 ];
+
+// Ensure every genre has a category for grouping in UI
+const __GENRE_CATEGORY_LOOKUP = {
+  'Street Rap': 'Hip-Hop / Rap','Drill': 'Hip-Hop / Rap','Boom Bap': 'Hip-Hop / Rap','Club Rap': 'Hip-Hop / Rap','Trap Pop': 'Hip-Hop / Rap',
+  'Emo Rap': 'Hip-Hop / Rap','Jazz-Hop': 'Hip-Hop / Rap','Grime': 'Hip-Hop / Rap','Phonk': 'Hip-Hop / Rap','Trap Soul': 'Hip-Hop / Rap',
+  'Pop': 'Pop','Indie Pop': 'Pop','K-Pop': 'Pop','J-Pop': 'Pop','Synth Pop': 'Pop','Ambient Pop': 'Pop','Eurodance': 'Pop','Cinematic Pop': 'Pop','Synthwave': 'Pop','Vaporwave': 'Pop','Hyperpop': 'Pop',
+  'Rock': 'Rock','Alt Rock': 'Rock','Pop Punk': 'Rock','Metal': 'Rock','Metalcore': 'Rock','Shoegaze': 'Rock',
+  'R&B': 'R&B / Soul','Alt R&B': 'R&B / Soul','Neo-Soul': 'R&B / Soul','Classic Soul': 'R&B / Soul','Gospel Choir': 'R&B / Soul','Gospel Trap': 'R&B / Soul','Disco': 'R&B / Soul','Blues': 'R&B / Soul','Funk': 'R&B / Soul',
+  'House': 'Electronic / Dance','Deep House': 'Electronic / Dance','Afro House': 'Electronic / Dance','Tech House': 'Electronic / Dance','Techno (Peak Time)': 'Electronic / Dance','Minimal Techno': 'Electronic / Dance',
+  'Progressive Trance': 'Electronic / Dance','Hard Trance': 'Electronic / Dance','EDM (Big Room)': 'Electronic / Dance','Future Bass': 'Electronic / Dance','DnB': 'Electronic / Dance','Liquid DnB': 'Electronic / Dance',
+  'Neurofunk': 'Electronic / Dance','Dubstep': 'Electronic / Dance','Drumstep': 'Electronic / Dance','Breakbeat': 'Electronic / Dance','Jersey Club': 'Electronic / Dance','UK Garage': 'Electronic / Dance','UK Funky': 'Electronic / Dance',
+  'Future Garage': 'Electronic / Dance','Footwork': 'Electronic / Dance','Juke': 'Electronic / Dance','Jungle': 'Electronic / Dance','Lo-fi Chillhop': 'Electronic / Dance','Hardstyle': 'Electronic / Dance',
+  'Reggaeton': 'Latin / Caribbean','Latin Pop': 'Latin / Caribbean','Bachata': 'Latin / Caribbean','Salsa': 'Latin / Caribbean','Cumbia': 'Latin / Caribbean','Dancehall': 'Latin / Caribbean','Reggae': 'Latin / Caribbean','Moombahton': 'Latin / Caribbean','Baile Funk': 'Latin / Caribbean',
+  'Afrobeats': 'African','Alte (Afrobeats)': 'African','Gqom': 'African','Amapiano': 'African',
+  'Country': 'Country / Folk','Hickhop': 'Country / Folk','Bluegrass': 'Country / Folk','Folk': 'Country / Folk',
+  'Bossa Nova': 'Jazz / World'
+};
+try {
+  // Mutate exported array to attach categories where missing
+  for (const it of GENRE_LIBRARY) {
+    const name = String(it?.name || '').trim();
+    if (!it.category || !String(it.category).trim()) {
+      it.category = __GENRE_CATEGORY_LOOKUP[name] || 'Other';
+    }
+  }
+} catch (_) {}

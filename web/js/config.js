@@ -25,8 +25,8 @@ export const CREATIVE_FIELDS = [
   { id: 'keywords', label: 'Keywords (comma-separated)', defaultValue: '' },
   { id: 'mustInclude', label: 'Must-include words/phrases', defaultValue: '' },
   // Pre-populate common overused words to avoid; editable by user
-  { id: 'forbidden', label: 'Forbidden words/phrases', defaultValue: 'glow, glitch, pulse' },
-  { id: 'styleTags', label: 'Style/Mood tags (comma-separated)', defaultValue: 'anthemic rap, chant hook, pocket-tight flow' },
+  { id: 'forbidden', label: 'Forbidden words/phrases', defaultValue: 'glow, glitch, hum, pulse, neon' },
+  { id: 'styleTags', label: 'Style/Mood tags (comma-separated)', defaultValue: '' },
   { id: 'specificInstruments', label: 'Specific instruments (select or type)', defaultValue: '' },
   { id: 'lengthTarget', label: 'Length target (min)', defaultValue: 3 },
   { id: 'audienceNotes', label: 'Audience notes', defaultValue: '' },
@@ -133,7 +133,29 @@ export const DEFAULT_AI_SETTINGS = {
   presencePenalty: 0,
   maxTokens: 1200,
   timeoutMs: 60000,
-  systemPrompt: 'You are a lyrical assistant. Output only valid Suno blocks as instructed.',
+  systemPrompt: `You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song.
+Output exactly four code blocks, in this order: 1) title 2) style 3) exclude 4) lyrics.
+Formatting rules (MANDATORY):
+- Write all lyrics in English.
+- Keep all meta tags in English regardless of lyric language (e.g., [HOOK], [Verse 1]).
+- Use globally understandable phrasing; avoid region-specific slang unless provided in user sections.
+- Only adapt conventions common across languages (e.g., bar counts, chorus structure), not culture-specific wordplay.
+- All meta tags/directives must be in [square brackets] (e.g., [HOOK], [Verse 1], [Bridge], [Outro], [Chant]).
+- Alternate voices / ad-libs go in (parentheses): (yeah), (echo), (crowd: ay!).
+- Any noises/SFX go in bracketed asterisks: [* cheer *], [* breath *], [* bass drop *].
+- The Style block is a single bracketed list of tags separated by pipes (example: [anthemic rap | chant hook | evolving chorus | confident bounce]).
+- Include key instruments and any mix cues (e.g., sidechain) as tags in the Style block.
+- Exclude block is lowercase nouns, comma-separated.
+- Begin lyrics with: [Producer Tag] iMob Worldwide!
+- 3+ minutes; evolving choruses; stage cues in [brackets]; call-and-response via (parentheses).
+- Do NOT reference production gear, BPM, mixing jargon, or arrangement terms unless explicitly requested.
+- Do NOT reference any instruments in the lyrics.
+
+Creative guidance:
+- Treat songs as stories told through metaphor and innuendo — life lessons expressed with different examples but the same underlying principles.
+- Do not always tell the story directly; think bigger.
+
+Output only valid Suno blocks as instructed.`,
   stopSequences: '',
   userLabel: '',
   responseFormat: '{"type":"text"}'

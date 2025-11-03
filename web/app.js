@@ -3,6 +3,130 @@ import { computeScores } from './js/scoring.js';
 import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
 import { GENRE_LIBRARY } from './data/genres.js';
+
+// Import new utility modules
+import {
+  validateNumber,
+  validateGenreWeight,
+  validateBaseInput,
+  validateDerivedInput,
+  validateTemperature,
+  validateTopP,
+  validatePenalty,
+  validateMaxTokens,
+  validateTimeout,
+  sanitizeText,
+  sanitizeTitle,
+  validateApiKey,
+  validateUrl,
+  normalizeWeights as validateAndNormalizeWeights,
+  clamp01
+} from './js/utils/validation.js';
+
+import {
+  copyToClipboard,
+  showToast,
+  flashButton,
+  formatNumber,
+  scrollToElement,
+  debounce
+} from './js/utils/dom.js';
+
+import {
+  getTheme,
+  applyTheme,
+  toggleTheme,
+  applyMotionPref,
+  toggleMotionPref,
+  applyEmojiPref,
+  toggleEmojiPref,
+  initTheme
+} from './js/utils/theme.js';
+
+import {
+  getMode,
+  applyMode,
+  toggleMode,
+  initMode
+} from './js/utils/mode.js';
+
+import {
+  STORAGE_KEYS,
+  getPreferences,
+  setPreferences,
+  getPromptHistory,
+  addPromptHistory,
+  clearPromptHistory,
+  getGamificationData,
+  setGamificationData,
+  hasSeenOnboarding,
+  markOnboardingSeen
+} from './js/state/persistence.js';
+
+import {
+  state,
+  buildDefaultState,
+  resetState as resetStateToDefaults,
+  loadState,
+  persistState,
+  scheduleAutoSave,
+  forceSave,
+  updateBaseInput,
+  updateDerivedInput,
+  updateWeight,
+  updateGenreMix,
+  updateCreativeInput,
+  updateUserSection,
+  updateAISetting,
+  setComputed,
+  setGenreAnalysis,
+  updateOutput,
+  getOutputs
+} from './js/state/state-manager.js';
+
+// Category mapping for all known genres (used for grouping)
+const GENRE_CATEGORY_MAP = (() => {
+  const map = new Map();
+  const set = (cat, arr) => arr.forEach(name => map.set(name.toLowerCase(), cat));
+  set('Hip-Hop / Rap', [
+    'Street Rap','Drill','Boom Bap','Club Rap','Trap Pop','Emo Rap','Jazz-Hop','Grime','Phonk','Trap Soul'
+  ]);
+  set('Pop', [
+    'Pop','Indie Pop','K-Pop','J-Pop','Synth Pop','Ambient Pop','Eurodance','Cinematic Pop','Synthwave','Vaporwave','Hyperpop'
+  ]);
+  set('Rock', [
+    'Rock','Alt Rock','Pop Punk','Metal','Metalcore','Shoegaze'
+  ]);
+  set('R&B / Soul', [
+    'R&B','Alt R&B','Neo-Soul','Classic Soul','Gospel Choir','Gospel Trap','Disco','Blues','Funk'
+  ]);
+  set('Electronic / Dance', [
+    'House','Deep House','Afro House','Tech House','Techno (Peak Time)','Minimal Techno','Progressive Trance','Hard Trance',
+    'EDM (Big Room)','Future Bass','DnB','Liquid DnB','Dubstep','Drumstep','Breakbeat','Jersey Club','UK Garage','UK Funky',
+    'Future Garage','Footwork','Juke','Jungle','Techno (Peak Time)','Lo-fi Chillhop','Hardstyle','Neurofunk'
+  ]);
+  set('Latin / Caribbean', [
+    'Reggaeton','Latin Pop','Bachata','Salsa','Cumbia','Dancehall','Reggae','Moombahton','Baile Funk'
+  ]);
+  set('African', [
+    'Afrobeats','Alte (Afrobeats)','Gqom','Amapiano'
+  ]);
+  set('Country / Folk', [
+    'Country','Hickhop','Bluegrass','Folk'
+  ]);
+  set('Jazz / World', [
+    'Bossa Nova'
+  ]);
+  return map;
+})();
+
+function getGenreCategory(name, fallback) {
+  const key = String(name || '').toLowerCase();
+  if (GENRE_CATEGORY_MAP.has(key)) return GENRE_CATEGORY_MAP.get(key);
+  // Use inline category on data item if present
+  if (fallback && typeof fallback === 'string' && fallback.trim()) return fallback;
+  return 'Other';
+}
 import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
@@ -18,82 +142,14 @@ const __INSTRUMENT_OPTIONS = [
   '808 bass','acoustic guitar','electric guitar','piano','rhodes','synth pad','synth lead','strings','brass','woodwinds','pluck synth','arp','drum kit','trap hats','claps','snare','kick','choir','vocal chop','fx riser'
 ];
 
-// Persistence keys and default-state builder
-const __STATE_KEY = 'rgf_state_v1';
-const __THEME_KEY = 'rgf_theme_v1';
-const __HIST_KEY = 'rgf_prompt_history_v1';
-const __ONBOARD_KEY = 'rgf_onboarding_seen_v1';
-const __PREF_KEY = 'rgf_prefs_v1';
-
-function getPrefs() { try { return JSON.parse(localStorage.getItem(__PREF_KEY) || '{}'); } catch(_) { return {}; } }
-function setPrefs(p) { try { localStorage.setItem(__PREF_KEY, JSON.stringify(p)); } catch(_) {} }
-function applyMotionPref() {
-  try {
-    const prefs = getPrefs();
-    const val = prefs.reduceMotion ? 'true' : 'false';
-    document.documentElement.setAttribute('data-reduce-motion', val);
-    const motionBtn = document.getElementById('motion-toggle');
-    if (motionBtn) motionBtn.textContent = prefs.reduceMotion ? 'Motion: Off' : 'Motion';
-  } catch(_) {}
-}
-function applyEmojiPref() {
-  try {
-    const prefs = getPrefs();
-    const use = !!prefs.useEmojis;
-    // Expose to games
-    window.__rgfUseEmojis = use;
-    const btn = document.getElementById('emoji-toggle');
-    if (btn) btn.textContent = use ? 'Emoji: On' : 'Emoji';
-  } catch(_) {}
-}
-function buildDefaultState() {
-  return {
-    controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
-    weights: { ...DEFAULT_WEIGHTS },
-    baseInputs: Object.fromEntries(BASE_INPUTS.map(item => [item.id, item.value])),
-    derivedInputs: Object.fromEntries(DERIVED_INPUTS.map(item => [item.id, item.value])),
-    creativeInputs: Object.fromEntries(CREATIVE_FIELDS.map(field => [field.id, field.defaultValue])),
-    genreMix: Array.from({ length: GENRE_SLOTS }, () => ({ genre: '', weight: 0 })),
-    premise: '(auto)',
-    customPremise: '',
-    accent: ACCENT_DEFAULT,
-    userSections: Object.fromEntries(USER_SECTION_DEFS.map(item => [item.id, ''])),
-    aiSettings: { ...DEFAULT_AI_SETTINGS },
-    computed: null,
-    genreAnalysis: null,
-    outputs: { brief: '', suno: '', prompt: '', aiResponse: '' }
-  };
-}
-
-const state = {
-  controls: Object.fromEntries(CONTROLS.map(c => [c.id, c.value])),
-  weights: { ...DEFAULT_WEIGHTS },
-  baseInputs: Object.fromEntries(BASE_INPUTS.map(item => [item.id, item.value])),
-  derivedInputs: Object.fromEntries(DERIVED_INPUTS.map(item => [item.id, item.value])),
-  creativeInputs: Object.fromEntries(CREATIVE_FIELDS.map(field => [field.id, field.defaultValue])),
-  genreMix: Array.from({ length: GENRE_SLOTS }, () => ({ genre: '', weight: 0 })),
-  premise: '(auto)',
-  customPremise: '',
-  accent: ACCENT_DEFAULT,
-  userSections: Object.fromEntries(USER_SECTION_DEFS.map(item => [item.id, ''])),
-  aiSettings: { ...DEFAULT_AI_SETTINGS },
-  computed: null,
-  genreAnalysis: null,
-  outputs: {
-    brief: '',
-    suno: '',
-    prompt: '',
-    aiResponse: ''
-  }
-};
+// Note: State management, theme, and persistence functions are now imported from modules
+// state, buildDefaultState, getPreferences, setPreferences, applyMotionPref, applyEmojiPref
+// are all imported from ./js/state/ and ./js/utils/ modules
 // Reduce immediate repeats when auto-picking premise
 let __lastPremise = '';
 // Recent genre memory to diversify suggestions
 let __recentGenrePicks = [];
-function formatNumber(value, digits = 2) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '';
-  return value.toFixed(digits);
-}
+// Note: formatNumber is now imported from ./js/utils/dom.js
 function renderConstants() {
   const container = document.getElementById('constants');
   container.innerHTML = renderStaticGrid(CONSTANTS.map(item => ({
@@ -116,9 +172,14 @@ function renderControls() {
     if (typeof ctrl.min === 'number') input.min = ctrl.min;
     if (typeof ctrl.max === 'number') input.max = ctrl.max;
     input.addEventListener('input', () => {
-      state.controls[ctrl.id] = parseFloat(input.value) || 0;
+      const value = parseFloat(input.value) || 0;
+      const validated = (typeof ctrl.min === 'number' && typeof ctrl.max === 'number')
+        ? validateNumber(value, ctrl.min, ctrl.max, ctrl.value)
+        : value;
+      state.controls[ctrl.id] = validated;
+      input.value = validated;
       recompute();
-      try { scheduleSave(); } catch (_) {}
+      try { scheduleAutoSave(); } catch (_) {}
     });
     label.appendChild(input);
     container.appendChild(label);
@@ -147,9 +208,13 @@ function renderWeights() {
     input.max = '1';
     input.value = state.weights[entry.id];
     input.addEventListener('input', () => {
-      state.weights[entry.id] = parseFloat(input.value) || 0;
+      const value = parseFloat(input.value) || 0;
+      const validated = Math.max(0, Math.min(1, value));
+      state.weights[entry.id] = validated;
+      input.value = validated.toFixed(2);
       renderWeightsSummary();
       recompute();
+      try { scheduleAutoSave(); } catch (_) {}
     });
     label.appendChild(input);
     container.appendChild(label);
@@ -161,12 +226,51 @@ function renderWeightsSummary() {
   const total = Object.values(state.weights).reduce((sum, val) => sum + val, 0);
   let summary = document.getElementById('weights-summary');
   if (!summary) {
-    summary = document.createElement('p');
+    summary = document.createElement('div');
     summary.id = 'weights-summary';
     summary.className = 'hint';
+    summary.style.display = 'flex';
+    summary.style.alignItems = 'center';
+    summary.style.gap = '0.5rem';
     document.getElementById('weights').appendChild(summary);
   }
-  summary.textContent = `Sum: ${formatNumber(total, 2)}`;
+
+  const isOff = Math.abs(total - 1.0) > 0.001;
+  summary.innerHTML = '';
+
+  const text = document.createElement('span');
+  text.textContent = `Sum: ${formatNumber(total, 2)}`;
+  if (isOff) text.style.color = 'var(--warning)';
+  summary.appendChild(text);
+
+  if (isOff) {
+    const normalizeBtn = document.createElement('button');
+    normalizeBtn.textContent = '⚡ Normalize';
+    normalizeBtn.className = 'btn-tertiary';
+    normalizeBtn.style.padding = '0.35rem 0.75rem';
+    normalizeBtn.style.fontSize = '0.85rem';
+    normalizeBtn.title = 'Automatically adjust weights to sum to 1.0';
+    normalizeBtn.addEventListener('click', () => {
+      normalizeWeights();
+      renderWeights();
+      recompute();
+      showToast('⚡ Weights normalized to 1.0');
+    });
+    summary.appendChild(normalizeBtn);
+  }
+}
+
+function normalizeWeights() {
+  const total = Object.values(state.weights).reduce((sum, val) => sum + val, 0);
+  if (total === 0) {
+    // Reset to default if all zeros
+    Object.assign(state.weights, DEFAULT_WEIGHTS);
+    return;
+  }
+  // Scale all weights proportionally
+  for (const key in state.weights) {
+    state.weights[key] = state.weights[key] / total;
+  }
 }
 function renderBaseInputs() {
   const container = document.getElementById('base-inputs');
@@ -182,8 +286,12 @@ function renderBaseInputs() {
     input.step = '0.1';
     input.value = state.baseInputs[item.id];
     input.addEventListener('input', () => {
-      state.baseInputs[item.id] = parseFloat(input.value) || 0;
+      const value = parseFloat(input.value) || 0;
+      const validated = validateBaseInput(value);
+      state.baseInputs[item.id] = validated;
+      input.value = validated;
       recompute();
+      try { scheduleAutoSave(); } catch (_) {}
     });
     label.appendChild(input);
     container.appendChild(label);
@@ -204,8 +312,12 @@ function renderDerivedInputs() {
     input.step = '0.01';
     input.value = state.derivedInputs[item.id];
     input.addEventListener('input', () => {
-      state.derivedInputs[item.id] = parseFloat(input.value) || 0;
+      const value = parseFloat(input.value) || 0;
+      const validated = validateDerivedInput(value);
+      state.derivedInputs[item.id] = validated;
+      input.value = validated.toFixed(2);
       recompute();
+      try { scheduleAutoSave(); } catch (_) {}
     });
     label.appendChild(input);
     container.appendChild(label);
@@ -327,7 +439,7 @@ function applyArtistProfile(profile) {
     } catch(_){}
     renderOutputs();
     showToast(`Applied artist cues: ${profile.name}`); try { rerenderAll(); } catch(_){}
-    try { scheduleSave(); } catch(_){}
+    try { scheduleAutoSave(); } catch(_){}
     return true;
   } catch(e) { console.error('applyArtistProfile failed', e); return false; }
 }
@@ -385,7 +497,7 @@ function suggestArtistProfiles(name, limit=5) {
       input.value = state.creativeInputs[field.id] || '';
       input.addEventListener('input', () => {
         state.creativeInputs[field.id] = input.value;
-        try { scheduleSave(); } catch (_) {}
+        try { scheduleAutoSave(); } catch (_) {}
       });
     } else if (field.id === 'keywords' || field.id === 'styleTags') {
       // Tokenized input with removable chips for keywords/style tags
@@ -408,15 +520,36 @@ function suggestArtistProfiles(name, limit=5) {
       };
       const commit = () => {
         state.creativeInputs[field.id] = tokens.join(', ');
-        try { scheduleSave(); } catch (_) {}
+        try { scheduleAutoSave(); } catch (_) {}
       };
       const renderChips = () => {
-        const safe = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
-        chips.innerHTML = tokens.map(name => `
-          <span class="chip">${safe(name)}
-            <button type="button" class="chip-remove" data-name="${safe(name)}" title="Remove">&times;</button>
-          </span>
-        `).join('');
+        chips.innerHTML = '';
+        tokens.forEach((name) => {
+          const chipSpan = document.createElement('span');
+          chipSpan.className = 'chip';
+          chipSpan.textContent = name;
+
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'chip-remove';
+          removeBtn.textContent = '×';
+          removeBtn.title = 'Remove';
+
+          removeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Find current index of this specific item
+            const currentIndex = tokens.indexOf(name);
+            if (currentIndex !== -1) {
+              tokens.splice(currentIndex, 1);
+              renderChips();
+              commit();
+            }
+          });
+
+          chipSpan.appendChild(removeBtn);
+          chips.appendChild(chipSpan);
+        });
       };
       const addFromText = () => {
         let raw = text.value;
@@ -434,14 +567,6 @@ function suggestArtistProfiles(name, limit=5) {
         }
       });
       text.addEventListener('blur', addFromText);
-      chips.addEventListener('click', (e) => {
-        const btn = e.target.closest('.chip-remove');
-        if (!btn) return;
-        const name = btn.getAttribute('data-name') || '';
-        tokens = tokens.filter(x => x.toLowerCase() !== name.toLowerCase());
-        renderChips();
-        commit();
-      });
       renderChips();
       wrapperDiv.appendChild(chips);
       wrapperDiv.appendChild(text);
@@ -536,7 +661,7 @@ function suggestArtistProfiles(name, limit=5) {
         const merged = [...selected, ...extra];
         state.creativeInputs[field.id] = merged.join(', ');
         renderChips(merged);
-        try { scheduleSave(); } catch (_) {}
+        try { scheduleAutoSave(); } catch (_) {}
       }
       function renderChips(list) {
         const safe = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
@@ -586,7 +711,7 @@ function suggestArtistProfiles(name, limit=5) {
           const extras = list.filter(x => !__INSTRUMENT_OPTIONS.includes(x));
           custom.value = extras.join(', ');
           renderChips(list);
-          try { scheduleSave(); } catch(_){}
+          try { scheduleAutoSave(); } catch(_){}
         } catch (e) {
           console.error('Suggest instruments failed', e);
         }
@@ -600,7 +725,7 @@ function suggestArtistProfiles(name, limit=5) {
       input.value = state.creativeInputs[field.id] || '';
       input.addEventListener('input', () => {
         state.creativeInputs[field.id] = input.value;
-        try { scheduleSave(); } catch (_) {}
+        try { scheduleAutoSave(); } catch (_) {}
       });
     }
     wrapper.appendChild(input);
@@ -616,13 +741,24 @@ function renderGenreMix() {
     card.innerHTML = `<p><strong>Slot ${index + 1}</strong></p>`;
 
     const select = document.createElement('select');
-    select.innerHTML = `<option value="">(none)</option><option value="(custom)">(custom)</option>` + GENRE_LIBRARY.map(g => `
-      <option value="${g.name}">${g.name}</option>`).join('');
+    // Build grouped options by genre category (if present)
+    const byCat = {};
+    const order = [];
+    for (const g of GENRE_LIBRARY) {
+      const cat = getGenreCategory(g.name, g.category);
+      if (!byCat[cat]) { byCat[cat] = []; order.push(cat); }
+      byCat[cat].push(g);
+    }
+    let optionsHtml = `<option value="">(none)</option><option value="(custom)">(custom)</option>`;
+    for (const cat of order) {
+      optionsHtml += `<optgroup label="${cat}">` + byCat[cat].map(g => `<option value="${g.name}">${g.name}</option>`).join('') + `</optgroup>`;
+    }
+    select.innerHTML = optionsHtml;
     select.value = slot.genre;
     select.addEventListener('change', () => {
       slot.genre = select.value;
       try { toggleCustom(); } catch (_) {}
-      try { scheduleSave(); } catch (_) {}
+      try { scheduleAutoSave(); } catch (_) {}
     });
 
     const custom = document.createElement('input');
@@ -631,7 +767,7 @@ function renderGenreMix() {
     custom.value = slot.customGenre || '';
     custom.style.display = 'none';
     custom.style.marginLeft = '8px';
-    custom.addEventListener('input', () => { slot.customGenre = custom.value; try { scheduleSave(); } catch (_) {} });
+    custom.addEventListener('input', () => { slot.customGenre = custom.value; try { scheduleAutoSave(); } catch (_) {} });
 
     const toggleCustom = () => {
       const show = (select.value || '').toLowerCase() === '(custom)';
@@ -652,11 +788,13 @@ function renderGenreMix() {
     number.value = slot.weight;
 
     const syncWeight = value => {
-      const numeric = Math.max(0, Math.min(GENRE_SLOT_WEIGHT_TOTAL, Number(value) || 0));
-      slot.weight = numeric;
-      slider.value = String(numeric);
-      number.value = String(numeric);
+      const numeric = validateGenreWeight(Number(value) || 0);
+      const clamped = Math.min(GENRE_SLOT_WEIGHT_TOTAL, numeric);
+      slot.weight = clamped;
+      slider.value = String(clamped);
+      number.value = String(clamped);
       renderGenreMixTotal();
+      try { scheduleAutoSave(); } catch (_) {}
     };
 
     slider.addEventListener('input', () => syncWeight(slider.value));
@@ -679,12 +817,59 @@ function renderGenreMixTotal() {
   const total = state.genreMix.reduce((sum, slot) => sum + (slot.weight || 0), 0);
   let totalEl = document.getElementById('genre-mix-total');
   if (!totalEl) {
-    totalEl = document.createElement('p');
+    totalEl = document.createElement('div');
     totalEl.id = 'genre-mix-total';
     totalEl.className = 'hint';
+    totalEl.style.display = 'flex';
+    totalEl.style.alignItems = 'center';
+    totalEl.style.gap = '0.5rem';
     document.getElementById('genre-mix').appendChild(totalEl);
   }
-  totalEl.textContent = `Total: ${formatNumber(total, 0)} / ${GENRE_SLOT_WEIGHT_TOTAL}`;
+
+  const isOff = Math.abs(total - GENRE_SLOT_WEIGHT_TOTAL) > 0.5;
+  totalEl.innerHTML = '';
+
+  const text = document.createElement('span');
+  text.textContent = `Total: ${formatNumber(total, 0)} / ${GENRE_SLOT_WEIGHT_TOTAL}`;
+  if (isOff) text.style.color = 'var(--warning)';
+  totalEl.appendChild(text);
+
+  if (isOff && total > 0) {
+    const normalizeBtn = document.createElement('button');
+    normalizeBtn.textContent = '⚡ Normalize';
+    normalizeBtn.className = 'btn-tertiary';
+    normalizeBtn.style.padding = '0.35rem 0.75rem';
+    normalizeBtn.style.fontSize = '0.85rem';
+    normalizeBtn.title = `Automatically adjust genre weights to sum to ${GENRE_SLOT_WEIGHT_TOTAL}`;
+    normalizeBtn.addEventListener('click', () => {
+      normalizeGenreMix();
+      renderGenreMix();
+      recompute();
+      showToast(`⚡ Genre mix normalized to ${GENRE_SLOT_WEIGHT_TOTAL}%`);
+    });
+    totalEl.appendChild(normalizeBtn);
+  }
+}
+
+function normalizeGenreMix() {
+  const total = state.genreMix.reduce((sum, slot) => sum + (slot.weight || 0), 0);
+  if (total === 0) return;
+
+  // Scale all non-zero weights proportionally to sum to GENRE_SLOT_WEIGHT_TOTAL
+  state.genreMix.forEach(slot => {
+    if (slot.weight > 0) {
+      slot.weight = Math.round((slot.weight / total) * GENRE_SLOT_WEIGHT_TOTAL);
+    }
+  });
+
+  // Fix rounding errors - adjust the largest weight
+  const newTotal = state.genreMix.reduce((sum, slot) => sum + (slot.weight || 0), 0);
+  const diff = GENRE_SLOT_WEIGHT_TOTAL - newTotal;
+  if (diff !== 0) {
+    const maxSlot = state.genreMix.reduce((max, slot) =>
+      (slot.weight > max.weight ? slot : max), state.genreMix[0]);
+    maxSlot.weight += diff;
+  }
 }
 
 function renderPremise() {
@@ -718,11 +903,11 @@ function renderPremise() {
   select.addEventListener('change', () => {
     state.premise = select.value;
     updateCustomVisibility();
-    try { scheduleSave(); } catch (_) {}
+    try { scheduleAutoSave(); } catch (_) {}
   });
   custom.addEventListener('input', () => {
     state.customPremise = custom.value;
-    try { scheduleSave(); } catch (_) {}
+    try { scheduleAutoSave(); } catch (_) {}
   });
 }
 
@@ -743,7 +928,7 @@ function renderAccent() {
       setGamify(g);
       if (g.accentsUsed.length >= 3) unlockAchievement('accentExplorer','Accent Explorer');
     } catch(_){}
-    try { scheduleSave(); } catch (_) {}
+    try { scheduleAutoSave(); } catch (_) {}
   });
 }
 
@@ -783,9 +968,9 @@ function renderLanguage() {
       setGamify(g);
       if (g.languagesUsed.length >= 3) unlockAchievement('polyglotExplorer','Polyglot Explorer');
     } catch(_){}
-    try { scheduleSave(); } catch (_) {}
+    try { scheduleAutoSave(); } catch (_) {}
   });
-  custom.addEventListener('input', () => { state.customLanguage = custom.value; try { if ((custom.value||'').trim()) unlockAchievement('polyglot2','Polyglot II'); } catch(_){} try { scheduleSave(); } catch (_) {} });
+  custom.addEventListener('input', () => { state.customLanguage = custom.value; try { if ((custom.value||'').trim()) unlockAchievement('polyglot2','Polyglot II'); } catch(_){} try { scheduleAutoSave(); } catch (_) {} });
 }
 
 // Utility: clean VBA artifact tokens from structure strings for display
@@ -884,14 +1069,27 @@ function renderAISettings() {
     const data = new FormData(form);
     for (const [key, value] of data.entries()) {
       if (!(key in state.aiSettings)) continue;
-      if (['temperature', 'topP', 'frequencyPenalty', 'presencePenalty'].includes(key)) {
-        state.aiSettings[key] = parseFloat(value) || 0;
-      } else if (['maxTokens', 'timeoutMs'].includes(key)) {
-        state.aiSettings[key] = parseInt(value, 10) || 0;
+
+      // Apply validation based on field type
+      if (key === 'temperature') {
+        state.aiSettings[key] = validateTemperature(parseFloat(value) || 0);
+      } else if (key === 'topP') {
+        state.aiSettings[key] = validateTopP(parseFloat(value) || 0);
+      } else if (key === 'frequencyPenalty' || key === 'presencePenalty') {
+        state.aiSettings[key] = validatePenalty(parseFloat(value) || 0);
+      } else if (key === 'maxTokens') {
+        state.aiSettings[key] = validateMaxTokens(parseInt(value, 10) || 0);
+      } else if (key === 'timeoutMs') {
+        state.aiSettings[key] = validateTimeout(parseInt(value, 10) || 0);
+      } else if (key === 'endpoint') {
+        state.aiSettings[key] = sanitizeText(value, 500);
+      } else if (key === 'apiKey') {
+        state.aiSettings[key] = sanitizeText(value, 500);
       } else {
-        state.aiSettings[key] = value;
+        state.aiSettings[key] = sanitizeText(value, 5000);
       }
     }
+    try { scheduleAutoSave(); } catch (_) {}
   });
 }
 
@@ -949,7 +1147,7 @@ function setupButtons() {
       renderOutputs();
       // Auto-navigate to Outputs so mobile users can see results
       try { selectTab('outputs'); } catch (_) { /* ignore */ }
-      try { addPromptHistory(state.outputs.prompt); } catch (_) {}
+      try { addPromptHistoryLocal(state.outputs.prompt); } catch (_) {}
       try { postBuildAchievements(); } catch (_) {}
     });
   const copyBtn = document.getElementById('copy-ai-prompt');
@@ -1061,14 +1259,22 @@ function setupButtons() {
   const loadBtn = document.getElementById('load-state');
   const resetBtn = document.getElementById('reset-state');
   const themeBtn = document.getElementById('theme-toggle');
-  if (saveBtn) saveBtn.addEventListener('click', () => { saveState(); showToast('Saved settings'); });
+  const modeBtn = document.getElementById('mode-toggle');
+  const shortcutsBtn = document.getElementById('show-shortcuts');
+  const exportBtn = document.getElementById('export-json');
+  const importBtn = document.getElementById('import-json');
+  if (saveBtn) saveBtn.addEventListener('click', () => { persistState(); showToast('Saved settings'); });
   if (loadBtn) loadBtn.addEventListener('click', () => { const ok = loadState(); showToast(ok ? 'Loaded settings' : 'No saved settings'); rerenderAll(); });
-  if (resetBtn) resetBtn.addEventListener('click', () => { resetState(); showToast('Reset to defaults'); rerenderAll(); });
+  if (resetBtn) resetBtn.addEventListener('click', () => { resetStateToDefaults(); showToast('Reset to defaults'); rerenderAll(); });
   if (themeBtn) themeBtn.addEventListener('click', () => { toggleTheme(); showToast(`Theme: ${getTheme().toUpperCase()}`); });
+  if (modeBtn) modeBtn.addEventListener('click', () => { const newMode = toggleMode(); showToast(`Mode: ${newMode.toUpperCase()}`); });
+  if (shortcutsBtn) shortcutsBtn.addEventListener('click', () => showKeyboardShortcutsDialog());
+  if (exportBtn) exportBtn.addEventListener('click', () => exportConfiguration());
+  if (importBtn) importBtn.addEventListener('click', () => importConfiguration());
   const motionBtn = document.getElementById('motion-toggle');
-  if (motionBtn) motionBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.reduceMotion = !prefs.reduceMotion; setPrefs(prefs); applyMotionPref(); showToast(`Motion: ${prefs.reduceMotion ? 'OFF' : 'ON'}`); });
+  if (motionBtn) motionBtn.addEventListener('click', () => { toggleMotionPref(); const prefs = getPreferences(); showToast(`Motion: ${prefs.reduceMotion ? 'OFF' : 'ON'}`); });
   const emojiBtn = document.getElementById('emoji-toggle');
-  if (emojiBtn) emojiBtn.addEventListener('click', () => { const prefs = getPrefs(); prefs.useEmojis = !prefs.useEmojis; setPrefs(prefs); applyEmojiPref(); try { document.dispatchEvent(new CustomEvent('rgf:prefs-changed', { detail: prefs })); } catch(_){} showToast(`Emojis: ${prefs.useEmojis ? 'ON' : 'OFF'}`); });
+  if (emojiBtn) emojiBtn.addEventListener('click', () => { toggleEmojiPref(); const prefs = getPreferences(); try { document.dispatchEvent(new CustomEvent('rgf:prefs-changed', { detail: prefs })); } catch(_){} showToast(`Emojis: ${prefs.useEmojis ? 'ON' : 'OFF'}`); });
   // Hero quick actions
   const heroBrowse = document.getElementById('open-genre-library-hero');
   const heroBuild = document.getElementById('build-prompt-hero');
@@ -1086,7 +1292,7 @@ function setupButtons() {
     renderOutputs();
     try { selectTab('outputs'); } catch (_) {}
     showToast('Prompt built');
-    try { addPromptHistory(state.outputs.prompt); } catch (_) {}
+    try { addPromptHistoryLocal(state.outputs.prompt); } catch (_) {}
     try { postBuildAchievements(); } catch (_) {}
   });
   const loadDemo = () => { try { applyDemoPreset(); showToast('Demo loaded'); rerenderAll(); } catch (e) { console.error(e); } };
@@ -1121,7 +1327,7 @@ function setupButtons() {
         renderOutputs();
         try { selectTab('outputs'); } catch (_) {}
         showToast('Prompt built');
-        try { addPromptHistory(state.outputs.prompt); } catch (_) {}
+        try { addPromptHistoryLocal(state.outputs.prompt); } catch (_) {}
         try { postBuildAchievements(); } catch (_) {}
       } else {
         gotoWizardStep(wizard.step + 1);
@@ -1131,9 +1337,9 @@ function setupButtons() {
 
   // Suggest buttons
   const premBtn = document.getElementById('premise-suggest');
-  if (premBtn) premBtn.addEventListener('click', () => { const s = suggestPremise(); state.premise = '(custom)'; state.customPremise = s; renderPremise(); showToast('Premise suggested'); try { unlockAchievement('muse','Muse'); } catch(_){} try { scheduleSave(); } catch(_){} });
+  if (premBtn) premBtn.addEventListener('click', () => { const s = suggestPremise(); state.premise = '(custom)'; state.customPremise = s; renderPremise(); showToast('Premise suggested'); try { unlockAchievement('muse','Muse'); } catch(_){} try { scheduleAutoSave(); } catch(_){} });
   const genreBtn = document.getElementById('genre-suggest');
-  if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { unlockAchievement('djBlend','Blend DJ'); } catch(_){} try { scheduleSave(); } catch(_){} });
+  if (genreBtn) genreBtn.addEventListener('click', () => { suggestGenreBlend(); renderGenreMix(); recompute(); showToast('Blend suggested'); try { unlockAchievement('djBlend','Blend DJ'); } catch(_){} try { scheduleAutoSave(); } catch(_){} });
   const genrePresetsBtn = document.getElementById('genre-presets');
   if (genrePresetsBtn) genrePresetsBtn.addEventListener('click', () => openLibraryDialog('Blend Presets', buildGenrePresetDialog()));
 
@@ -1177,6 +1383,29 @@ function closeDialog() {
 }
 
 function buildGenreLibraryTable() {
+  // Create wrapper container with search
+  const wrapper = document.createElement('div');
+
+  // Add search input
+  const searchContainer = document.createElement('div');
+  searchContainer.style.marginBottom = '1rem';
+  searchContainer.style.position = 'sticky';
+  searchContainer.style.top = '0';
+  searchContainer.style.background = 'var(--panel)';
+  searchContainer.style.padding = '0.5rem 0';
+  searchContainer.style.zIndex = '2';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = '🔍 Search genres by name, tempo, style, or tags...';
+  searchInput.style.width = '100%';
+  searchInput.style.padding = '0.75rem 1rem';
+  searchInput.style.fontSize = '0.95rem';
+  searchInput.setAttribute('autofocus', '');
+
+  searchContainer.appendChild(searchInput);
+  wrapper.appendChild(searchContainer);
+
   const table = document.createElement('table');
   table.className = 'library-table';
   table.innerHTML = `<thead>
@@ -1210,30 +1439,122 @@ function buildGenreLibraryTable() {
     .filter(Boolean);
 
   const tbody = document.createElement('tbody');
+  // Group by category for readability
+  const byCat = {};
+  const order = [];
   GENRE_LIBRARY.forEach(item => {
-    const row = document.createElement('tr');
-    const name = String(item.name || '').trim();
-    const tempo = String(item.tempo || '').trim();
-    const structureParts = splitStructure(item.structure);
-    const styleParts = splitCsv(item.styleTags);
-    const excludeParts = splitCsv(item.exclude);
-    const sfxParts = splitCsv(item.sfx);
-
-    row.innerHTML = `
-      <td>${name}</td>
-      <td>${tempo}</td>
-      <td>${toChips(structureParts)}</td>
-      <td>${toChips(styleParts)}</td>
-      <td>${toChips(excludeParts)}</td>
-      <td>${toChips(sfxParts)}</td>
-    `;
-    tbody.appendChild(row);
+    const cat = getGenreCategory(item.name, item.category);
+    if (!byCat[cat]) { byCat[cat] = []; order.push(cat); }
+    byCat[cat].push(item);
   });
+
+  // Render all rows with data attributes for filtering
+  const allRows = [];
+  order.forEach(cat => {
+    const header = document.createElement('tr');
+    header.className = 'group-row';
+    header.setAttribute('data-category', cat);
+    header.innerHTML = `<td colspan="6"><strong>${cat}</strong></td>`;
+    tbody.appendChild(header);
+    allRows.push({ type: 'header', element: header, category: cat });
+
+    byCat[cat].forEach(item => {
+      const row = document.createElement('tr');
+      const name = String(item.name || '').trim();
+      const tempo = String(item.tempo || '').trim();
+      const structureParts = splitStructure(item.structure);
+      const styleParts = splitCsv(item.styleTags);
+      const excludeParts = splitCsv(item.exclude);
+      const sfxParts = splitCsv(item.sfx);
+
+      // Store searchable text as data attribute
+      const searchText = [
+        name,
+        tempo,
+        ...structureParts,
+        ...styleParts,
+        ...excludeParts,
+        ...sfxParts
+      ].join(' ').toLowerCase();
+
+      row.setAttribute('data-search', searchText);
+      row.setAttribute('data-category', cat);
+      row.innerHTML = `
+        <td>${name}</td>
+        <td>${tempo}</td>
+        <td>${toChips(structureParts)}</td>
+        <td>${toChips(styleParts)}</td>
+        <td>${toChips(excludeParts)}</td>
+        <td>${toChips(sfxParts)}</td>
+      `;
+      tbody.appendChild(row);
+      allRows.push({ type: 'row', element: row, category: cat });
+    });
+  });
+
   table.appendChild(tbody);
-  return table;
+  wrapper.appendChild(table);
+
+  // Add search functionality
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+
+    if (!query) {
+      // Show all rows
+      allRows.forEach(item => item.element.style.display = '');
+      return;
+    }
+
+    // Track which categories have visible items
+    const visibleCategories = new Set();
+
+    // Filter genre rows
+    allRows.forEach(item => {
+      if (item.type === 'row') {
+        const searchText = item.element.getAttribute('data-search');
+        const matches = searchText.includes(query);
+        item.element.style.display = matches ? '' : 'none';
+        if (matches) {
+          visibleCategories.add(item.category);
+        }
+      }
+    });
+
+    // Show/hide category headers based on whether they have visible items
+    allRows.forEach(item => {
+      if (item.type === 'header') {
+        item.element.style.display = visibleCategories.has(item.category) ? '' : 'none';
+      }
+    });
+  });
+
+  return wrapper;
 }
 
 function buildAccentLibraryTable() {
+  // Create wrapper container with search
+  const wrapper = document.createElement('div');
+
+  // Add search input
+  const searchContainer = document.createElement('div');
+  searchContainer.style.marginBottom = '1rem';
+  searchContainer.style.position = 'sticky';
+  searchContainer.style.top = '0';
+  searchContainer.style.background = 'var(--panel)';
+  searchContainer.style.padding = '0.5rem 0';
+  searchContainer.style.zIndex = '2';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = '🔍 Search accents by name, instruction, or style...';
+  searchInput.style.width = '100%';
+  searchInput.style.padding = '0.75rem 1rem';
+  searchInput.style.fontSize = '0.95rem';
+  searchInput.setAttribute('autofocus', '');
+
+  searchContainer.appendChild(searchInput);
+  wrapper.appendChild(searchContainer);
+
   const table = document.createElement('table');
   table.className = 'library-table';
   table.innerHTML = `<thead>
@@ -1244,17 +1565,46 @@ function buildAccentLibraryTable() {
     </tr>
   </thead>`;
   const tbody = document.createElement('tbody');
+  const allRows = [];
+
   ACCENT_LIBRARY.forEach(item => {
     const row = document.createElement('tr');
+
+    // Store searchable text as data attribute
+    const searchText = [
+      item.name,
+      item.instruction,
+      item.styleTag
+    ].join(' ').toLowerCase();
+
+    row.setAttribute('data-search', searchText);
     row.innerHTML = `
       <td>${item.name}</td>
       <td>${item.instruction}</td>
       <td>${item.styleTag}</td>
     `;
     tbody.appendChild(row);
+    allRows.push(row);
   });
+
   table.appendChild(tbody);
-  return table;
+  wrapper.appendChild(table);
+
+  // Add search functionality
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+
+    allRows.forEach(row => {
+      if (!query) {
+        row.style.display = '';
+      } else {
+        const searchText = row.getAttribute('data-search');
+        row.style.display = searchText.includes(query) ? '' : 'none';
+      }
+    });
+  });
+
+  return wrapper;
 }
 function buildCreativeBrief() {
   if (!state.computed || !state.computed.blocks) {
@@ -2144,37 +2494,12 @@ function updateHiddenDirective() {
   }
 }
 
-async function copyToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(text);
-  }
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.setAttribute('readonly', '');
-  ta.style.position = 'fixed';
-  ta.style.top = '-1000px';
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand('copy');
-  } finally {
-    document.body.removeChild(ta);
-  }
-}
-
-function flashButton(btn, label, delay = 800) {
-  const original = btn.textContent;
-  btn.textContent = label;
-  btn.disabled = true;
-  setTimeout(() => {
-    btn.textContent = original;
-    btn.disabled = false;
-  }, delay);
-}
+// copyToClipboard and flashButton are now imported from ./js/utils/dom.js
 
 function init() {
-  // Apply theme from previous session and compact density
+  // Apply theme and mode from previous session
   applyTheme(getTheme());
+  initMode();
   try { loadState(); } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
@@ -2201,19 +2526,330 @@ function init() {
   applyEmojiPref();
   setupButtons();
   setupTabs();
+  setupKeyboardShortcuts();
   const backBtn = document.getElementById('back-to-inputs');
   if (backBtn) backBtn.addEventListener('click', () => { try { selectTab('inputs'); window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {} });
   // Onboarding on first run
   try {
-    const seen = localStorage.getItem(__ONBOARD_KEY);
-    if (!seen) showOnboarding();
+    if (!hasSeenOnboarding()) showOnboarding();
   } catch (_) {}
+}
+
+// Keyboard shortcuts for power users
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+
+    // Ignore shortcuts when typing in input fields
+    const activeElement = document.activeElement;
+    const isTyping = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      activeElement.isContentEditable
+    );
+
+    // Ctrl/Cmd + S: Save state
+    if (ctrlKey && e.key === 's') {
+      e.preventDefault();
+      persistState();
+      showToast('⌨️ Settings saved');
+      return;
+    }
+
+    // Ctrl/Cmd + B: Build prompt
+    if (ctrlKey && e.key === 'b') {
+      e.preventDefault();
+      try {
+        state.outputs.prompt = buildPromptText();
+        updateHiddenDirective();
+        renderOutputs();
+        selectTab('outputs');
+        showToast('⌨️ Prompt built');
+        try { addPromptHistoryLocal(state.outputs.prompt); } catch (_) {}
+      } catch (err) {
+        console.error('Build Prompt failed:', err);
+        showToast('❌ Build failed');
+      }
+      return;
+    }
+
+    // Ctrl/Cmd + Enter: Generate creative brief
+    if (ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      const briefBtn = document.getElementById('generate-brief');
+      if (briefBtn) briefBtn.click();
+      showToast('⌨️ Brief generated');
+      return;
+    }
+
+    // Ctrl/Cmd + Shift + S: Generate Suno
+    if (ctrlKey && e.shiftKey && e.key === 'S') {
+      e.preventDefault();
+      const sunoBtn = document.getElementById('generate-suno');
+      if (sunoBtn) sunoBtn.click();
+      showToast('⌨️ Suno generated');
+      return;
+    }
+
+    // Ctrl/Cmd + /: Show keyboard shortcuts help
+    if (ctrlKey && e.key === '/') {
+      e.preventDefault();
+      showKeyboardShortcutsDialog();
+      return;
+    }
+
+    // Escape: Close any open dropdowns or dialogs
+    if (e.key === 'Escape') {
+      const openDropdowns = document.querySelectorAll('.dropdown.open');
+      openDropdowns.forEach(dd => dd.classList.remove('open'));
+    }
+
+    // Tab navigation shortcuts (only when not typing)
+    if (!isTyping) {
+      // 1, 2, 3: Switch tabs
+      if (e.key === '1' && !ctrlKey && !e.shiftKey) {
+        e.preventDefault();
+        selectTab('inputs');
+        showToast('📝 Inputs');
+        return;
+      }
+      if (e.key === '2' && !ctrlKey && !e.shiftKey) {
+        e.preventDefault();
+        selectTab('outputs');
+        showToast('📤 Outputs');
+        return;
+      }
+      if (e.key === '3' && !ctrlKey && !e.shiftKey) {
+        e.preventDefault();
+        selectTab('ai');
+        showToast('🤖 AI');
+        return;
+      }
+    }
+  });
+}
+
+// Show keyboard shortcuts help dialog
+function showKeyboardShortcutsDialog() {
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const modKey = isMac ? '⌘' : 'Ctrl';
+
+  const shortcuts = [
+    { key: `${modKey} + S`, desc: 'Save current state' },
+    { key: `${modKey} + B`, desc: 'Build AI prompt' },
+    { key: `${modKey} + Enter`, desc: 'Generate creative brief' },
+    { key: `${modKey} + Shift + S`, desc: 'Generate Suno blocks' },
+    { key: '1 / 2 / 3', desc: 'Switch tabs (Inputs / Outputs / AI)' },
+    { key: `${modKey} + /`, desc: 'Show this help' },
+    { key: 'Esc', desc: 'Close dropdowns/dialogs' }
+  ];
+
+  const content = `
+    <div style="padding: 1rem;">
+      <h3 style="margin-top: 0; font-family: var(--font-display);">⌨️ Keyboard Shortcuts</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        ${shortcuts.map(s => `
+          <tr style="border-bottom: 1px solid var(--panel-border);">
+            <td style="padding: 0.75rem 1rem 0.75rem 0; font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent-primary); font-weight: 600;">
+              ${s.key}
+            </td>
+            <td style="padding: 0.75rem 0;">
+              ${s.desc}
+            </td>
+          </tr>
+        `).join('')}
+      </table>
+      <p style="margin-top: 1.5rem; color: var(--muted); font-size: 0.85rem;">
+        💡 Tip: Most shortcuts work from anywhere in the app
+      </p>
+    </div>
+  `;
+
+  openLibraryDialog('Keyboard Shortcuts', content);
+}
+
+// Export configuration as JSON file
+function exportConfiguration() {
+  try {
+    const config = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      state: state,
+      theme: getTheme(),
+      mode: getMode(),
+      preferences: getPreferences()
+    };
+
+    const json = JSON.stringify(config, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rgf-config-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('📥 Configuration exported');
+  } catch (err) {
+    console.error('Export failed:', err);
+    showToast('❌ Export failed');
+  }
+}
+
+// Import configuration from JSON file
+function importConfiguration() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+
+  input.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const config = JSON.parse(event.target.result);
+
+        // Validate structure
+        if (!config.state) {
+          throw new Error('Invalid configuration file');
+        }
+
+        // Apply imported state
+        Object.assign(state, config.state);
+
+        // Apply theme and mode if present
+        if (config.theme) {
+          applyTheme(config.theme);
+        }
+        if (config.mode) {
+          applyMode(config.mode);
+        }
+        if (config.preferences) {
+          setPreferences(config.preferences);
+          applyMotionPref();
+          applyEmojiPref();
+        }
+
+        // Save and rerender
+        persistState();
+        rerenderAll();
+        recompute();
+
+        showToast('📤 Configuration imported');
+      } catch (err) {
+        console.error('Import failed:', err);
+        showToast('❌ Import failed: Invalid file');
+      }
+    };
+
+    reader.readAsText(file);
+  });
+
+  input.click();
+}
+
+function showOnboarding() {
+  const dialog = document.getElementById('onboarding-dialog');
+  if (!dialog) return;
+
+  const closeBtn = document.getElementById('onboarding-close');
+  const gotItBtn = document.getElementById('onboarding-gotit');
+  const demoBtn = document.getElementById('onboarding-demo');
+
+  const closeDialog = () => {
+    try {
+      dialog.close();
+      markOnboardingSeen();
+    } catch (err) {
+      dialog.style.display = 'none';
+      markOnboardingSeen();
+    }
+  };
+
+  if (closeBtn) closeBtn.onclick = closeDialog;
+  if (gotItBtn) gotItBtn.onclick = closeDialog;
+  if (demoBtn) demoBtn.onclick = () => {
+    try {
+      applyDemoPreset();
+      rerenderAll();
+      closeDialog();
+      showToast('Demo loaded');
+    } catch (err) {
+      console.error('Demo load error:', err);
+    }
+  };
+
+  try {
+    dialog.showModal();
+  } catch (err) {
+    dialog.style.display = 'block';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
 
 // Enhance UX with collapsible sections and toolbar controls
 document.addEventListener('DOMContentLoaded', setupCollapsibleSections);
+document.addEventListener('DOMContentLoaded', setupDropdowns);
+
+function setupDropdowns() {
+  const dropdowns = document.querySelectorAll('.dropdown');
+
+  dropdowns.forEach(dropdown => {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    const menu = dropdown.querySelector('.dropdown-menu');
+
+    if (!toggle || !menu) return;
+
+    // Toggle dropdown on click
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      // Close other dropdowns
+      dropdowns.forEach(other => {
+        if (other !== dropdown) {
+          other.classList.remove('open');
+        }
+      });
+
+      // Toggle this dropdown
+      dropdown.classList.toggle('open');
+    });
+
+    // Close dropdown when clicking a menu item
+    const menuButtons = menu.querySelectorAll('button');
+    menuButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        dropdown.classList.remove('open');
+      });
+    });
+  });
+
+  // Close all dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+      dropdowns.forEach(dropdown => {
+        dropdown.classList.remove('open');
+      });
+    }
+  });
+
+  // Close dropdowns on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      dropdowns.forEach(dropdown => {
+        dropdown.classList.remove('open');
+      });
+    }
+  });
+}
 
 function setupCollapsibleSections() {
   const sections = Array.from(document.querySelectorAll('.panel-group > section'));
@@ -2342,15 +2978,48 @@ function buildLockedSections() {
 }
 
 async function callAI() {
-  const endpoint = (state.aiSettings.endpoint || '').trim();
-  const apiKey = (state.aiSettings.apiKey || '').trim();
-  if (endpoint.length === 0) throw new Error('Endpoint URL is required.');
-  if (apiKey.length < 10) throw new Error('API key appears to be missing.');
+  const endpoint = sanitizeText(state.aiSettings.endpoint || '', 500).trim();
+  const apiKey = sanitizeText(state.aiSettings.apiKey || '', 500).trim();
+
+  // Validate endpoint URL
+  if (endpoint.length === 0) {
+    throw new Error('Endpoint URL is required.');
+  }
+  if (!validateUrl(endpoint)) {
+    throw new Error('Invalid endpoint URL format. Must be a valid HTTP/HTTPS URL.');
+  }
+
+  // Validate API key
+  if (!validateApiKey(apiKey)) {
+    throw new Error('API key appears to be invalid or too short (minimum 10 characters).');
+  }
 
   const prompt = buildPromptText();
   state.outputs.prompt = prompt;
 
-  const systemPrompt = state.aiSettings.systemPrompt || 'You are a lyrical assistant. Output only valid Suno blocks as instructed.';
+  const systemPrompt = state.aiSettings.systemPrompt || `You are Suno v5 Lyrical Expert - iMob Worldwide. Generate a completely original song.
+Output exactly four code blocks, in this order: 1) title 2) style 3) exclude 4) lyrics.
+Formatting rules (MANDATORY):
+- Write all lyrics in English.
+- Keep all meta tags in English regardless of lyric language (e.g., [HOOK], [Verse 1]).
+- Use globally understandable phrasing; avoid region-specific slang unless provided in user sections.
+- Only adapt conventions common across languages (e.g., bar counts, chorus structure), not culture-specific wordplay.
+- All meta tags/directives must be in [square brackets] (e.g., [HOOK], [Verse 1], [Bridge], [Outro], [Chant]).
+- Alternate voices / ad-libs go in (parentheses): (yeah), (echo), (crowd: ay!).
+- Any noises/SFX go in bracketed asterisks: [* cheer *], [* breath *], [* bass drop *].
+- The Style block is a single bracketed list of tags separated by pipes (example: [anthemic rap | chant hook | evolving chorus | confident bounce]).
+- Include key instruments and any mix cues (e.g., sidechain) as tags in the Style block.
+- Exclude block is lowercase nouns, comma-separated.
+- Begin lyrics with: [Producer Tag] iMob Worldwide!
+- 3+ minutes; evolving choruses; stage cues in [brackets]; call-and-response via (parentheses).
+- Do NOT reference production gear, BPM, mixing jargon, or arrangement terms unless explicitly requested.
+- Do NOT reference any instruments in the lyrics.
+
+Creative guidance:
+- Treat songs as stories told through metaphor and innuendo — life lessons expressed with different examples but the same underlying principles.
+- Do not always tell the story directly; think bigger.
+
+Output only valid Suno blocks as instructed.`;
   const userMessage = { role: 'user', content: prompt };
   if (state.aiSettings.userLabel) {
     userMessage.name = state.aiSettings.userLabel;
@@ -2364,24 +3033,28 @@ async function callAI() {
   }
 
   const payload = {
-    model: state.aiSettings.model || 'gpt-4o-mini',
+    model: sanitizeText(state.aiSettings.model || 'gpt-4o-mini', 100),
     messages: [
       { role: 'system', content: systemPrompt },
       userMessage
     ],
-    temperature: Number(state.aiSettings.temperature) || 0,
-    top_p: Number(state.aiSettings.topP) || 1,
-    frequency_penalty: Number(state.aiSettings.frequencyPenalty) || 0,
-    presence_penalty: Number(state.aiSettings.presencePenalty) || 0,
-    max_tokens: Number(state.aiSettings.maxTokens) || 1200,
+    temperature: validateTemperature(Number(state.aiSettings.temperature) || 0),
+    top_p: validateTopP(Number(state.aiSettings.topP) || 1),
+    frequency_penalty: validatePenalty(Number(state.aiSettings.frequencyPenalty) || 0),
+    presence_penalty: validatePenalty(Number(state.aiSettings.presencePenalty) || 0),
+    max_tokens: validateMaxTokens(Number(state.aiSettings.maxTokens) || 1200),
     response_format: responseFormat
   };
 
-  const stopSequences = (state.aiSettings.stopSequences || '').split(',').map(s => s.trim()).filter(Boolean);
+  const stopSequences = (state.aiSettings.stopSequences || '')
+    .split(',')
+    .map(s => sanitizeText(s, 100).trim())
+    .filter(Boolean)
+    .slice(0, 4); // Limit to 4 stop sequences
   if (stopSequences.length) payload.stop = stopSequences;
 
   const controller = new AbortController();
-  const timeoutMs = Number(state.aiSettings.timeoutMs) || 60000;
+  const timeoutMs = validateTimeout(Number(state.aiSettings.timeoutMs) || 60000);
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const headers = {
@@ -2413,73 +3086,9 @@ async function callAI() {
 }
 
 // ---------- UX helpers: Toasts, Theme, Persistence ----------
-function showToast(message, ms = 1500) {
-  try {
-    const root = document.getElementById('toast-root');
-    if (!root) return;
-    const el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = message;
-    root.appendChild(el);
-    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; }, Math.max(500, ms - 250));
-    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, ms);
-  } catch (_) { /* no-op */ }
-}
+// showToast, getTheme, applyTheme, toggleTheme are now imported from modules
 
-function getTheme() {
-  try { return localStorage.getItem(__THEME_KEY) || 'light'; } catch (_) { return 'light'; }
-}
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  try { localStorage.setItem(__THEME_KEY, theme); } catch (_) {}
-}
-function toggleTheme() {
-  const next = getTheme() === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
-}
-
-function saveState() {
-  const payload = JSON.stringify(state);
-  try { localStorage.setItem(__STATE_KEY, payload); return true; } catch (_) { return false; }
-}
-function loadState() {
-  try {
-    const raw = localStorage.getItem(__STATE_KEY);
-    if (!raw) return false;
-    const saved = JSON.parse(raw);
-    Object.assign(state.controls, saved.controls || {});
-    Object.assign(state.weights, saved.weights || {});
-    Object.assign(state.baseInputs, saved.baseInputs || {});
-    Object.assign(state.derivedInputs, saved.derivedInputs || {});
-    Object.assign(state.creativeInputs, saved.creativeInputs || {});
-    state.genreMix = Array.isArray(saved.genreMix) ? saved.genreMix : state.genreMix;
-    state.premise = saved.premise || state.premise;
-    state.customPremise = typeof saved.customPremise === 'string' ? saved.customPremise : state.customPremise;
-    state.accent = saved.accent || state.accent;
-    Object.assign(state.userSections, saved.userSections || {});
-    Object.assign(state.aiSettings, saved.aiSettings || {});
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-function resetState() {
-  const fresh = buildDefaultState();
-  Object.assign(state.controls, fresh.controls);
-  Object.assign(state.weights, fresh.weights);
-  Object.assign(state.baseInputs, fresh.baseInputs);
-  Object.assign(state.derivedInputs, fresh.derivedInputs);
-  Object.assign(state.creativeInputs, fresh.creativeInputs);
-  state.genreMix = fresh.genreMix;
-  state.premise = fresh.premise;
-  state.customPremise = fresh.customPremise;
-  state.accent = fresh.accent;
-  Object.assign(state.userSections, fresh.userSections);
-  Object.assign(state.aiSettings, fresh.aiSettings);
-  state.outputs = fresh.outputs;
-  state.computed = null;
-  state.genreAnalysis = null;
-}
+// saveState (now persistState), loadState, and resetState are imported from state-manager.js
 function rerenderAll() {
   renderConstants();
   renderControls();
@@ -2499,16 +3108,11 @@ function rerenderAll() {
   renderPromptHistory();
 }
 
-// Debounced autosave: persist state across restarts without manual Save
-let __saveTimer = null;
-function scheduleSave(delay = 400) {
-  if (__saveTimer) clearTimeout(__saveTimer);
-  __saveTimer = setTimeout(() => { try { saveState(); } catch (_) {} }, delay);
-}
+// Debounced autosave: scheduleAutoSave is now imported from state-manager.js
 
 // Generic listeners to catch most changes without touching every handler
-document.addEventListener('input', () => { try { scheduleSave(600); } catch (_) {} });
-document.addEventListener('change', () => { try { scheduleSave(600); } catch (_) {} });
+document.addEventListener('input', () => { try { scheduleAutoSave(600); } catch (_) {} });
+document.addEventListener('change', () => { try { scheduleAutoSave(600); } catch (_) {} });
 
 // Keep derived UI (readiness/wizard bar) in sync with edits
   document.addEventListener('input', () => { try { renderReadiness(); renderWizardBar(); } catch (_) {} });
@@ -2650,11 +3254,11 @@ function applyDemoPreset() {
       const equal = 1 / Math.max(1, keys.length);
       keys.forEach(k => state.weights[k] = +(equal.toFixed(2)));
     }
-    // Genre mix
+    // Genre mix (use exact genre names from library)
     const mix = state.genreMix || [];
-    if (mix[0]) { mix[0].genre = 'trap'; mix[0].customGenre = ''; mix[0].weight = 50; }
-    if (mix[1]) { mix[1].genre = 'afrobeats'; mix[1].customGenre = ''; mix[1].weight = 30; }
-    if (mix[2]) { mix[2].genre = 'r&b'; mix[2].customGenre = ''; mix[2].weight = 20; }
+    if (mix[0]) { mix[0].genre = 'Trap Pop'; mix[0].customGenre = ''; mix[0].weight = 50; }
+    if (mix[1]) { mix[1].genre = 'Afrobeats'; mix[1].customGenre = ''; mix[1].weight = 30; }
+    if (mix[2]) { mix[2].genre = 'R&B'; mix[2].customGenre = ''; mix[2].weight = 20; }
     for (let i=3;i<mix.length;i++) { mix[i].genre=''; mix[i].customGenre=''; mix[i].weight=0; }
     // Premise & accent
     state.premise = '(custom)';
@@ -2722,34 +3326,23 @@ function wizardFixCurrentStep() {
   }
   // Refresh gating
   renderWizardBar();
-  try { scheduleSave(); } catch(_){}
-}
-
-function normalizeWeights() {
-  const keys = Object.keys(state.weights || {});
-  const vals = keys.map(k => Number(state.weights[k] || 0));
-  const sum = vals.reduce((a,b)=>a+b,0);
-  if (sum <= 0) {
-    const equal = 1 / (keys.length || 1);
-    keys.forEach(k => { state.weights[k] = +(equal.toFixed(4)); });
-    return;
-  }
-  keys.forEach((k,i) => { state.weights[k] = +( (vals[i] / sum).toFixed(4) ); });
+  try { scheduleAutoSave(); } catch(_){}
 }
 
 // ---------- Prompt history (localStorage) ----------
-function getPromptHistory() {
+// Note: Using enhanced local versions with metadata instead of imported basic versions
+function getPromptHistoryLocal() {
   try {
-    const raw = localStorage.getItem(__HIST_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
     if (!raw) return [];
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr : [];
   } catch (_) { return []; }
 }
-function setPromptHistory(list) {
-  try { localStorage.setItem(__HIST_KEY, JSON.stringify(list)); } catch (_) {}
+function setPromptHistoryLocal(list) {
+  try { localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(list)); } catch (_) {}
 }
-function addPromptHistory(text) {
+function addPromptHistoryLocal(text) {
   const t = String(text || '').trim();
   if (!t) return;
   const analysis = state.genreAnalysis || analyzeGenreMix(state.genreMix);
@@ -2765,22 +3358,22 @@ function addPromptHistory(text) {
     mix: analysis?.mixSummary || '',
     text: t
   };
-  const list = getPromptHistory();
+  const list = getPromptHistoryLocal();
   list.unshift(entry);
   while (list.length > 50) list.pop();
-  setPromptHistory(list);
+  setPromptHistoryLocal(list);
   renderPromptHistory();
 }
-function clearPromptHistory() {
-  setPromptHistory([]);
+function clearPromptHistoryLocal() {
+  setPromptHistoryLocal([]);
   renderPromptHistory();
 }
 function renderPromptHistory() {
   const root = document.getElementById('prompt-history-list');
   const clearBtn = document.getElementById('clear-prompt-history');
-  if (clearBtn) clearBtn.onclick = () => { clearPromptHistory(); };
+  if (clearBtn) clearBtn.onclick = () => { clearPromptHistoryLocal(); };
   if (!root) return;
-  const list = getPromptHistory();
+  const list = getPromptHistoryLocal();
   if (!list.length) {
     root.innerHTML = '<p class="hint">No prompt history yet. Click "Build Prompt" to generate one.</p>';
     return;
@@ -3090,7 +3683,7 @@ function resetInputsForGame() {
     // Drop computed scores so UI doesn't show stale meters
     state.computed = null;
     // Persist
-    try { scheduleSave(); } catch (_) {}
+    try { scheduleAutoSave(); } catch (_) {}
   } catch (_) {}
 }
 function buildGameSummary(output, modeKey) {
@@ -3412,7 +4005,7 @@ function applyGenrePreset(preset) {
     }
   } catch(_) {}
   showToast(`Applied: ${preset.label}`);
-  try { scheduleSave(); } catch(_){}
+  try { scheduleAutoSave(); } catch(_){}
 }
 
 
