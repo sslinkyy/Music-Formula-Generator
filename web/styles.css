@@ -881,6 +881,8 @@ button:disabled { opacity: 0.6; cursor: default; }
   }
 
   .dropdown.open .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
     transform: translateX(-50%) translateY(0);
   }
 
