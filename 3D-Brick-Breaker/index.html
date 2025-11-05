@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Brick Breaker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-overlay">
+            <div id="score-panel">
+                <div class="stat">
+                    <span class="label">SCORE</span>
+                    <span id="score" class="value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">LEVEL</span>
+                    <span id="level" class="value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="label">LIVES</span>
+                    <span id="lives" class="value">3</span>
+                </div>
+                <div class="stat">
+                    <span class="label">COMBO</span>
+                    <span id="combo" class="value">0x</span>
+                </div>
+            </div>
+
+            <div id="power-ups"></div>
+
+            <div id="menu" class="modal">
+                <h1>3D BRICK BREAKER</h1>
+                <p>Break all the bricks to advance!</p>
+                <div class="controls-info">
+                    <p><strong>Controls:</strong></p>
+                    <p>Move Mouse = Control Paddle</p>
+                    <p>Click / Space = Launch Ball</p>
+                    <p>P = Pause</p>
+                </div>
+                <button id="start-btn" class="btn-primary">START GAME</button>
+                <button id="settings-btn" class="btn-secondary">SETTINGS</button>
+            </div>
+
+            <div id="pause-menu" class="modal hidden">
+                <h2>PAUSED</h2>
+                <button id="resume-btn" class="btn-primary">RESUME</button>
+                <button id="restart-btn" class="btn-secondary">RESTART</button>
+                <button id="quit-btn" class="btn-secondary">MAIN MENU</button>
+            </div>
+
+            <div id="game-over" class="modal hidden">
+                <h2>GAME OVER</h2>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <p>Level Reached: <span id="final-level">1</span></p>
+                <button id="retry-btn" class="btn-primary">TRY AGAIN</button>
+                <button id="menu-btn" class="btn-secondary">MAIN MENU</button>
+            </div>
+
+            <div id="level-complete" class="modal hidden">
+                <h2>LEVEL COMPLETE!</h2>
+                <p>Score: <span id="level-score">0</span></p>
+                <p>Bonus: <span id="level-bonus">0</span></p>
+                <button id="next-level-btn" class="btn-primary">NEXT LEVEL</button>
+            </div>
+
+            <div id="settings-menu" class="modal hidden">
+                <h2>SETTINGS</h2>
+                <div class="setting">
+                    <label>Music Volume</label>
+                    <input type="range" id="music-volume" min="0" max="100" value="50">
+                </div>
+                <div class="setting">
+                    <label>SFX Volume</label>
+                    <input type="range" id="sfx-volume" min="0" max="100" value="70">
+                </div>
+                <div class="setting">
+                    <label>Graphics Quality</label>
+                    <select id="quality-select">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <button id="settings-back-btn" class="btn-secondary">BACK</button>
+            </div>
+        </div>
+
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/powerup.js"></script>
+    <script src="js/brick.js"></script>
+    <script src="js/ball.js"></script>
+    <script src="js/paddle.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
