@@ -3770,7 +3770,11 @@ function buildGameHubDialog() {
   playBtn.className = 'btn-primary';
   playBtn.textContent = 'Play';
   playBtn.addEventListener('click', () => {
-    window.open('../3D-Brick-Breaker/index.html', '_blank', 'width=1280,height=720');
+    // Determine the correct path - works both locally and on GitHub Pages
+    const basePath = window.location.pathname.includes('/Music-Formula-Generator/')
+      ? '/Music-Formula-Generator/3D-Brick-Breaker/index.html'
+      : '../3D-Brick-Breaker/index.html';
+    window.open(basePath, '_blank', 'width=1280,height=720');
   });
   brickBreakerRow.appendChild(playBtn);
   brickBreakerCard.appendChild(brickBreakerRow);
