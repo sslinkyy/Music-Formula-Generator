@@ -3770,9 +3770,10 @@ function buildGameHubDialog() {
   playBtn.className = 'btn-primary';
   playBtn.textContent = 'Play';
   playBtn.addEventListener('click', () => {
-    // Determine the correct path - works both locally and on GitHub Pages
-    const basePath = window.location.pathname.includes('/Music-Formula-Generator/')
-      ? '/Music-Formula-Generator/3D-Brick-Breaker/index.html'
+    // On GitHub Pages, 3D-Brick-Breaker is deployed at the same level
+    // Locally, it's one directory up from /web
+    const basePath = window.location.hostname.includes('github.io')
+      ? '3D-Brick-Breaker/index.html'
       : '../3D-Brick-Breaker/index.html';
     window.open(basePath, '_blank', 'width=1280,height=720');
   });
