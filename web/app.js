@@ -719,6 +719,40 @@ function suggestArtistProfiles(name, limit=5) {
       actions.appendChild(suggestBtn);
       wrapperDiv.appendChild(actions);
       input = wrapperDiv;
+    } else if (field.type === 'boolean') {
+      // Boolean toggle (checkbox)
+      const toggleWrapper = document.createElement('div');
+      toggleWrapper.style.display = 'flex';
+      toggleWrapper.style.alignItems = 'center';
+      toggleWrapper.style.gap = '8px';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = `checkbox-${field.id}`;
+      checkbox.checked = state.creativeInputs[field.id] || false;
+      checkbox.style.accentColor = 'var(--accent)';
+      checkbox.style.width = '20px';
+      checkbox.style.height = '20px';
+      checkbox.style.cursor = 'pointer';
+
+      checkbox.addEventListener('change', () => {
+        state.creativeInputs[field.id] = checkbox.checked;
+        try { scheduleAutoSave(); } catch (_) {}
+      });
+
+      const label = document.createElement('span');
+      label.textContent = checkbox.checked ? 'Enabled' : 'Disabled';
+      label.style.fontWeight = '500';
+      label.style.cursor = 'pointer';
+      label.addEventListener('click', () => {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+        label.textContent = checkbox.checked ? 'Enabled' : 'Disabled';
+      });
+
+      toggleWrapper.appendChild(checkbox);
+      toggleWrapper.appendChild(label);
+      input = toggleWrapper;
     } else {
       input = document.createElement('input');
       input.type = 'text';
@@ -1993,6 +2027,30 @@ function buildProductionDirectives(analysis) {
   lines.push("- 3+ minutes; evolving choruses; stage cues in [brackets]; call-and-response via (parentheses).");
   lines.push("- Do NOT reference production gear, BPM, mixing jargon, or arrangement terms unless explicitly requested.");
   lines.push("- Do NOT reference any instruments in the lyrics.");
+
+  // Check for instrumental mode
+  if (state.creativeInputs.instrumental) {
+    lines.push("");
+    lines.push("⚠️ INSTRUMENTAL MODE ENABLED ⚠️");
+    lines.push("This is an INSTRUMENTAL track. Do NOT generate full lyrics or sung/rapped verses.");
+    lines.push("Focus on:");
+    lines.push("- Title (instrumental theme)");
+    lines.push("- Style tags (instrumental arrangement, key instruments, mood)");
+    lines.push("- Exclude tags");
+    lines.push("- Structure with instrumental sections (use tags like [Intro], [Main Theme], [Drop], [Break], [Bridge], [Outro])");
+    lines.push("ALLOWED vocal elements:");
+    lines.push("- [Producer Tag] iMob Worldwide! (opening tag is OK)");
+    lines.push("- Vocal punch-ins: short hype ad-libs like (yeah), (ay), (uh), (let's go)");
+    lines.push("- Vocal chops and samples (brief, percussive)");
+    lines.push("- [* SFX *] tags for sound effects and transitions");
+    lines.push("- Minimal chants or crowd responses if appropriate for genre");
+    lines.push("NOT ALLOWED:");
+    lines.push("- Full verses with complete sentences/storytelling");
+    lines.push("- Sung hooks or melodic vocal sections");
+    lines.push("- Rapped bars or lyrical content");
+    lines.push("Keep vocals minimal, percussive, and production-focused only.");
+  }
+
   lines.push("");
   lines.push(`Final Score: ${formatNumber(computed.final.clamped, 1)}`);
   lines.push(`Tempo / Feel: ${analysis.tempoHint || tempo}`);

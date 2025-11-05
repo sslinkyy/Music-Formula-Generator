@@ -1424,6 +1424,82 @@ export const GENRE_LIBRARY = [
     "flowPlan": " Sparse talk-sing; leave air for groove.",
     "rhymePlan": " Percussive words; minimal rhyme."
   }
+  , {
+    "name": "Bass Culture",
+    "tempo": " 35-45 bpm feel",
+    "styleTags": " sub-bass focus, SPL power, bass drops, minimal mids, deep 808s, subsonic energy",
+    "structure": " Intro 4 a-' Build 8 a-' Drop 16 a-' Break 4 a-' Drop 16 a-' Outro 8",
+    "exclude": " shoegaze, folk, bluegrass",
+    "sfx": " sub drop, bass sweep, impact boom",
+    "weights": {
+      "core": 0.3,
+      "tech": 0.2,
+      "anthem": 0.15,
+      "style": 0.15,
+      "group": 0.05,
+      "perf": 0.15
+    },
+    "hookPlan": " Minimal hook focused on bass presence and sub drops.",
+    "flowPlan": " Sparse vocals; let bass dominate; hype tags before drops.",
+    "rhymePlan": " Simple bass-culture references; minimal rhyme density."
+  }
+  , {
+    "name": "Car Bass",
+    "tempo": " 30-40 bpm feel",
+    "styleTags": " trunk rattling bass, SPL competition, subsonic frequencies, bass test tones, extreme low-end",
+    "structure": " Intro 4 a-' Drop 16 a-' Break 4 a-' Drop 20 a-' Outro 4",
+    "exclude": " shoegaze, folk, acoustic",
+    "sfx": " sub impact, bass tone sweep, rumble fx",
+    "weights": {
+      "core": 0.35,
+      "tech": 0.25,
+      "anthem": 0.1,
+      "style": 0.1,
+      "group": 0.05,
+      "perf": 0.15
+    },
+    "hookPlan": " Instrumental focus with massive sub-bass presence.",
+    "flowPlan": " Minimal vocals; bass is the star; optional hype ad-libs.",
+    "rhymePlan": " Car culture references if vocals present; bass-first always."
+  }
+  , {
+    "name": "Competition Bass",
+    "tempo": " 32-42 bpm feel",
+    "styleTags": " SPL competition, dB pressure, subsonic assault, bass wall, extreme headroom, system test",
+    "structure": " Intro 2 a-' Build 4 a-' Drop 20 a-' Break 4 a-' Drop 24",
+    "exclude": " acoustic, folk, lo-fi chillhop",
+    "sfx": " sub impact, pressure blast, bass sweep",
+    "weights": {
+      "core": 0.4,
+      "tech": 0.3,
+      "anthem": 0.08,
+      "style": 0.07,
+      "group": 0.05,
+      "perf": 0.1
+    },
+    "hookPlan": " Pure bass drops; minimal melody; maximum SPL.",
+    "flowPlan": " Rare vocals; competition callouts only; bass dominates.",
+    "rhymePlan": " Competition references; dB counts; bass flexing."
+  }
+  , {
+    "name": "Bass Test",
+    "tempo": " 28-38 bpm feel",
+    "styleTags": " frequency sweep, subsonic tones, system calibration, pure bass, test tones, audio engineering",
+    "structure": " Intro 4 a-' Sweep 16 a-' Drop 16 a-' Sweep 16 a-' Drop 16 a-' Outro 4",
+    "exclude": " acoustic, vocal-focused, lo-fi",
+    "sfx": " sine sweep, sub drop, frequency tone",
+    "weights": {
+      "core": 0.35,
+      "tech": 0.35,
+      "anthem": 0.05,
+      "style": 0.1,
+      "group": 0.05,
+      "perf": 0.1
+    },
+    "hookPlan": " Instrumental bass test; frequency demonstration.",
+    "flowPlan": " No vocals; pure bass and sub-bass frequencies.",
+    "rhymePlan": " Instrumental only; bass testing purpose."
+  }
 ];
 
 // Ensure every genre has a category for grouping in UI
@@ -1440,7 +1516,8 @@ const __GENRE_CATEGORY_LOOKUP = {
   'Reggaeton': 'Latin / Caribbean','Latin Pop': 'Latin / Caribbean','Bachata': 'Latin / Caribbean','Salsa': 'Latin / Caribbean','Cumbia': 'Latin / Caribbean','Dancehall': 'Latin / Caribbean','Reggae': 'Latin / Caribbean','Moombahton': 'Latin / Caribbean','Baile Funk': 'Latin / Caribbean',
   'Afrobeats': 'African','Alte (Afrobeats)': 'African','Gqom': 'African','Amapiano': 'African',
   'Country': 'Country / Folk','Hickhop': 'Country / Folk','Bluegrass': 'Country / Folk','Folk': 'Country / Folk',
-  'Bossa Nova': 'Jazz / World'
+  'Bossa Nova': 'Jazz / World',
+  'Bass Culture': 'Bass / SPL','Car Bass': 'Bass / SPL','Competition Bass': 'Bass / SPL','Bass Test': 'Bass / SPL'
 };
 try {
   // Mutate exported array to attach categories where missing
