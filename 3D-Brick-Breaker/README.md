@@ -49,7 +49,12 @@ A modern 3D brick breaker game built with Three.js featuring realistic graphics,
 
 ## Controls
 
-- **Mouse Movement**: Control paddle
+### Paddle Movement
+- **Mouse Movement**: Move paddle with mouse cursor
+- **Arrow Keys**: Left/Right arrows to move paddle
+- **A / D Keys**: Alternative keyboard controls
+
+### Actions
 - **Click / Space**: Launch ball
 - **P / Escape**: Pause game
 

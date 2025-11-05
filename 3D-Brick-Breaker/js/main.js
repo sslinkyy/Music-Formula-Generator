@@ -38,6 +38,12 @@ class Game {
         this.powerUps = [];
         this.particles = [];
 
+        // Keyboard controls
+        this.keys = {
+            left: false,
+            right: false
+        };
+
         // Settings
         this.settings = {
             musicVolume: 0.5,
@@ -215,6 +221,7 @@ class Game {
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => this.onKeyDown(e));
+        document.addEventListener('keyup', (e) => this.onKeyUp(e));
 
         // UI Button handlers
         document.getElementById('start-btn').addEventListener('click', () => this.startGame());
@@ -317,6 +324,7 @@ class Game {
     }
 
     onKeyDown(event) {
+        // Launch ball
         if (event.key === ' ' || event.key === 'Spacebar') {
             event.preventDefault();
             if (this.state === GameState.PLAYING) {
@@ -324,6 +332,7 @@ class Game {
             }
         }
 
+        // Pause
         if (event.key === 'p' || event.key === 'P' || event.key === 'Escape') {
             event.preventDefault();
             if (this.state === GameState.PLAYING) {
@@ -331,6 +340,32 @@ class Game {
             } else if (this.state === GameState.PAUSED) {
                 this.resumeGame();
             }
+        }
+
+        // Paddle movement - Left
+        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
+            event.preventDefault();
+            this.keys.left = true;
+        }
+
+        // Paddle movement - Right
+        if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
+            event.preventDefault();
+            this.keys.right = true;
+        }
+    }
+
+    onKeyUp(event) {
+        // Paddle movement - Left
+        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
+            event.preventDefault();
+            this.keys.left = false;
+        }
+
+        // Paddle movement - Right
+        if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
+            event.preventDefault();
+            this.keys.right = false;
         }
     }
 
@@ -478,6 +513,21 @@ class Game {
             this.comboTimer -= deltaTime;
             if (this.comboTimer <= 0) {
                 this.resetCombo();
+            }
+        }
+
+        // Handle keyboard paddle movement
+        if (this.paddle) {
+            const keyboardSpeed = 15; // Units per second
+
+            if (this.keys.left) {
+                const newX = this.paddle.position.x - keyboardSpeed * deltaTime;
+                this.paddle.setTargetX(newX);
+            }
+
+            if (this.keys.right) {
+                const newX = this.paddle.position.x + keyboardSpeed * deltaTime;
+                this.paddle.setTargetX(newX);
             }
         }
 
