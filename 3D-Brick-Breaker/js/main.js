@@ -9,7 +9,19 @@ const GameState = {
 
 class Game {
     constructor() {
+        // Check if Three.js is loaded
+        if (typeof THREE === 'undefined') {
+            console.error('THREE.js is not loaded!');
+            alert('Failed to load 3D engine. Please refresh the page.');
+            return;
+        }
+
         this.canvas = document.getElementById('game-canvas');
+        if (!this.canvas) {
+            console.error('Canvas element not found!');
+            return;
+        }
+
         this.state = GameState.MENU;
 
         // Game stats
@@ -33,16 +45,23 @@ class Game {
             quality: 'medium'
         };
 
-        this.setupThreeJS();
-        this.setupLighting();
-        this.setupEventListeners();
-        this.setupUI();
+        try {
+            this.setupThreeJS();
+            this.setupLighting();
+            this.setupEventListeners();
+            this.setupUI();
 
-        // Start animation loop
-        this.animate();
+            // Start animation loop
+            this.animate();
+        } catch (error) {
+            console.error('Game initialization failed:', error);
+            alert(`Game failed to start: ${error.message}`);
+        }
     }
 
     setupThreeJS() {
+        console.log('Setting up Three.js scene...');
+
         // Scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0a1a);
@@ -73,6 +92,8 @@ class Game {
 
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());
+
+        console.log('Three.js setup complete!');
     }
 
     setupLighting() {
@@ -464,6 +485,11 @@ class Game {
         if (this.paddle) {
             this.paddle.update(deltaTime);
         }
+
+        // Update bricks
+        this.bricks.forEach(brick => {
+            brick.update(deltaTime);
+        });
 
         // Update balls
         this.balls.forEach((ball, index) => {
