@@ -3759,6 +3759,23 @@ function buildGameHubDialog() {
       openLibraryDialog('Snake (Prototype)', content);
     }
   }));
+
+  // Add 3D Brick Breaker as a standalone game
+  const brickBreakerCard = document.createElement('div');
+  brickBreakerCard.className = 'panel';
+  brickBreakerCard.innerHTML = `<h3 style="margin-top:0">3D Brick Breaker</h3><p class="hint" style="margin:0 0 8px">Modern 3D brick breaker with realistic graphics, power-ups, and multiple levels. (Standalone game)</p>`;
+  const brickBreakerRow = document.createElement('div');
+  brickBreakerRow.className = 'inline-buttons';
+  const playBtn = document.createElement('button');
+  playBtn.className = 'btn-primary';
+  playBtn.textContent = 'Play';
+  playBtn.addEventListener('click', () => {
+    window.open('../3D-Brick-Breaker/index.html', '_blank', 'width=1280,height=720');
+  });
+  brickBreakerRow.appendChild(playBtn);
+  brickBreakerCard.appendChild(brickBreakerRow);
+  grid.appendChild(brickBreakerCard);
+
   wrap.appendChild(grid);
   return wrap;
 }
