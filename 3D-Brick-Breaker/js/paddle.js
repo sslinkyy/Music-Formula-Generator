@@ -63,8 +63,8 @@ class Paddle {
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.scene.add(this.mesh);
 
-        console.log('[Paddle] Created and added to scene at position:', this.position, 'size:', {width: this.width, height: this.height, depth: this.depth});
-        console.log('[Paddle] Mesh:', this.mesh, 'Children count:', this.mesh.children.length);
+        console.log('[Paddle] Created and added to scene at position:', JSON.stringify(this.position), 'size:', JSON.stringify({width: this.width, height: this.height, depth: this.depth}));
+        console.log('[Paddle] Mesh visible:', this.mesh.visible, 'Children count:', this.mesh.children.length);
 
         // Store references
         this.paddleMesh = paddle;

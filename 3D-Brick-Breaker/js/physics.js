@@ -48,6 +48,11 @@ const PhysicsManager = {
             new THREE.Vector3(ball.position.x, ball.position.y, ball.position.z)
         );
 
+        // Debug: log when ball is near paddle
+        if (ball.position.y < -8 && ball.position.y > -12) {
+            console.log('[Physics] Ball near paddle - ballY:', ball.position.y.toFixed(2), 'paddleY:', paddle.position.y.toFixed(2), 'distance:', distance.toFixed(2), 'threshold:', ball.radius);
+        }
+
         if (distance < ball.radius) {
             // Check if ball is moving downward
             if (ball.velocity.y < 0) {
