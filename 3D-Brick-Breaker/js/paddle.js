@@ -3,10 +3,10 @@ class Paddle {
         this.scene = scene;
         this.position = { x: 0, y: -10, z: 0 };
         this.targetX = 0;
-        this.width = 4;
-        this.baseWidth = 4;
-        this.height = 0.5;
-        this.depth = 1.5;
+        this.width = 6;  // Increased from 4 for better visibility
+        this.baseWidth = 6;  // Increased from 4
+        this.height = 0.8;  // Increased from 0.5
+        this.depth = 2;  // Increased from 1.5
         this.speed = 20;
 
         // Power-up states
@@ -24,13 +24,9 @@ class Paddle {
         // Main paddle body
         const geometry = new THREE.BoxGeometry(this.width, this.height, this.depth);
 
-        // Create realistic material with metallic look
-        const material = new THREE.MeshStandardMaterial({
-            color: 0x00ff88,
-            metalness: 0.8,
-            roughness: 0.2,
-            emissive: 0x00ff88,
-            emissiveIntensity: 1.0  // Increased from 0.3 to make more visible
+        // Create bright unlit material for maximum visibility
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00ff88
         });
 
         const paddle = new THREE.Mesh(geometry, material);
@@ -59,6 +55,11 @@ class Paddle {
         glow.rotation.x = Math.PI / 2;
         glow.position.y = -this.height / 2 - 0.1;
         this.mesh.add(glow);
+
+        // Add bright point light to make paddle highly visible
+        const light = new THREE.PointLight(0x00ff88, 2, 20);
+        light.position.set(0, 0, 0);
+        this.mesh.add(light);
 
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.scene.add(this.mesh);
