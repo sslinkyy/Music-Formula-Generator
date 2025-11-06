@@ -324,6 +324,11 @@ class PowerUp {
                     originalBall.position.z
                 );
 
+                // Apply difficulty modifiers to new ball
+                if (window.DifficultyManager && game.level) {
+                    DifficultyManager.applyToBall(ball, game.level);
+                }
+
                 // Set velocity at different angles
                 const angle = (i === 0 ? -30 : 30) * Math.PI / 180;
                 const speed = originalBall.speed;

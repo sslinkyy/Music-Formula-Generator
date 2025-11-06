@@ -294,18 +294,27 @@ class Game {
         // Clear existing objects
         this.clearLevel();
 
-        // Create paddle
+        // Create paddle and apply difficulty
         this.paddle = new Paddle(this.scene);
+        DifficultyManager.applyToPaddle(this.paddle, this.level);
         console.log('[Game] Paddle created at', this.paddle.position);
 
-        // Create ball attached to paddle
+        // Create ball attached to paddle and apply difficulty
         const ball = new Ball(this.scene, 0, 2, -1);  // Start above paddle at same Z
+        DifficultyManager.applyToBall(ball, this.level);
         ball.attachToPaddle(this.paddle);
         this.balls.push(ball);
         console.log('[Game] Ball created and attached, position:', ball.position, 'attached:', ball.attached);
 
         // Create bricks for current level
-        this.bricks = LevelManager.createLevel(this.level, this.scene);
+        const bricks = LevelManager.createLevel(this.level, this.scene);
+
+        // Apply difficulty to each brick
+        bricks.forEach(brick => {
+            DifficultyManager.applyToBrick(brick, this.level);
+        });
+
+        this.bricks = bricks;
         console.log('[Game] Created', this.bricks.length, 'bricks');
 
         if (this.bricks.length === 0) {
@@ -457,17 +466,32 @@ class Game {
         // Clear existing objects
         this.clearLevel();
 
-        // Create paddle
+        // Create paddle and apply difficulty
         this.paddle = new Paddle(this.scene);
+        DifficultyManager.applyToPaddle(this.paddle, this.level);
 
-        // Create ball attached to paddle
+        // Create ball attached to paddle and apply difficulty
         const ball = new Ball(this.scene, 0, 2, -1);
+        DifficultyManager.applyToBall(ball, this.level);
         ball.attachToPaddle(this.paddle);
         this.balls.push(ball);
 
         // Create bricks with fade-in animation
         const bricks = LevelManager.createLevel(this.level, this.scene);
+
+        // Apply difficulty to each brick
+        bricks.forEach(brick => {
+            DifficultyManager.applyToBrick(brick, this.level);
+        });
+
         this.bricks = bricks;
+
+        // Show difficulty changes (if any)
+        if (this.level > 1) {
+            setTimeout(() => {
+                DifficultyManager.showChanges(this.level);
+            }, 500); // Show after level intro starts
+        }
 
         // Fade in bricks row by row
         bricks.forEach((brick, index) => {
@@ -683,6 +707,7 @@ class Game {
             // Reset ball
             setTimeout(() => {
                 const ball = new Ball(this.scene, 0, -8, 2);
+                DifficultyManager.applyToBall(ball, this.level);
                 ball.attachToPaddle(this.paddle);
                 this.balls.push(ball);
             }, 1000);
