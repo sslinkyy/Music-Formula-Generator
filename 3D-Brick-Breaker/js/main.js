@@ -472,6 +472,9 @@ class Game {
         // Clear existing objects
         this.clearLevel();
 
+        // Update background color based on level tier
+        this.updateBackgroundColor();
+
         // Create paddle and apply difficulty
         this.paddle = new Paddle(this.scene);
         DifficultyManager.applyToPaddle(this.paddle, this.level);
@@ -557,8 +560,17 @@ class Game {
         // Victory celebration phase (smooth slow-motion)
         this.timeScale = 0.5;  // Slow down for dramatic effect
 
+        // Screen shake effect
+        this.triggerScreenShake(1.0, 800);
+
+        // Camera zoom effect
+        this.triggerCameraZoom();
+
         // Create victory particles
         this.createVictoryEffect();
+
+        // Flash background color
+        this.flashBackgroundColor();
 
         // Calculate bonuses
         const levelBonus = this.level * 1000;
@@ -591,33 +603,162 @@ class Game {
     }
 
     createVictoryEffect() {
-        // Create particle explosion at center
+        // Create massive particle explosion at center
         if (this.paddle) {
-            for (let i = 0; i < 30; i++) {
-                const particle = new Particle(
-                    this.scene,
-                    this.paddle.position.x,
-                    this.paddle.position.y + 5,
-                    this.paddle.position.z,
-                    0xffd700  // Gold color
-                );
-                const angle = (i / 30) * Math.PI * 2;
-                particle.velocity.x = Math.cos(angle) * 8;
-                particle.velocity.y = Math.sin(angle) * 8 + 5;
-                particle.velocity.z = (Math.random() - 0.5) * 4;
-                this.particles.push(particle);
+            // Multiple waves of particles
+            for (let wave = 0; wave < 3; wave++) {
+                setTimeout(() => {
+                    // Gold particles
+                    for (let i = 0; i < 50; i++) {
+                        const particle = new Particle(
+                            this.scene,
+                            this.paddle.position.x,
+                            this.paddle.position.y + 8,
+                            this.paddle.position.z,
+                            wave === 0 ? 0xffd700 : (wave === 1 ? 0xff69b4 : 0x00ffff)  // Gold, pink, cyan
+                        );
+                        const angle = (i / 50) * Math.PI * 2 + wave * 0.5;
+                        const speed = 10 + wave * 3;
+                        particle.velocity.x = Math.cos(angle) * speed;
+                        particle.velocity.y = Math.sin(angle) * speed + 8;
+                        particle.velocity.z = (Math.random() - 0.5) * 6;
+                        this.particles.push(particle);
+                    }
+                }, wave * 200);
             }
         }
 
-        // Paddle victory glow
+        // Paddle victory glow pulse
         if (this.paddle && this.paddle.paddleMesh) {
-            this.paddle.paddleMesh.material.emissiveIntensity = 2.0;
+            let glowIntensity = 0.5;
+            const glowPulse = setInterval(() => {
+                glowIntensity = glowIntensity === 0.5 ? 2.5 : 0.5;
+                if (this.paddle && this.paddle.paddleMesh) {
+                    this.paddle.paddleMesh.material.emissiveIntensity = glowIntensity;
+                }
+            }, 200);
+
             setTimeout(() => {
+                clearInterval(glowPulse);
                 if (this.paddle && this.paddle.paddleMesh) {
                     this.paddle.paddleMesh.material.emissiveIntensity = 0.5;
                 }
             }, 2000);
         }
+    }
+
+    triggerScreenShake(intensity = 1.0, duration = 500) {
+        // Screen shake effect via canvas transform
+        const canvas = document.getElementById('game-canvas');
+        if (!canvas) return;
+
+        const startTime = Date.now();
+        const originalTransform = canvas.style.transform || '';
+
+        const shake = () => {
+            const elapsed = Date.now() - startTime;
+            if (elapsed > duration) {
+                canvas.style.transform = originalTransform;
+                return;
+            }
+
+            const progress = elapsed / duration;
+            const currentIntensity = intensity * (1 - progress); // Fade out shake
+            const x = (Math.random() - 0.5) * currentIntensity * 10;
+            const y = (Math.random() - 0.5) * currentIntensity * 10;
+
+            canvas.style.transform = `translate(${x}px, ${y}px)`;
+            requestAnimationFrame(shake);
+        };
+
+        shake();
+    }
+
+    triggerCameraZoom() {
+        // Smooth camera zoom in and out
+        const originalZ = this.camera.position.z;
+        const targetZ = originalZ - 5; // Zoom in
+        let progress = 0;
+
+        const zoomIn = setInterval(() => {
+            progress += 0.05;
+            if (progress >= 1) {
+                clearInterval(zoomIn);
+                this.camera.position.z = targetZ;
+
+                // Zoom back out
+                progress = 0;
+                const zoomOut = setInterval(() => {
+                    progress += 0.03;
+                    if (progress >= 1) {
+                        clearInterval(zoomOut);
+                        this.camera.position.z = originalZ;
+                    } else {
+                        this.camera.position.z = targetZ + (originalZ - targetZ) * progress;
+                    }
+                }, 16);
+            } else {
+                this.camera.position.z = originalZ + (targetZ - originalZ) * progress;
+            }
+        }, 16);
+    }
+
+    flashBackgroundColor() {
+        // Flash the background with victory colors
+        const originalColor = this.scene.background;
+
+        const colors = [
+            new THREE.Color(0xffd700), // Gold
+            new THREE.Color(0xff69b4), // Pink
+            new THREE.Color(0x00ffff), // Cyan
+            originalColor
+        ];
+
+        let colorIndex = 0;
+        const flashInterval = setInterval(() => {
+            this.scene.background = colors[colorIndex];
+            colorIndex++;
+
+            if (colorIndex >= colors.length) {
+                clearInterval(flashInterval);
+            }
+        }, 200);
+    }
+
+    updateBackgroundColor() {
+        // Gradually shift background color based on level tier
+        let targetColor;
+
+        if (this.level <= 3) {
+            // Tutorial: Deep blue
+            targetColor = new THREE.Color(0x001133);
+        } else if (this.level <= 6) {
+            // Early: Blue-purple
+            targetColor = new THREE.Color(0x0a0a2e);
+        } else if (this.level <= 10) {
+            // Mid: Purple
+            targetColor = new THREE.Color(0x1a0a3e);
+        } else if (this.level <= 15) {
+            // Advanced: Deep purple-red
+            targetColor = new THREE.Color(0x2e0a2e);
+        } else {
+            // Master: Dark red
+            targetColor = new THREE.Color(0x2e0a0a);
+        }
+
+        // Smooth color transition
+        const currentColor = this.scene.background;
+        let progress = 0;
+
+        const colorTransition = setInterval(() => {
+            progress += 0.02;
+            if (progress >= 1) {
+                clearInterval(colorTransition);
+                this.scene.background = targetColor;
+            } else {
+                this.scene.background = new THREE.Color().lerpColors(currentColor, targetColor, progress);
+            }
+        }, 16);
     }
 
     showCollectedPowerups() {
