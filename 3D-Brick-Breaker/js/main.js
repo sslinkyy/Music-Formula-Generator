@@ -31,6 +31,9 @@ class Game {
         this.combo = 0;
         this.comboTimer = 0;
 
+        // Game timing
+        this.timeScale = 1.0;  // For smooth transitions and slow-motion effects
+
         // Game objects
         this.paddle = null;
         this.balls = [];
@@ -426,10 +429,73 @@ class Game {
 
     nextLevel() {
         this.level++;
-        this.hideModal('level-complete');
-        this.updateLevel();
-        this.initLevel();
-        this.state = GameState.PLAYING;
+
+        // Smooth fade out modal
+        const modal = document.getElementById('level-complete');
+        let opacity = 1;
+        const fadeOut = setInterval(() => {
+            opacity -= 0.05;
+            modal.style.opacity = opacity.toString();
+            if (opacity <= 0) {
+                clearInterval(fadeOut);
+                this.hideModal('level-complete');
+
+                // Initialize new level with animation
+                this.updateLevel();
+                this.initLevelWithAnimation();
+            }
+        }, 16);
+    }
+
+    initLevelWithAnimation() {
+        console.log('[Game] Initializing level', this.level, 'with smooth intro');
+
+        // Clear existing objects
+        this.clearLevel();
+
+        // Create paddle
+        this.paddle = new Paddle(this.scene);
+
+        // Create ball attached to paddle
+        const ball = new Ball(this.scene, 0, 2, -1);
+        ball.attachToPaddle(this.paddle);
+        this.balls.push(ball);
+
+        // Create bricks with fade-in animation
+        const bricks = LevelManager.createLevel(this.level, this.scene);
+        this.bricks = bricks;
+
+        // Fade in bricks row by row
+        bricks.forEach((brick, index) => {
+            if (brick.mesh) {
+                brick.mesh.material.opacity = 0;
+                brick.mesh.material.transparent = true;
+
+                // Stagger fade-in based on Y position (row)
+                const delay = index * 30;  // 30ms between each brick
+                setTimeout(() => {
+                    let opacity = 0;
+                    const fadeIn = setInterval(() => {
+                        opacity += 0.05;
+                        if (brick.mesh && brick.mesh.material) {
+                            brick.mesh.material.opacity = opacity;
+                        }
+                        if (opacity >= 1) {
+                            clearInterval(fadeIn);
+                            if (brick.mesh && brick.mesh.material) {
+                                brick.mesh.material.transparent = false;
+                            }
+                        }
+                    }, 16);
+                }, delay);
+            }
+        });
+
+        // Resume game after intro
+        setTimeout(() => {
+            this.state = GameState.PLAYING;
+            console.log('[Game] Level intro complete, game resumed');
+        }, bricks.length * 30 + 500);  // Wait for all bricks + buffer
     }
 
     showSettings() {
@@ -453,12 +519,107 @@ class Game {
 
     levelComplete() {
         this.state = GameState.LEVEL_COMPLETE;
+
+        // Victory celebration phase (smooth slow-motion)
+        this.timeScale = 0.5;  // Slow down for dramatic effect
+
+        // Create victory particles
+        this.createVictoryEffect();
+
+        // Calculate bonuses
         const levelBonus = this.level * 1000;
         this.score += levelBonus;
-        document.getElementById('level-score').textContent = this.score;
-        document.getElementById('level-bonus').textContent = levelBonus;
-        this.showModal('level-complete');
-        AudioManager.play('levelComplete');
+
+        // Update UI after short delay for celebration
+        setTimeout(() => {
+            this.timeScale = 1.0;  // Restore normal speed
+            document.getElementById('level-score').textContent = this.score;
+            document.getElementById('level-bonus').textContent = levelBonus;
+
+            // Show collected music powerups summary
+            this.showCollectedPowerups();
+
+            // Smooth fade-in modal
+            const modal = document.getElementById('level-complete');
+            modal.style.opacity = '0';
+            this.showModal('level-complete');
+
+            // Fade in animation
+            let opacity = 0;
+            const fadeIn = setInterval(() => {
+                opacity += 0.05;
+                modal.style.opacity = opacity.toString();
+                if (opacity >= 1) clearInterval(fadeIn);
+            }, 16);
+
+            AudioManager.play('levelComplete');
+        }, 2000);  // 2 second celebration
+    }
+
+    createVictoryEffect() {
+        // Create particle explosion at center
+        if (this.paddle) {
+            for (let i = 0; i < 30; i++) {
+                const particle = new Particle(
+                    this.scene,
+                    this.paddle.position.x,
+                    this.paddle.position.y + 5,
+                    this.paddle.position.z,
+                    0xffd700  // Gold color
+                );
+                const angle = (i / 30) * Math.PI * 2;
+                particle.velocity.x = Math.cos(angle) * 8;
+                particle.velocity.y = Math.sin(angle) * 8 + 5;
+                particle.velocity.z = (Math.random() - 0.5) * 4;
+                this.particles.push(particle);
+            }
+        }
+
+        // Paddle victory glow
+        if (this.paddle && this.paddle.paddleMesh) {
+            this.paddle.paddleMesh.material.emissiveIntensity = 2.0;
+            setTimeout(() => {
+                if (this.paddle && this.paddle.paddleMesh) {
+                    this.paddle.paddleMesh.material.emissiveIntensity = 0.5;
+                }
+            }, 2000);
+        }
+    }
+
+    showCollectedPowerups() {
+        // Display collected music data in level complete screen
+        const container = document.getElementById('collected-powerups');
+        if (!container) return;
+
+        container.innerHTML = '<h4>Music Collected:</h4>';
+
+        if (typeof PowerUpManager !== 'undefined') {
+            const collected = PowerUpManager.collected;
+
+            // Show genres
+            if (Object.keys(collected.genres).length > 0) {
+                container.innerHTML += '<div class="collected-category">';
+                container.innerHTML += '<strong>Genres:</strong> ';
+                container.innerHTML += Object.entries(collected.genres)
+                    .map(([genre, count]) => `${genre} (${count}x)`)
+                    .join(', ');
+                container.innerHTML += '</div>';
+            }
+
+            // Show style tags
+            if (collected.styleTags.length > 0) {
+                container.innerHTML += '<div class="collected-category">';
+                container.innerHTML += '<strong>Styles:</strong> ' + collected.styleTags.join(', ');
+                container.innerHTML += '</div>';
+            }
+
+            // Show keywords
+            if (collected.keywords.length > 0) {
+                container.innerHTML += '<div class="collected-category">';
+                container.innerHTML += '<strong>Keywords:</strong> ' + collected.keywords.join(', ');
+                container.innerHTML += '</div>';
+            }
+        }
     }
 
     showModal(id) {
@@ -607,7 +768,7 @@ class Game {
 
         // Check level complete
         const activeBricks = this.bricks.filter(brick => !brick.destroyed);
-        if (activeBricks.length === 0 && this.bricks.length > 0) {
+        if (this.bricks.length === 0) {
             console.log('[Game] All bricks destroyed, level complete!');
             this.levelComplete();
         }
@@ -640,7 +801,8 @@ class Game {
     animate() {
         requestAnimationFrame(() => this.animate());
 
-        const deltaTime = 0.016; // Approximately 60 FPS
+        const baseDeltaTime = 0.016; // Approximately 60 FPS
+        const deltaTime = baseDeltaTime * this.timeScale;  // Apply time scaling for smooth transitions
 
         // Rotate stars slowly
         if (this.stars) {
