@@ -271,6 +271,11 @@ class Game {
         this.updateLives();
         this.updateLevel();
 
+        // Reset music powerup collection
+        if (typeof PowerUpManager !== 'undefined') {
+            PowerUpManager.reset();
+        }
+
         this.initLevel();
         console.log('[Game] Game state:', this.state, 'Lives:', this.lives);
         AudioManager.playMusic();
@@ -581,7 +586,7 @@ class Game {
         this.powerUps.forEach((powerUp, index) => {
             powerUp.update(deltaTime);
 
-            if (powerUp.position.y < -15 || powerUp.collected) {
+            if (powerUp.position.y < -5 || powerUp.collected) {
                 powerUp.destroy();
                 this.powerUps.splice(index, 1);
             }

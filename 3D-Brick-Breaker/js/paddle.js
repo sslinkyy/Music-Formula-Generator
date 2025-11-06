@@ -3,8 +3,8 @@ class Paddle {
         this.scene = scene;
         this.position = { x: 0, y: 0, z: -1 };  // Bottom center of playfield
         this.targetX = 0;
-        this.width = 10;  // Much bigger for visibility and gameplay
-        this.baseWidth = 10;
+        this.width = 5;  // Reduced for better gameplay challenge
+        this.baseWidth = 5;
         this.height = 1.2;
         this.depth = 2.5;
         this.speed = 20;

@@ -2,8 +2,8 @@ class Brick {
     constructor(scene, x, y, z, type = 'normal') {
         this.scene = scene;
         this.position = { x, y, z };
-        this.width = 3;  // Increased for better visibility
-        this.height = 1.2;
+        this.width = 2;  // Smaller for more bricks
+        this.height = 0.8;
         this.depth = 2;
         this.type = type;
         this.destroyed = false;
@@ -185,12 +185,14 @@ class Brick {
         // Drop power-up if this brick has one
         if (this.hasPowerUp && window.game) {
             const powerUpType = PowerUpManager.getRandomType();
+            const powerUpData = PowerUpManager.getRandomData(powerUpType);
             const powerUp = new PowerUp(
                 this.scene,
                 this.position.x,
                 this.position.y,
                 this.position.z,
-                powerUpType
+                powerUpType,
+                powerUpData
             );
             window.game.powerUps.push(powerUp);
         }

@@ -34,17 +34,17 @@ const LevelManager = {
 
             for (let row = 0; row < rowCount; row++) {
                 const bricks = [];
-                const bricksPerRow = 6;
-                const startX = -(bricksPerRow - 1) * 3.3 / 2;  // Adjusted for wider bricks
-                const y = 18 - row * 1.6;  // Start higher, more spacing
+                const bricksPerRow = 10;  // Increased from 6
+                const startX = -(bricksPerRow - 1) * 2.2 / 2;  // Adjusted spacing
+                const y = 18 - row * 1.2;  // Tighter vertical spacing
                 const typeIndex = Math.min(row % types.length, types.length - 1);
 
                 for (let col = 0; col < bricksPerRow; col++) {
-                    const x = startX + col * 3.3;  // Wider spacing
+                    const x = startX + col * 2.2;  // Tighter spacing
 
                     // Add power-up brick occasionally
                     let type = types[typeIndex];
-                    if (Math.random() < 0.1) {
+                    if (Math.random() < 0.15) {  // More powerups
                         type = 'powerup';
                     }
 
