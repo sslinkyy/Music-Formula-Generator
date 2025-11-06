@@ -1500,23 +1500,1294 @@ export const GENRE_LIBRARY = [
     "flowPlan": " No vocals; pure bass and sub-bass frequencies.",
     "rhymePlan": " Instrumental only; bass testing purpose."
   }
+  , {
+    "name": "Trash-Grass",
+    "tempo": " 180-220 bpm feel",
+    "styleTags": " acoustic punk, mandolin, banjo, gritty vocals, back-porch chaos, DIY energy, folk-punk fusion",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " edm, trap, dubstep",
+    "sfx": " banjo strum, jug blow, wood stomp",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.16,
+      "anthem": 0.18,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Raw gang vocal shout-along with banjo/mandolin stabs.",
+    "flowPlan": " Fast-paced vocal delivery; bluegrass speed with punk attitude.",
+    "rhymePlan": " Simple working-class narratives; rural rebellion themes."
+  }
+  , {
+    "name": "Crust-Punk",
+    "tempo": " 160-180 bpm feel",
+    "styleTags": " D-beat drums, raw distortion, politically charged, DIY ethos, anarcho-punk, aggressive vocals",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " pop, r&b, edm",
+    "sfx": " feedback squeal, crash cymbal, distortion burst",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.18,
+      "anthem": 0.16,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Shouted political slogans; raw gang vocals.",
+    "flowPlan": " Aggressive barked delivery; urgent message-driven.",
+    "rhymePlan": " Anti-establishment themes; protest lyrics; direct messaging."
+  }
+  , {
+    "name": "Cow-Punk",
+    "tempo": " 140-160 bpm feel",
+    "styleTags": " punk meets honky-tonk, twangy guitars, attitude, country rebellion, distorted twang",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " edm, trap, r&b",
+    "sfx": " slide guitar screech, bottle smash, honky-tonk piano",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.17,
+      "anthem": 0.19,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Twangy punk hook with rebellious country attitude.",
+    "flowPlan": " Snarled vocals with country inflection; punk energy.",
+    "rhymePlan": " Outlaw country storytelling with punk aggression."
+  }
+  , {
+    "name": "Gutter-Rock",
+    "tempo": " 120-140 bpm feel",
+    "styleTags": " sleazy bar-rock, punk grime, lo-fi production, dirty guitars, raw attitude",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Solo 8 a-' Hook 8",
+    "exclude": " pop, edm, clean production",
+    "sfx": " bottle clink, guitar feedback, bar noise",
+    "weights": {
+      "core": 0.25,
+      "tech": 0.15,
+      "anthem": 0.17,
+      "style": 0.2,
+      "group": 0.13,
+      "perf": 0.1
+    },
+    "hookPlan": " Grimy rock hook with sleazy swagger.",
+    "flowPlan": " Slurred rock vocals; dive-bar attitude.",
+    "rhymePlan": " Gutter tales; lowlife narratives; street poetry."
+  }
+  , {
+    "name": "Noise-Rock",
+    "tempo": " 100-140 bpm feel",
+    "styleTags": " distorted, dissonant, experimental, feedback, harsh textures, avant-garde",
+    "structure": " Intro 4 a-' Build 8 a-' Verse 12 a-' Noise Break 8 a-' Verse 12 a-' Outro 8",
+    "exclude": " pop, r&b, clean production",
+    "sfx": " feedback wall, distortion burst, harsh static",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.2,
+      "anthem": 0.12,
+      "style": 0.22,
+      "group": 0.14,
+      "perf": 0.1
+    },
+    "hookPlan": " Dissonant wall of noise; unconventional structure.",
+    "flowPlan": " Buried or screamed vocals; texture over melody.",
+    "rhymePlan": " Abstract or stream-of-consciousness; emotion over narrative."
+  }
+  , {
+    "name": "Math-Rock",
+    "tempo": " 140-180 bpm feel",
+    "styleTags": " odd time signatures, clean tapping guitars, precision chaos, instrumental focus, polyrhythms",
+    "structure": " Intro 7 a-' Section A 13 a-' Section B 11 a-' Section C 15 a-' Outro 5",
+    "exclude": " simple 4/4, trap, basic structures",
+    "sfx": " guitar tap, time signature shift, precision click",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.3,
+      "anthem": 0.1,
+      "style": 0.2,
+      "group": 0.1,
+      "perf": 0.1
+    },
+    "hookPlan": " Complex instrumental motifs; unconventional time signatures.",
+    "flowPlan": " Minimal vocals or instrumental; technical precision focus.",
+    "rhymePlan": " If vocals present: abstract, fragmented, rhythmically complex."
+  }
+  , {
+    "name": "Post-Hardcore",
+    "tempo": " 140-170 bpm feel",
+    "styleTags": " emotional intensity, melodic breakdowns, screamed vocals, clean singing, dynamic shifts",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Breakdown 8 a-' Hook 8",
+    "exclude": " pop, r&b, trap",
+    "sfx": " scream, breakdown impact, emotional swell",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.18,
+      "anthem": 0.18,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Melodic sung hooks contrasting with screamed verses.",
+    "flowPlan": " Alternate between clean and screamed vocals; dynamic range.",
+    "rhymePlan": " Emotional confessional lyrics; introspective themes."
+  }
+  , {
+    "name": "Emoviolence",
+    "tempo": " 200-260 bpm feel",
+    "styleTags": " ultra-fast screamo, grindcore speed, chaotic, blast beats, extreme intensity",
+    "structure": " Blast 8 a-' Chaos 12 a-' Break 4 a-' Blast 12 a-' Outro 4",
+    "exclude": " pop, ballad, r&b",
+    "sfx": " blast beat, screech, chaos burst",
+    "weights": {
+      "core": 0.28,
+      "tech": 0.2,
+      "anthem": 0.12,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " No traditional hook; chaotic screamed passages.",
+    "flowPlan": " Rapid-fire screamed vocals; emotional violence.",
+    "rhymePlan": " Stream-of-consciousness emotional outbursts; abstract pain."
+  }
+  , {
+    "name": "Gypsy-Punk",
+    "tempo": " 150-180 bpm feel",
+    "styleTags": " Eastern-European folk, punk rhythms, accordion, violin, brass, festive chaos",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " trap, dubstep, minimal techno",
+    "sfx": " accordion burst, brass stab, violin screech",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.16,
+      "anthem": 0.2,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Folk melodies with punk energy; gang vocal shouts.",
+    "flowPlan": " Fast-paced Eastern European vocal style with punk attitude.",
+    "rhymePlan": " Immigration stories; cultural identity; rebellious celebration."
+  }
+  , {
+    "name": "Pirate-Punk",
+    "tempo": " 140-170 bpm feel",
+    "styleTags": " nautical folk-punk, shanty hooks, accordion, drinking songs, rebellious spirit",
+    "structure": " Intro 4 a-' Verse 16 a-' Shanty Hook 8 a-' Verse 16 a-' Shanty Hook 8 a-' Bridge 8 a-' Shanty Hook 8",
+    "exclude": " trap, edm, r&b",
+    "sfx": " ship bell, accordion swell, crowd chant",
+    "weights": {
+      "core": 0.23,
+      "tech": 0.15,
+      "anthem": 0.22,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Sea shanty chorus with gang vocals and accordion.",
+    "flowPlan": " Storytelling verses; call-and-response shanty choruses.",
+    "rhymePlan": " Pirate tales; nautical adventure; drinking songs."
+  }
+  , {
+    "name": "Anarcho-Punk",
+    "tempo": " 150-180 bpm feel",
+    "styleTags": " message-driven, protest-oriented, political, DIY ethos, anti-establishment",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " pop, commercial, corporate",
+    "sfx": " protest chant, megaphone, crowd noise",
+    "weights": {
+      "core": 0.25,
+      "tech": 0.17,
+      "anthem": 0.18,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Political slogans; chanted mantras; protest anthems.",
+    "flowPlan": " Direct message delivery; urgent vocal style.",
+    "rhymePlan": " Anti-capitalist themes; social justice; anarchist philosophy."
+  }
+  , {
+    "name": "Celtic-Punk",
+    "tempo": " 150-180 bpm feel",
+    "styleTags": " folk melodies, fiddle, tin whistle, punk drive, Irish influence, drinking anthems",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " trap, dubstep, edm",
+    "sfx": " tin whistle trill, fiddle reel, bodhrán drum",
+    "weights": {
+      "core": 0.23,
+      "tech": 0.16,
+      "anthem": 0.21,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Celtic melodies with punk energy; gang vocal choruses.",
+    "flowPlan": " Irish storytelling cadence with punk aggression.",
+    "rhymePlan": " Irish heritage; working-class struggles; celebration themes."
+  }
+  , {
+    "name": "Brass-Punk",
+    "tempo": " 140-170 bpm feel",
+    "styleTags": " horn sections, street-brass rock, punk energy, New Orleans influence, brass leads",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Brass Solo 8 a-' Hook 8",
+    "exclude": " minimal, ambient, lo-fi",
+    "sfx": " trumpet blast, trombone slide, brass section hit",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.17,
+      "anthem": 0.21,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Horn-driven punk hooks; brass-section led anthems.",
+    "flowPlan": " Energetic vocals competing with horn arrangements.",
+    "rhymePlan": " Street celebration; urban party themes; rebellion."
+  }
+  , {
+    "name": "Outlaw-Country",
+    "tempo": " 100-120 bpm feel",
+    "styleTags": " anti-Nashville, rugged storytelling, outlaw attitude, raw production, rebel spirit",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " pop-country, edm, trap",
+    "sfx": " slide guitar, whiskey pour, road noise",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.15,
+      "anthem": 0.18,
+      "style": 0.19,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Raw country hook; rebellious attitude; anti-establishment.",
+    "flowPlan": " Gruff storytelling vocals; lived-in authenticity.",
+    "rhymePlan": " Outlaw tales; rebellion; freedom; hard living stories."
+  }
+  , {
+    "name": "Alt-Country",
+    "tempo": " 110-130 bpm feel",
+    "styleTags": " country meets indie, alternative tone, twang with edge, lo-fi aesthetic",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " mainstream pop-country, edm, trap",
+    "sfx": " pedal steel bend, amp hum, tape hiss",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.16,
+      "anthem": 0.18,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Indie-influenced country hooks; melancholic melodies.",
+    "flowPlan": " Subdued vocal delivery; introspective storytelling.",
+    "rhymePlan": " Modern rural life; isolation; Americana themes."
+  }
+  , {
+    "name": "Grind-Grass",
+    "tempo": " 200-240 bpm feel",
+    "styleTags": " high-BPM bluegrass, punk ferocity, speed-grass, shred banjo, breakneck tempo",
+    "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Solo 8 a-' Hook 8",
+    "exclude": " ballad, ambient, lo-fi",
+    "sfx": " banjo shred, mandolin blitz, foot stomp",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.2,
+      "anthem": 0.16,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Rapid-fire bluegrass hooks at punk tempo.",
+    "flowPlan": " Fast vocal delivery matching instrumental speed.",
+    "rhymePlan": " Traditional bluegrass themes at breakneck pace."
+  }
+  , {
+    "name": "Gothic-Americana",
+    "tempo": " 80-100 bpm feel",
+    "styleTags": " dark, biblical, brooding Southern folk, haunting, murder ballad vibes",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Outro 8",
+    "exclude": " upbeat pop, edm, trap",
+    "sfx": " distant thunder, church bell, crow caw",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.16,
+      "anthem": 0.15,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Dark Southern Gothic hooks; haunting melodies.",
+    "flowPlan": " Deep, somber vocal delivery; biblical cadence.",
+    "rhymePlan": " Death, sin, redemption; Southern Gothic narratives."
+  }
+  , {
+    "name": "Diesel-Folk",
+    "tempo": " 90-110 bpm feel",
+    "styleTags": " truck-stop storytelling, mechanical grit, working-class folk, highway tales",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " pop, edm, r&b",
+    "sfx": " diesel engine, highway noise, truck horn",
+    "weights": {
+      "core": 0.25,
+      "tech": 0.15,
+      "anthem": 0.18,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Working-class anthems; trucker narratives.",
+    "flowPlan": " Road-worn vocal delivery; blue-collar storytelling.",
+    "rhymePlan": " Highway stories; labor themes; American road life."
+  }
+  , {
+    "name": "Appalachian Doom",
+    "tempo": " 60-80 bpm feel",
+    "styleTags": " slow, haunting mountain folk, doom overtones, dark drones, banjo doom",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 12",
+    "exclude": " upbeat, edm, pop",
+    "sfx": " mountain wind, distant banjo, ominous drone",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.18,
+      "anthem": 0.14,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Slow, haunting Appalachian melodies with doom weight.",
+    "flowPlan": " Somber, deep vocal delivery; mountain preacher cadence.",
+    "rhymePlan": " Mountain isolation; dark folklore; ancestral ghosts."
+  }
+  , {
+    "name": "Murder-Ballad Revival",
+    "tempo": " 80-100 bpm feel",
+    "styleTags": " narrative songs, death, crime, morality tales, traditional storytelling",
+    "structure": " Intro 4 a-' Verse 20 a-' Hook 8 a-' Verse 20 a-' Hook 8 a-' Outro 4",
+    "exclude": " pop, edm, trap",
+    "sfx": " acoustic strum, dramatic pause, ominous chord",
+    "weights": {
+      "core": 0.28,
+      "tech": 0.14,
+      "anthem": 0.16,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Narrative chorus summarizing the tragedy.",
+    "flowPlan": " Story-driven verses; clear narrative progression.",
+    "rhymePlan": " Murder, betrayal, revenge; moral consequence stories."
+  }
+  , {
+    "name": "Skiffle-Punk",
+    "tempo": " 150-180 bpm feel",
+    "styleTags": " British washboard-based, acoustic proto-punk, DIY instruments, jug band energy",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " edm, trap, polished production",
+    "sfx": " washboard scrape, jug blow, tea-chest bass thump",
+    "weights": {
+      "core": 0.23,
+      "tech": 0.15,
+      "anthem": 0.19,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Acoustic punk energy with washboard percussion.",
+    "flowPlan": " British working-class vocal style; DIY attitude.",
+    "rhymePlan": " British street culture; working-class rebellion."
+  }
+  , {
+    "name": "Hobo-Core",
+    "tempo": " 130-160 bpm feel",
+    "styleTags": " itinerant folk-punk, busker anthems, train-hopping tales, DIY spirit",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " pop, polished production, edm",
+    "sfx": " train whistle, harmonica wail, bottle percussion",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.15,
+      "anthem": 0.18,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Sing-along busker choruses; traveling anthems.",
+    "flowPlan": " Rambling storytelling; itinerant vocal style.",
+    "rhymePlan": " Train-hopping; drifter life; American wanderers."
+  }
+  , {
+    "name": "Swamp-Rock",
+    "tempo": " 100-120 bpm feel",
+    "styleTags": " southern mud-soaked rhythm, punk grit, swamp blues, gator rock",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Solo 8 a-' Hook 8",
+    "exclude": " clean pop, edm, polished production",
+    "sfx": " swamp ambience, slide guitar, muddy stomp",
+    "weights": {
+      "core": 0.25,
+      "tech": 0.16,
+      "anthem": 0.17,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Swampy blues rock hooks with punk attitude.",
+    "flowPlan": " Southern drawl with punk aggression; muddy delivery.",
+    "rhymePlan": " Bayou tales; Southern gothic; swamp life stories."
+  }
+  , {
+    "name": "Cloud-Rap",
+    "tempo": " 70-90 bpm feel",
+    "styleTags": " ethereal beats, reverb-drenched vocals, dreamy atmosphere, lo-fi aesthetic",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " aggressive trap, drill, hard rock",
+    "sfx": " reverb swell, dreamy pad, vinyl crackle",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.18,
+      "anthem": 0.16,
+      "style": 0.22,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Ethereal, reverb-soaked melodic hooks.",
+    "flowPlan": " Lazy, floating delivery; dreamy cadence.",
+    "rhymePlan": " Abstract, stream-of-consciousness; emotional vulnerability."
+  }
+  , {
+    "name": "Phonk (Memphis)",
+    "tempo": " 130-150 bpm feel",
+    "styleTags": " Memphis 90s samples, chopped screw, horror aesthetic, dark trap, lo-fi",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4",
+    "exclude": " pop, clean production, upbeat",
+    "sfx": " Memphis vocal sample, tape slow, horror stab",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.2,
+      "anthem": 0.15,
+      "style": 0.19,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Dark sampled hooks; Memphis underground vibes.",
+    "flowPlan": " Chopped and screwed delivery; Memphis flow style.",
+    "rhymePlan": " Dark street tales; horror imagery; underground themes."
+  }
+  , {
+    "name": "Trap-Metal",
+    "tempo": " 140-160 bpm feel",
+    "styleTags": " trap drums, screamed vocals, metal energy, distorted 808s, aggressive",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Breakdown 8 a-' Hook 8",
+    "exclude": " pop, r&b, ballad",
+    "sfx": " distorted 808, scream, metal crash",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.18,
+      "anthem": 0.18,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Screamed hooks over trap production; metal aggression.",
+    "flowPlan": " Alternate between rapped and screamed vocals.",
+    "rhymePlan": " Rage themes; aggressive content; cathartic violence."
+  }
+  , {
+    "name": "Hyper-Pop-Rap",
+    "tempo": " 140-180 bpm feel",
+    "styleTags": " distorted autotune, digital maximalism, glitchy, experimental, chaotic energy",
+    "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " traditional, acoustic, lo-fi",
+    "sfx": " glitch burst, autotune warp, digital noise",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.24,
+      "anthem": 0.18,
+      "style": 0.18,
+      "group": 0.1,
+      "perf": 0.1
+    },
+    "hookPlan": " Heavily autotuned, distorted, maximalist hooks.",
+    "flowPlan": " Rapid, glitchy delivery; digital vocal processing.",
+    "rhymePlan": " Internet culture; post-ironic; digital native themes."
+  }
+  , {
+    "name": "Lo-Fi Hip-Hop",
+    "tempo": " 80-95 bpm feel",
+    "styleTags": " dusty jazz samples, ambient beats, vinyl crackle, chill vibes, study beats",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " aggressive trap, metal, loud edm",
+    "sfx": " vinyl crackle, rain ambience, tape hiss",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.18,
+      "anthem": 0.14,
+      "style": 0.22,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Mellow instrumental or minimal vocal hooks.",
+    "flowPlan": " Laid-back, contemplative delivery; chill cadence.",
+    "rhymePlan": " Introspective themes; everyday observations; relaxed storytelling."
+  }
+  , {
+    "name": "PluggnB",
+    "tempo": " 140-150 bpm feel",
+    "styleTags": " melodic plug beats, R&B vocal cadences, smooth delivery, modern production",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " aggressive metal, punk, acoustic",
+    "sfx": " plug melody, snare roll, ambient pad",
+    "weights": {
+      "core": 0.23,
+      "tech": 0.19,
+      "anthem": 0.19,
+      "style": 0.17,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Melodic R&B-influenced hooks over plug production.",
+    "flowPlan": " Smooth, melodic flow; R&B cadence with rap influence.",
+    "rhymePlan": " Romantic themes; lifestyle; modern relationship dynamics."
+  }
+  , {
+    "name": "Drill Rage",
+    "tempo": " 140-160 bpm feel",
+    "styleTags": " aggressive 808s, glitch layers, distortion, intense energy, dark production",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4",
+    "exclude": " pop, ballad, ambient",
+    "sfx": " distorted 808, glitch stutter, rage scream",
+    "weights": {
+      "core": 0.25,
+      "tech": 0.21,
+      "anthem": 0.16,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Aggressive chanted hooks; rage energy.",
+    "flowPlan": " High-energy aggressive delivery; rage vocals.",
+    "rhymePlan": " Aggressive street content; confrontational themes."
+  }
+  , {
+    "name": "Boom-Bap Revival",
+    "tempo": " 86-96 bpm feel",
+    "styleTags": " analog-style MPC sampling, golden-era flow, dusty drums, vintage aesthetic",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4",
+    "exclude": " edm, hyperpop, modern trap",
+    "sfx": " vinyl scratch, sample chop, drum break",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.2,
+      "anthem": 0.14,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Classic boom-bap hooks; golden-era style.",
+    "flowPlan": " 90s influenced flow; traditional rap cadences.",
+    "rhymePlan": " Lyrical focus; wordplay; classic hip-hop themes."
+  }
+  , {
+    "name": "Horror-Core",
+    "tempo": " 90-110 bpm feel",
+    "styleTags": " horror-movie influence, macabre lyrics, dark production, sinister atmosphere",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " pop, upbeat, r&b",
+    "sfx": " horror sample, sinister laugh, creepy atmosphere",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.18,
+      "anthem": 0.15,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Dark, horror-themed hooks with sinister vibes.",
+    "flowPlan": " Theatrical, menacing delivery; horror narrator style.",
+    "rhymePlan": " Horror imagery; violence; dark psychological themes."
+  }
+  , {
+    "name": "Nerdcore",
+    "tempo": " 95-110 bpm feel",
+    "styleTags": " geek culture, hip-hop bars, gaming references, tech themes, nerdy wordplay",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 4",
+    "exclude": " gangsta rap, aggressive themes",
+    "sfx": " 8-bit blip, keyboard click, game sound",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.18,
+      "anthem": 0.16,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Geek culture reference hooks; nerdy catchphrases.",
+    "flowPlan": " Clever wordplay delivery; technical references.",
+    "rhymePlan": " Gaming, tech, sci-fi themes; intellectual wordplay."
+  }
+  , {
+    "name": "Industrial-Rap",
+    "tempo": " 120-140 bpm feel",
+    "styleTags": " metallic percussion, dystopian aesthetic, harsh textures, experimental, abrasive",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Breakdown 8 a-' Hook 8",
+    "exclude": " pop, r&b, clean production",
+    "sfx": " metal clang, industrial noise, distorted hit",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.22,
+      "anthem": 0.15,
+      "style": 0.19,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Abrasive, distorted hooks; industrial textures.",
+    "flowPlan": " Aggressive, unconventional delivery; experimental vocals.",
+    "rhymePlan": " Dystopian themes; system critique; abstract aggression."
+  }
+  , {
+    "name": "Country-Rap",
+    "tempo": " 95-110 bpm feel",
+    "styleTags": " southern rap, twang, slide guitar, country fusion, rural themes",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " pure urban trap, edm, metal",
+    "sfx": " slide guitar, truck engine, country twang",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.17,
+      "anthem": 0.19,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Country-influenced hooks with rap delivery.",
+    "flowPlan": " Southern drawl rap cadence; country inflection.",
+    "rhymePlan": " Rural lifestyle; country culture; southern pride."
+  }
+  , {
+    "name": "Blackened-Folk",
+    "tempo": " 90-120 bpm feel",
+    "styleTags": " black-metal atmospheres, folk melodies, acoustic darkness, pagan vibes",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " pop, edm, upbeat",
+    "sfx": " wind howl, acoustic tremolo, distant scream",
+    "weights": {
+      "core": 0.25,
+      "tech": 0.18,
+      "anthem": 0.14,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Dark folk melodies with atmospheric black metal influence.",
+    "flowPlan": " Haunting vocal delivery; pagan storytelling.",
+    "rhymePlan": " Pagan themes; nature worship; ancient darkness."
+  }
+  , {
+    "name": "Crust-Metal",
+    "tempo": " 160-180 bpm feel",
+    "styleTags": " metal instrumentation, punk political roots, D-beat, distortion, aggressive",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " pop, r&b, clean production",
+    "sfx": " distortion wall, D-beat blast, feedback",
+    "weights": {
+      "core": 0.27,
+      "tech": 0.19,
+      "anthem": 0.15,
+      "style": 0.17,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Political metal hooks; crust punk aggression.",
+    "flowPlan": " Shouted/screamed vocals; political messaging.",
+    "rhymePlan": " Anti-war; anti-capitalist; political protest themes."
+  }
+  , {
+    "name": "Sludge-Metal",
+    "tempo": " 60-90 bpm feel",
+    "styleTags": " slow, distorted, grimy tones, heavy, doom influence, feedback",
+    "structure": " Intro 8 a-' Verse 20 a-' Hook 8 a-' Verse 20 a-' Hook 8 a-' Outro 12",
+    "exclude": " pop, upbeat, clean",
+    "sfx": " feedback drone, sludge riff, heavy distortion",
+    "weights": {
+      "core": 0.28,
+      "tech": 0.18,
+      "anthem": 0.12,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Slow, crushing riff-based hooks; sludgy heaviness.",
+    "flowPlan": " Growled or shouted vocals; buried in distortion.",
+    "rhymePlan": " Nihilism; despair; heavy subject matter."
+  }
+  , {
+    "name": "Stoner-Doom",
+    "tempo": " 70-100 bpm feel",
+    "styleTags": " fuzzy riffs, psychedelic desert vibe, slow grooves, heavy tone",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Solo 16 a-' Outro 8",
+    "exclude": " pop, edm, fast punk",
+    "sfx": " fuzz tone, feedback, desert wind",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.17,
+      "anthem": 0.14,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Fuzzy, psychedelic riff hooks; stoner grooves.",
+    "flowPlan": " Drawled, hazy vocal delivery; laid-back heaviness.",
+    "rhymePlan": " Psychedelic themes; desert imagery; weed culture."
+  }
+  , {
+    "name": "Pirate-Metal",
+    "tempo": " 140-170 bpm feel",
+    "styleTags": " seafaring anthems, accordion, galloping drums, folk metal, nautical themes",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " r&b, trap, ambient",
+    "sfx": " accordion swell, ship bell, galloping drums",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.17,
+      "anthem": 0.21,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Pirate-themed anthemic hooks with accordion.",
+    "flowPlan": " Theatrical pirate vocal style; shanty influences.",
+    "rhymePlan": " Pirate adventures; sailing; rum and treasure tales."
+  }
+  , {
+    "name": "Nintendocore",
+    "tempo": " 160-200 bpm feel",
+    "styleTags": " chiptune meets hardcore, 8-bit synths, breakdowns, video game sounds",
+    "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Breakdown 8 a-' Hook 8",
+    "exclude": " acoustic, ambient, traditional",
+    "sfx": " 8-bit melody, game sound, power-up effect",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.22,
+      "anthem": 0.18,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " 8-bit melodies with hardcore breakdowns.",
+    "flowPlan": " Screamed vocals over video game soundscapes.",
+    "rhymePlan": " Gaming culture; nostalgia; digital themes."
+  }
+  , {
+    "name": "Cybergrind",
+    "tempo": " 200-300 bpm feel",
+    "styleTags": " glitchy, electronic grindcore, programmed drums, digital chaos",
+    "structure": " Blast 8 a-' Chaos 12 a-' Break 4 a-' Blast 12 a-' Outro 4",
+    "exclude": " pop, ballad, ambient",
+    "sfx": " glitch burst, programmed blast, digital scream",
+    "weights": {
+      "core": 0.26,
+      "tech": 0.24,
+      "anthem": 0.1,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " No traditional hooks; chaotic digital assault.",
+    "flowPlan": " Extreme screamed vocals; inhuman speed.",
+    "rhymePlan": " Abstract; technological horror; digital dystopia."
+  }
+  , {
+    "name": "Mathcore",
+    "tempo": " 150-220 bpm feel",
+    "styleTags": " dissonant, complex time signatures, chaotic, technical, avant-garde metal",
+    "structure": " Intro 5 a-' Section A 11 a-' Section B 13 a-' Section C 9 a-' Outro 7",
+    "exclude": " simple structures, pop, r&b",
+    "sfx": " dissonant chord, time shift, chaos burst",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.28,
+      "anthem": 0.12,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Complex, dissonant riff patterns; unconventional structures.",
+    "flowPlan": " Screamed vocals in unpredictable patterns.",
+    "rhymePlan": " Abstract; chaotic; stream-of-consciousness aggression."
+  }
+  , {
+    "name": "Folk-Metal",
+    "tempo": " 130-160 bpm feel",
+    "styleTags": " traditional instruments, mythic lyrics, pagan themes, metal power, folk melodies",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " r&b, trap, edm",
+    "sfx": " flute trill, folk drum, metal crash",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.17,
+      "anthem": 0.19,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Folk melodies with metal power; epic anthems.",
+    "flowPlan": " Clean or harsh vocals; mythic storytelling.",
+    "rhymePlan": " Pagan mythology; ancient battles; folklore."
+  }
+  , {
+    "name": "Punk-Jazz",
+    "tempo": " 140-180 bpm feel",
+    "styleTags": " brass bands gone rogue, chaotic jazz, punk energy, improvisation",
+    "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Solo 12 a-' Hook 8",
+    "exclude": " pop, trap, smooth jazz",
+    "sfx": " saxophone honk, brass chaos, punk crash",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.2,
+      "anthem": 0.17,
+      "style": 0.19,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Chaotic brass-led hooks; punk jazz fusion.",
+    "flowPlan": " Shouted vocals over jazz chaos; improvisational energy.",
+    "rhymePlan": " Urban chaos; street jazz; rebellious improvisation."
+  }
+  , {
+    "name": "Acid-Jazz",
+    "tempo": " 100-120 bpm feel",
+    "styleTags": " funk, soul, hip-hop sampling, groove-based, jazzy loops",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Solo 8 a-' Outro 8",
+    "exclude": " metal, punk, harsh sounds",
+    "sfx": " vinyl scratch, jazz sample, funk bass pop",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.18,
+      "anthem": 0.16,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Groovy funk-jazz hooks; smooth vocal lines.",
+    "flowPlan": " Smooth delivery; jazzy phrasing.",
+    "rhymePlan": " Urban cool; sophisticated themes; groove focus."
+  }
+  , {
+    "name": "Electro-Swing",
+    "tempo": " 120-130 bpm feel",
+    "styleTags": " vintage swing samples, EDM beats, brass samples, dance energy",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " metal, punk, ambient",
+    "sfx": " swing sample, brass hit, vintage scratch",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.2,
+      "anthem": 0.2,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Vintage swing melodies with modern beat drops.",
+    "flowPlan": " Vintage-style vocals or minimal; dance focus.",
+    "rhymePlan": " Retro themes; dance culture; vintage aesthetics."
+  }
+  , {
+    "name": "No-Wave Jazz",
+    "tempo": " 110-140 bpm feel",
+    "styleTags": " free-form, abrasive post-punk jazz, dissonant, experimental",
+    "structure": " Intro 6 a-' Section A 14 a-' Section B 12 a-' Section C 10 a-' Outro 8",
+    "exclude": " pop, commercial, traditional structures",
+    "sfx": " dissonant sax, feedback, chaotic percussion",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.22,
+      "anthem": 0.12,
+      "style": 0.24,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " No traditional hooks; free-form experimental passages.",
+    "flowPlan": " Spoken word or abstract vocals; avant-garde delivery.",
+    "rhymePlan": " Abstract; political; experimental narratives."
+  }
+  , {
+    "name": "Jazzcore",
+    "tempo": " 160-200 bpm feel",
+    "styleTags": " jazz-theory precision, hardcore punk speed, complex harmony, aggressive",
+    "structure": " Intro 4 a-' Verse 12 a-' Hook 8 a-' Verse 12 a-' Hook 8 a-' Solo 8 a-' Hook 8",
+    "exclude": " simple pop, trap, basic structures",
+    "sfx": " jazz chord stab, hardcore blast, complex fill",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.24,
+      "anthem": 0.16,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Complex jazz harmonies at hardcore speed.",
+    "flowPlan": " Aggressive vocals over technical jazz arrangements.",
+    "rhymePlan": " Intellectual themes; complex wordplay; technical focus."
+  }
+  , {
+    "name": "Downtempo Funk",
+    "tempo": " 80-95 bpm feel",
+    "styleTags": " lo-fi funk textures, ambient rhythm, chill grooves, laid-back",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " aggressive, metal, fast edm",
+    "sfx": " vinyl crackle, bass pluck, ambient pad",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.16,
+      "anthem": 0.15,
+      "style": 0.23,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Chill funk grooves; ambient vocal textures.",
+    "flowPlan": " Laid-back delivery; smooth funk cadence.",
+    "rhymePlan": " Relaxed themes; introspection; vibe focus."
+  }
+  , {
+    "name": "Witch-House",
+    "tempo": " 110-140 bpm feel",
+    "styleTags": " occult imagery, pitched-down vocals, trap beats, darkwave, gothic",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Outro 8",
+    "exclude": " upbeat pop, country, traditional",
+    "sfx": " occult sample, pitch-down effect, witch cackle",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.2,
+      "anthem": 0.15,
+      "style": 0.21,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Dark, pitched-down hooks; occult atmosphere.",
+    "flowPlan": " Slowed, heavily processed vocals; haunting delivery.",
+    "rhymePlan": " Occult themes; dark magic; gothic imagery."
+  }
+  , {
+    "name": "Vaporwave (Mallsoft)",
+    "tempo": " 80-100 bpm feel",
+    "styleTags": " nostalgia loops, mallsoft aesthetic, 80s corporate irony, slowed samples",
+    "structure": " Intro 8 a-' Loop A 16 a-' Loop B 16 a-' Loop A 16 a-' Outro 8",
+    "exclude": " aggressive, metal, punk",
+    "sfx": " elevator music, mall ambience, 80s synth",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.18,
+      "anthem": 0.12,
+      "style": 0.28,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Slowed corporate samples; nostalgic loops.",
+    "flowPlan": " Minimal or no vocals; instrumental aesthetic focus.",
+    "rhymePlan": " If vocals: 80s nostalgia; consumer culture; ironic commentary."
+  }
+  , {
+    "name": "Dark-Synth",
+    "tempo": " 120-140 bpm feel",
+    "styleTags": " cinematic 80s synths, dystopian tone, retrowave, dark atmosphere",
+    "structure": " Intro 8 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Outro 8",
+    "exclude": " upbeat pop, country, acoustic",
+    "sfx": " synth stab, dystopian drone, 80s drum hit",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.2,
+      "anthem": 0.16,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Dark cinematic synth hooks; retro-futuristic.",
+    "flowPlan": " Robotic or minimal vocals; cinematic delivery.",
+    "rhymePlan": " Cyberpunk themes; dystopian futures; neon noir."
+  }
+  , {
+    "name": "Breakcore",
+    "tempo": " 180-300 bpm feel",
+    "styleTags": " extreme BPM, glitch breakbeats, chaotic, digital hardcore, frenetic",
+    "structure": " Intro 4 a-' Chaos 12 a-' Break 4 a-' Chaos 16 a-' Outro 4",
+    "exclude": " ballad, ambient, slow",
+    "sfx": " glitch stutter, amen break chop, digital scream",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.26,
+      "anthem": 0.12,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Chaotic breakbeat patterns; no traditional hooks.",
+    "flowPlan": " Rapid or no vocals; speed and chaos focus.",
+    "rhymePlan": " Abstract or no lyrics; sonic chaos priority."
+  }
+  , {
+    "name": "Glitch-Hop",
+    "tempo": " 85-110 bpm feel",
+    "styleTags": " experimental hip-hop, cut-up digital textures, glitchy beats, abstract",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " traditional, acoustic, commercial pop",
+    "sfx": " glitch stutter, digital chop, abstract noise",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.22,
+      "anthem": 0.15,
+      "style": 0.19,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Glitchy, experimental hooks with hip-hop foundation.",
+    "flowPlan": " Abstract or chopped vocal delivery; experimental cadence.",
+    "rhymePlan": " Abstract; digital culture; experimental narratives."
+  }
+  , {
+    "name": "Drill-and-Bass",
+    "tempo": " 160-190 bpm feel",
+    "styleTags": " chaotic IDM, jungle beats, drill influence, drum programming, experimental",
+    "structure": " Intro 4 a-' Build 8 a-' Drop 16 a-' Break 4 a-' Drop 16 a-' Outro 4",
+    "exclude": " simple structures, ballad, acoustic",
+    "sfx": " complex drum fill, bass wobble, IDM glitch",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.26,
+      "anthem": 0.14,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Complex drum patterns; minimal traditional hooks.",
+    "flowPlan": " Minimal or no vocals; drum programming focus.",
+    "rhymePlan": " If vocals: abstract; rhythm-focused; experimental."
+  }
+  , {
+    "name": "Dungeon-Synth",
+    "tempo": " 80-110 bpm feel",
+    "styleTags": " lo-fi medieval ambient, RPG-inspired, fantasy, synth textures, atmospheric",
+    "structure": " Intro 8 a-' Theme A 16 a-' Theme B 16 a-' Theme A 16 a-' Outro 8",
+    "exclude": " aggressive, modern trap, punk",
+    "sfx": " medieval drone, dungeon echo, fantasy ambience",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.18,
+      "anthem": 0.12,
+      "style": 0.26,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Medieval synth melodies; fantasy atmosphere.",
+    "flowPlan": " Instrumental or minimal chanting; atmospheric focus.",
+    "rhymePlan": " If vocals: fantasy themes; medieval narratives; RPG imagery."
+  }
+  , {
+    "name": "Noise-Pop",
+    "tempo": " 120-140 bpm feel",
+    "styleTags": " melody buried in feedback, shoegaze meets pop, distorted beauty",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " clean pop, r&b, trap",
+    "sfx": " feedback swell, distorted melody, noise burst",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.18,
+      "anthem": 0.16,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Pop melodies buried in distortion and feedback.",
+    "flowPlan": " Dreamy vocals through layers of noise; shoegaze delivery.",
+    "rhymePlan": " Introspective pop themes; emotional vulnerability; abstract."
+  }
+  , {
+    "name": "Chip-Tune",
+    "tempo": " 130-160 bpm feel",
+    "styleTags": " 8-bit video-game sounds, pop form, retro gaming aesthetic, synth leads",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " acoustic, traditional, organic",
+    "sfx": " 8-bit melody, game sound, power-up blip",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.2,
+      "anthem": 0.18,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " 8-bit melodic hooks; video game aesthetics.",
+    "flowPlan": " Pop vocal delivery or instrumental; gaming energy.",
+    "rhymePlan": " Gaming culture; nostalgia; digital themes."
+  }
+  , {
+    "name": "AI-Pop",
+    "tempo": " 110-130 bpm feel",
+    "styleTags": " machine-generated pop, synthetic soul, algorithmic composition, artificial emotion",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " organic, traditional, acoustic",
+    "sfx": " digital glitch, synthetic voice, AI processing",
+    "weights": {
+      "core": 0.2,
+      "tech": 0.24,
+      "anthem": 0.18,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Algorithmically-perfect pop hooks; synthetic emotion.",
+    "flowPlan": " Robotic or heavily processed vocals; artificial delivery.",
+    "rhymePlan": " AI themes; digital existence; post-human emotions."
+  }
+  , {
+    "name": "Balkan-Brass",
+    "tempo": " 120-150 bpm feel",
+    "styleTags": " high-energy Eastern European, folk pop, brass section, turbo-folk, festive",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " minimal, ambient, lo-fi",
+    "sfx": " brass blast, accordion, folk percussion",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.16,
+      "anthem": 0.22,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " High-energy brass-led folk hooks; celebratory energy.",
+    "flowPlan": " Eastern European vocal style; passionate delivery.",
+    "rhymePlan": " Celebration themes; cultural pride; party narratives."
+  }
+  , {
+    "name": "Afro-Punk",
+    "tempo": " 140-160 bpm feel",
+    "styleTags": " punk rock, alt rock, African rhythms, Black cultural themes, rebellious",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " traditional country, polished pop, edm",
+    "sfx": " African drum, punk guitar, cultural percussion",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.17,
+      "anthem": 0.19,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Punk hooks with African rhythmic influence.",
+    "flowPlan": " Punk vocal delivery with African cultural themes.",
+    "rhymePlan": " Black identity; cultural rebellion; African diaspora themes."
+  }
+  , {
+    "name": "Latin-Trap Industrial",
+    "tempo": " 90-110 bpm feel",
+    "styleTags": " heavy reggaeton, digital metal, industrial textures, Spanish lyrics, harsh",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " acoustic, soft pop, traditional",
+    "sfx": " industrial clang, dembow beat, metallic hit",
+    "weights": {
+      "core": 0.24,
+      "tech": 0.2,
+      "anthem": 0.18,
+      "style": 0.16,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Reggaeton hooks with industrial metal textures.",
+    "flowPlan": " Spanish rap delivery over harsh industrial beats.",
+    "rhymePlan": " Street themes; urban Latin culture; aggressive content."
+  }
+  , {
+    "name": "Cumbia-Punk",
+    "tempo": " 140-160 bpm feel",
+    "styleTags": " Colombian cumbia rhythm, punk guitar, accordion, rebellious fusion",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 4 a-' Hook 8",
+    "exclude": " edm, metal, polished pop",
+    "sfx": " accordion burst, cumbia percussion, punk guitar",
+    "weights": {
+      "core": 0.23,
+      "tech": 0.16,
+      "anthem": 0.2,
+      "style": 0.19,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Cumbia rhythms with punk energy and attitude.",
+    "flowPlan": " Latin punk vocal delivery; cumbia groove influence.",
+    "rhymePlan": " Latin American culture; rebellion; party themes."
+  }
+  , {
+    "name": "Klezmer-Core",
+    "tempo": " 150-180 bpm feel",
+    "styleTags": " Jewish folk instrumentation, punk blend, clarinet, festive chaos",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " trap, edm, minimal",
+    "sfx": " clarinet trill, folk percussion, Jewish traditional",
+    "weights": {
+      "core": 0.22,
+      "tech": 0.16,
+      "anthem": 0.2,
+      "style": 0.2,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Klezmer melodies with punk energy; cultural fusion.",
+    "flowPlan": " Jewish folk vocal style with punk attitude.",
+    "rhymePlan": " Jewish culture; heritage; celebratory rebellion."
+  }
+  , {
+    "name": "Ska-Core",
+    "tempo": " 160-190 bpm feel",
+    "styleTags": " ska horns, hardcore guitars, upstroke rhythm, brass punk fusion",
+    "structure": " Intro 4 a-' Verse 16 a-' Hook 8 a-' Verse 16 a-' Hook 8 a-' Bridge 8 a-' Hook 8",
+    "exclude": " ballad, ambient, lo-fi",
+    "sfx": " horn section hit, upstroke guitar, ska beat",
+    "weights": {
+      "core": 0.23,
+      "tech": 0.17,
+      "anthem": 0.2,
+      "style": 0.18,
+      "group": 0.12,
+      "perf": 0.1
+    },
+    "hookPlan": " Ska horn hooks with hardcore aggression.",
+    "flowPlan": " Energetic ska vocals with punk edge.",
+    "rhymePlan": " Unity themes; ska culture; political punk messages."
+  }
 ];
 
 // Ensure every genre has a category for grouping in UI
 const __GENRE_CATEGORY_LOOKUP = {
   'Street Rap': 'Hip-Hop / Rap','Drill': 'Hip-Hop / Rap','Boom Bap': 'Hip-Hop / Rap','Club Rap': 'Hip-Hop / Rap','Trap Pop': 'Hip-Hop / Rap',
   'Emo Rap': 'Hip-Hop / Rap','Jazz-Hop': 'Hip-Hop / Rap','Grime': 'Hip-Hop / Rap','Phonk': 'Hip-Hop / Rap','Trap Soul': 'Hip-Hop / Rap',
+  'Cloud-Rap': 'Hip-Hop / Rap','Phonk (Memphis)': 'Hip-Hop / Rap','Trap-Metal': 'Hip-Hop / Rap','Hyper-Pop-Rap': 'Hip-Hop / Rap','Lo-Fi Hip-Hop': 'Hip-Hop / Rap',
+  'PluggnB': 'Hip-Hop / Rap','Drill Rage': 'Hip-Hop / Rap','Boom-Bap Revival': 'Hip-Hop / Rap','Horror-Core': 'Hip-Hop / Rap','Nerdcore': 'Hip-Hop / Rap',
+  'Industrial-Rap': 'Hip-Hop / Rap','Country-Rap': 'Hip-Hop / Rap',
   'Pop': 'Pop','Indie Pop': 'Pop','K-Pop': 'Pop','J-Pop': 'Pop','Synth Pop': 'Pop','Ambient Pop': 'Pop','Eurodance': 'Pop','Cinematic Pop': 'Pop','Synthwave': 'Pop','Vaporwave': 'Pop','Hyperpop': 'Pop',
   'Rock': 'Rock','Alt Rock': 'Rock','Pop Punk': 'Rock','Metal': 'Rock','Metalcore': 'Rock','Shoegaze': 'Rock',
+  'Trash-Grass': 'Rock / Punk / Alternative','Crust-Punk': 'Rock / Punk / Alternative','Cow-Punk': 'Rock / Punk / Alternative','Gutter-Rock': 'Rock / Punk / Alternative',
+  'Noise-Rock': 'Rock / Punk / Alternative','Math-Rock': 'Rock / Punk / Alternative','Post-Hardcore': 'Rock / Punk / Alternative','Emoviolence': 'Rock / Punk / Alternative',
+  'Gypsy-Punk': 'Rock / Punk / Alternative','Pirate-Punk': 'Rock / Punk / Alternative','Anarcho-Punk': 'Rock / Punk / Alternative','Celtic-Punk': 'Rock / Punk / Alternative','Brass-Punk': 'Rock / Punk / Alternative',
+  'Blackened-Folk': 'Metal / Hardcore','Crust-Metal': 'Metal / Hardcore','Sludge-Metal': 'Metal / Hardcore','Stoner-Doom': 'Metal / Hardcore',
+  'Pirate-Metal': 'Metal / Hardcore','Nintendocore': 'Metal / Hardcore','Cybergrind': 'Metal / Hardcore','Mathcore': 'Metal / Hardcore','Folk-Metal': 'Metal / Hardcore',
   'R&B': 'R&B / Soul','Alt R&B': 'R&B / Soul','Neo-Soul': 'R&B / Soul','Classic Soul': 'R&B / Soul','Gospel Choir': 'R&B / Soul','Gospel Trap': 'R&B / Soul','Disco': 'R&B / Soul','Blues': 'R&B / Soul','Funk': 'R&B / Soul',
   'House': 'Electronic / Dance','Deep House': 'Electronic / Dance','Afro House': 'Electronic / Dance','Tech House': 'Electronic / Dance','Techno (Peak Time)': 'Electronic / Dance','Minimal Techno': 'Electronic / Dance',
   'Progressive Trance': 'Electronic / Dance','Hard Trance': 'Electronic / Dance','EDM (Big Room)': 'Electronic / Dance','Future Bass': 'Electronic / Dance','DnB': 'Electronic / Dance','Liquid DnB': 'Electronic / Dance',
   'Neurofunk': 'Electronic / Dance','Dubstep': 'Electronic / Dance','Drumstep': 'Electronic / Dance','Breakbeat': 'Electronic / Dance','Jersey Club': 'Electronic / Dance','UK Garage': 'Electronic / Dance','UK Funky': 'Electronic / Dance',
   'Future Garage': 'Electronic / Dance','Footwork': 'Electronic / Dance','Juke': 'Electronic / Dance','Jungle': 'Electronic / Dance','Lo-fi Chillhop': 'Electronic / Dance','Hardstyle': 'Electronic / Dance',
+  'Witch-House': 'Electronic / Experimental','Vaporwave (Mallsoft)': 'Electronic / Experimental','Dark-Synth': 'Electronic / Experimental','Breakcore': 'Electronic / Experimental',
+  'Glitch-Hop': 'Electronic / Experimental','Drill-and-Bass': 'Electronic / Experimental','Dungeon-Synth': 'Electronic / Experimental','Noise-Pop': 'Electronic / Experimental',
+  'Chip-Tune': 'Electronic / Experimental','AI-Pop': 'Electronic / Experimental',
   'Reggaeton': 'Latin / Caribbean','Latin Pop': 'Latin / Caribbean','Bachata': 'Latin / Caribbean','Salsa': 'Latin / Caribbean','Cumbia': 'Latin / Caribbean','Dancehall': 'Latin / Caribbean','Reggae': 'Latin / Caribbean','Moombahton': 'Latin / Caribbean','Baile Funk': 'Latin / Caribbean',
   'Afrobeats': 'African','Alte (Afrobeats)': 'African','Gqom': 'African','Amapiano': 'African',
   'Country': 'Country / Folk','Hickhop': 'Country / Folk','Bluegrass': 'Country / Folk','Folk': 'Country / Folk',
-  'Bossa Nova': 'Jazz / World',
+  'Outlaw-Country': 'Country / Folk / Americana','Alt-Country': 'Country / Folk / Americana','Grind-Grass': 'Country / Folk / Americana','Gothic-Americana': 'Country / Folk / Americana',
+  'Diesel-Folk': 'Country / Folk / Americana','Appalachian Doom': 'Country / Folk / Americana','Murder-Ballad Revival': 'Country / Folk / Americana','Skiffle-Punk': 'Country / Folk / Americana',
+  'Hobo-Core': 'Country / Folk / Americana','Swamp-Rock': 'Country / Folk / Americana',
+  'Bossa Nova': 'Jazz / World','Punk-Jazz': 'Jazz / Blues / Funk','Acid-Jazz': 'Jazz / Blues / Funk','Electro-Swing': 'Jazz / Blues / Funk',
+  'No-Wave Jazz': 'Jazz / Blues / Funk','Jazzcore': 'Jazz / Blues / Funk','Downtempo Funk': 'Jazz / Blues / Funk',
+  'Balkan-Brass': 'World / Crosscultural','Afro-Punk': 'World / Crosscultural','Latin-Trap Industrial': 'World / Crosscultural','Cumbia-Punk': 'World / Crosscultural',
+  'Klezmer-Core': 'World / Crosscultural','Ska-Core': 'World / Crosscultural',
   'Bass Culture': 'Bass / SPL','Car Bass': 'Bass / SPL','Competition Bass': 'Bass / SPL','Bass Test': 'Bass / SPL'
 };
 try {
