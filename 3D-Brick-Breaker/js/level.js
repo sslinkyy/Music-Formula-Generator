@@ -42,9 +42,14 @@ const LevelManager = {
                 for (let col = 0; col < bricksPerRow; col++) {
                     const x = startX + col * 2.2;  // Tighter spacing
 
-                    // Add power-up brick occasionally
+                    // Determine brick type with priorities
                     let type = types[typeIndex];
-                    if (Math.random() < 0.15) {  // More powerups
+                    const roll = Math.random();
+
+                    if (roll < 0.08 && level > 1) {  // 8% obstacle bricks (after level 1)
+                        const obstacles = ['warp', 'reverse', 'crazy', 'unbreakable'];
+                        type = obstacles[Math.floor(Math.random() * obstacles.length)];
+                    } else if (roll < 0.20) {  // 12% powerups
                         type = 'powerup';
                     }
 
@@ -74,7 +79,12 @@ const LevelManager = {
                     const x = startX + col * 3.3;  // Wider spacing
 
                     let brickType = type;
-                    if (Math.random() < 0.12) {
+                    const roll = Math.random();
+
+                    if (roll < 0.08 && level > 1) {  // 8% obstacle bricks
+                        const obstacles = ['warp', 'reverse', 'crazy', 'unbreakable'];
+                        brickType = obstacles[Math.floor(Math.random() * obstacles.length)];
+                    } else if (roll < 0.20) {  // 12% powerups
                         brickType = 'powerup';
                     }
 
@@ -110,8 +120,14 @@ const LevelManager = {
                     let brickType = type;
                     if (row === centerRow && col === Math.floor(bricksInRow / 2)) {
                         brickType = 'explosive';
-                    } else if (Math.random() < 0.1) {
-                        brickType = 'powerup';
+                    } else {
+                        const roll = Math.random();
+                        if (roll < 0.08 && level > 1) {  // 8% obstacle bricks
+                            const obstacles = ['warp', 'reverse', 'crazy', 'unbreakable'];
+                            brickType = obstacles[Math.floor(Math.random() * obstacles.length)];
+                        } else if (roll < 0.18) {  // 10% powerups
+                            brickType = 'powerup';
+                        }
                     }
 
                     bricks.push({ x, y, z: -1, type: brickType });  // Same Z as paddle
