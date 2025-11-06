@@ -38,6 +38,12 @@ class Game {
         this.controlsReversed = false;
         this.reverseEffectTimer = 0;
 
+        // Powerup effects
+        this.hasShield = false;
+        this.shieldHits = 0;
+        this.shieldMesh = null;
+        this.hasMagnet = false;
+
         // Game objects
         this.paddle = null;
         this.balls = [];
@@ -696,6 +702,45 @@ class Game {
     }
 
     loseLife() {
+        // Check if shield can absorb the hit
+        if (this.hasShield && this.shieldHits > 0) {
+            this.shieldHits--;
+
+            // Show shield block effect
+            if (this.shieldMesh) {
+                this.shieldMesh.material.opacity = 0.6;
+                setTimeout(() => {
+                    if (this.shieldMesh) {
+                        this.shieldMesh.material.opacity = 0.2;
+                    }
+                }, 200);
+            }
+
+            // If shield is depleted, remove it
+            if (this.shieldHits <= 0) {
+                this.hasShield = false;
+                if (this.shieldMesh) {
+                    this.shieldMesh.visible = false;
+                }
+                if (this.shieldTimeout) {
+                    clearTimeout(this.shieldTimeout);
+                }
+            }
+
+            AudioManager.play('powerup'); // Shield block sound
+
+            // Reset ball without losing life
+            setTimeout(() => {
+                const ball = new Ball(this.scene, 0, -8, 2);
+                DifficultyManager.applyToBall(ball, this.level);
+                ball.attachToPaddle(this.paddle);
+                this.balls.push(ball);
+            }, 1000);
+
+            return; // Don't lose a life
+        }
+
+        // No shield - lose a life
         this.lives--;
         this.updateLives();
         this.resetCombo();
@@ -791,6 +836,16 @@ class Game {
                 this.particles.splice(index, 1);
             }
         });
+
+        // Update shield visual
+        if (this.shieldMesh && this.hasShield) {
+            // Pulse animation
+            const pulse = Math.sin(Date.now() * 0.003) * 0.1 + 0.2;
+            this.shieldMesh.material.opacity = pulse;
+
+            // Rotate shield
+            this.shieldMesh.rotation.y += deltaTime * 0.5;
+        }
 
         // Update obstacle effect timers
         if (this.reverseEffectTimer > 0) {

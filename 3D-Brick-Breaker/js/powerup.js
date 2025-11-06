@@ -1,84 +1,97 @@
 const PowerUpManager = {
     types: {
-        // Music Generation Powerups
+        // Music Generation Powerups (55% total)
         GENRE: {
             id: 'genre',
             name: 'Genre',
             color: 0xff00ff,
-            chance: 0.20,
+            chance: 0.18,
             category: 'music'
         },
         STYLE_TAG: {
             id: 'style-tag',
             name: 'Style Tag',
             color: 0x00ffff,
-            chance: 0.20,
+            chance: 0.15,
             category: 'music'
         },
         KEYWORD: {
             id: 'keyword',
             name: 'Keyword',
             color: 0xffff00,
-            chance: 0.15,
+            chance: 0.10,
             category: 'music'
         },
         PREMISE: {
             id: 'premise',
             name: 'Premise',
             color: 0xff8800,
-            chance: 0.10,
+            chance: 0.07,
             category: 'music'
         },
         LANGUAGE: {
             id: 'language',
             name: 'Language',
             color: 0x00ff88,
-            chance: 0.05,
+            chance: 0.03,
             category: 'music'
         },
         ACCENT: {
             id: 'accent',
             name: 'Accent',
             color: 0x88ff00,
-            chance: 0.05,
-            category: 'music'
-        },
-        FORBIDDEN: {
-            id: 'forbidden',
-            name: 'Forbidden Word',
-            color: 0xff0000,
-            chance: 0.05,
+            chance: 0.02,
             category: 'music'
         },
 
-        // Gameplay Powerups
+        // Gameplay Powerups (45% total) - AMAZING!
         MULTI_BALL: {
             id: 'multi-ball',
-            name: 'Multi-Ball',
+            name: 'Multi-Ball x3',
             color: 0xff6b6b,
-            chance: 0.08,
-            category: 'gameplay'
+            chance: 0.10,
+            category: 'gameplay',
+            duration: 0
         },
-        EXPAND_PADDLE: {
-            id: 'expand-paddle',
-            name: 'Expand Paddle',
+        MEGA_PADDLE: {
+            id: 'mega-paddle',
+            name: 'Mega Paddle',
             color: 0x4ecdc4,
-            chance: 0.07,
-            category: 'gameplay'
+            chance: 0.10,
+            category: 'gameplay',
+            duration: 12
+        },
+        SHIELD: {
+            id: 'shield',
+            name: 'Shield',
+            color: 0x00ddff,
+            chance: 0.08,
+            category: 'gameplay',
+            duration: 15
+        },
+        TIME_SLOW: {
+            id: 'time-slow',
+            name: 'Time Slow',
+            color: 0xaa44ff,
+            chance: 0.08,
+            category: 'gameplay',
+            duration: 10
+        },
+        MAGNET: {
+            id: 'magnet',
+            name: 'Magnet',
+            color: 0xff44aa,
+            chance: 0.05,
+            category: 'gameplay',
+            duration: 12
         },
         LASER: {
             id: 'laser',
             name: 'Laser',
             color: 0xffe66d,
-            chance: 0.03,
-            category: 'gameplay'
-        },
-        SLOW_BALL: {
-            id: 'slow-ball',
-            name: 'Slow Ball',
-            color: 0x95e1d3,
-            chance: 0.02,
-            category: 'gameplay'
+            chance: 0.04,
+            category: 'gameplay',
+            duration: 8
         }
     },
 
@@ -231,8 +244,25 @@ class PowerUp {
     update(deltaTime) {
         if (this.collected) return;
 
+        // Magnet effect - pull towards paddle
+        if (window.game && window.game.hasMagnet && window.game.paddle) {
+            const paddle = window.game.paddle;
+            const dx = paddle.position.x - this.position.x;
+            const dy = paddle.position.y - this.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 0.5) {
+                // Accelerate towards paddle
+                const magnetStrength = 15;
+                this.velocity.x = (dx / distance) * magnetStrength;
+                this.velocity.y = (dy / distance) * magnetStrength;
+            }
+        }
+
         // Update position
+        this.position.x += this.velocity.x * deltaTime;
         this.position.y += this.velocity.y * deltaTime;
+        this.mesh.position.x = this.position.x;
         this.mesh.position.y = this.position.y;
 
         // Rotate
@@ -297,26 +327,35 @@ class PowerUp {
             case 'multi-ball':
                 this.activateMultiBall(game);
                 break;
-            case 'expand-paddle':
-                game.paddle.expandPaddle(10);
+            case 'mega-paddle':
+                this.activateMegaPaddle(game);
+                break;
+            case 'shield':
+                this.activateShield(game);
+                break;
+            case 'time-slow':
+                this.activateTimeSlow(game);
+                break;
+            case 'magnet':
+                this.activateMagnet(game);
                 break;
             case 'laser':
-                game.paddle.activateLaser(8);
-                break;
-            case 'slow-ball':
-                game.balls.forEach(ball => ball.slowDown(8));
+                game.paddle.activateLaser(this.type.duration);
                 break;
         }
     }
 
     activateMultiBall(game) {
-        // Create two additional balls
+        // Create THREE additional balls (x3 multi-ball!)
         const originalBalls = [...game.balls];
 
         originalBalls.forEach(originalBall => {
             if (originalBall.attached) return;
 
-            for (let i = 0; i < 2; i++) {
+            // Spawn 3 new balls at different angles
+            const angles = [-40, 0, 40]; // Degrees
+
+            for (let i = 0; i < 3; i++) {
                 const ball = new Ball(
                     this.scene,
                     originalBall.position.x,
@@ -330,7 +369,7 @@ class PowerUp {
                 }
 
                 // Set velocity at different angles
-                const angle = (i === 0 ? -30 : 30) * Math.PI / 180;
+                const angle = angles[i] * Math.PI / 180;
                 const speed = originalBall.speed;
 
                 ball.velocity.x = Math.sin(angle) * speed;
@@ -342,6 +381,199 @@ class PowerUp {
                 game.balls.push(ball);
             }
         });
+    }
+
+    activateMegaPaddle(game) {
+        if (!game.paddle) return;
+
+        const paddle = game.paddle;
+        const duration = this.type.duration;
+
+        // Clear any existing paddle timer
+        if (paddle.megaPaddleTimeout) {
+            clearTimeout(paddle.megaPaddleTimeout);
+        }
+
+        // Animate to 3x size
+        paddle.isMegaPaddle = true;
+        const targetWidth = paddle.baseWidth * 3;
+        const startWidth = paddle.width;
+
+        // Smooth grow animation
+        let progress = 0;
+        const growInterval = setInterval(() => {
+            progress += 0.05;
+            if (progress >= 1) {
+                progress = 1;
+                clearInterval(growInterval);
+            }
+
+            paddle.width = startWidth + (targetWidth - startWidth) * progress;
+
+            // Update geometry
+            if (paddle.paddleMesh && paddle.paddleMesh.geometry) {
+                paddle.paddleMesh.geometry.dispose();
+                paddle.paddleMesh.geometry = new THREE.BoxGeometry(paddle.width, paddle.height, paddle.depth);
+            }
+
+            // Update glow
+            if (paddle.glowMesh && paddle.glowMesh.geometry) {
+                paddle.glowMesh.geometry.dispose();
+                paddle.glowMesh.geometry = new THREE.PlaneGeometry(paddle.width + 1, paddle.depth + 1);
+            }
+
+            // Change color to cyan
+            if (paddle.paddleMesh && paddle.paddleMesh.material) {
+                paddle.paddleMesh.material.color.setHex(0x4ecdc4);
+                paddle.paddleMesh.material.emissive.setHex(0x4ecdc4);
+            }
+        }, 16);
+
+        // Revert after duration
+        paddle.megaPaddleTimeout = setTimeout(() => {
+            paddle.isMegaPaddle = false;
+
+            // Smooth shrink animation
+            const currentWidth = paddle.width;
+            const targetWidth = paddle.baseWidth;
+            let progress = 0;
+
+            const shrinkInterval = setInterval(() => {
+                progress += 0.05;
+                if (progress >= 1) {
+                    progress = 1;
+                    clearInterval(shrinkInterval);
+                }
+
+                paddle.width = currentWidth + (targetWidth - currentWidth) * progress;
+
+                if (paddle.paddleMesh && paddle.paddleMesh.geometry) {
+                    paddle.paddleMesh.geometry.dispose();
+                    paddle.paddleMesh.geometry = new THREE.BoxGeometry(paddle.width, paddle.height, paddle.depth);
+                }
+
+                if (paddle.glowMesh && paddle.glowMesh.geometry) {
+                    paddle.glowMesh.geometry.dispose();
+                    paddle.glowMesh.geometry = new THREE.PlaneGeometry(paddle.width + 1, paddle.depth + 1);
+                }
+
+                // Restore original color
+                if (paddle.paddleMesh && paddle.paddleMesh.material && !paddle.hasLaser) {
+                    paddle.paddleMesh.material.color.setHex(0x00ff88);
+                    paddle.paddleMesh.material.emissive.setHex(0x00ff88);
+                }
+            }, 16);
+        }, duration * 1000);
+    }
+
+    activateShield(game) {
+        if (!game.paddle) return;
+
+        const duration = this.type.duration;
+
+        // Activate shield
+        game.hasShield = true;
+        game.shieldHits = 1; // One free miss
+
+        // Create shield visual
+        if (!game.shieldMesh) {
+            const shieldGeometry = new THREE.SphereGeometry(8, 32, 32);
+            const shieldMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ddff,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.BackSide,
+                wireframe: true
+            });
+
+            game.shieldMesh = new THREE.Mesh(shieldGeometry, shieldMaterial);
+            game.shieldMesh.position.set(0, 0, -1);
+            game.scene.add(game.shieldMesh);
+        }
+
+        // Shield pulse animation
+        game.shieldMesh.visible = true;
+
+        // Remove after duration or when hit
+        if (game.shieldTimeout) clearTimeout(game.shieldTimeout);
+
+        game.shieldTimeout = setTimeout(() => {
+            game.hasShield = false;
+            game.shieldHits = 0;
+            if (game.shieldMesh) {
+                game.shieldMesh.visible = false;
+            }
+        }, duration * 1000);
+    }
+
+    activateTimeSlow(game) {
+        const duration = this.type.duration;
+
+        // Slow down time to 50%
+        game.timeScale = 0.5;
+
+        // Add purple tint overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'time-slow-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(170, 68, 255, 0.15)';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '900';
+        overlay.style.transition = 'opacity 0.5s';
+        overlay.style.opacity = '0';
+
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 50);
+
+        // Revert after duration
+        if (game.timeSlowTimeout) clearTimeout(game.timeSlowTimeout);
+
+        game.timeSlowTimeout = setTimeout(() => {
+            game.timeScale = 1.0;
+
+            // Fade out overlay
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    document.body.removeChild(overlay);
+                }
+            }, 500);
+        }, duration * 1000);
+    }
+
+    activateMagnet(game) {
+        const duration = this.type.duration;
+
+        // Activate magnet
+        game.hasMagnet = true;
+
+        // Change paddle color to pink
+        if (game.paddle && game.paddle.paddleMesh && game.paddle.paddleMesh.material) {
+            game.paddle.paddleMesh.material.color.setHex(0xff44aa);
+            game.paddle.paddleMesh.material.emissive.setHex(0xff44aa);
+        }
+
+        // Revert after duration
+        if (game.magnetTimeout) clearTimeout(game.magnetTimeout);
+
+        game.magnetTimeout = setTimeout(() => {
+            game.hasMagnet = false;
+
+            // Restore paddle color
+            if (game.paddle && game.paddle.paddleMesh && game.paddle.paddleMesh.material) {
+                if (!game.paddle.isMegaPaddle && !game.paddle.hasLaser) {
+                    game.paddle.paddleMesh.material.color.setHex(0x00ff88);
+                    game.paddle.paddleMesh.material.emissive.setHex(0x00ff88);
+                }
+            }
+        }, duration * 1000);
     }
 
     showNotification() {
