@@ -3,10 +3,10 @@ class Ball {
         this.scene = scene;
         this.position = { x, y, z };
         this.velocity = { x: 0, y: 0, z: 0 };
-        this.radius = 0.6;  // Increased for better visibility
-        this.speed = 15;
-        this.baseSpeed = 15;
-        this.maxSpeed = 30;
+        this.radius = 1.0;  // 10% larger (0.9 * 1.1 ≈ 1.0)
+        this.speed = 20;  // 10% faster (18 * 1.1 ≈ 20)
+        this.baseSpeed = 20;
+        this.maxSpeed = 40;  // 10% faster (36 * 1.1 ≈ 40)
 
         this.attached = false;
         this.attachedPaddle = null;
@@ -146,7 +146,7 @@ class Ball {
     }
 
     checkWallCollisions() {
-        const bounds = 16; // Game boundary (expanded)
+        const bounds = 52.8; // Game boundary (10% larger: 48 * 1.1)
 
         // Left wall
         if (this.position.x - this.radius < -bounds) {
@@ -169,9 +169,9 @@ class Ball {
             this.onWallHit();
         }
 
-        // Top boundary (ceiling)
-        if (this.position.y + this.radius > 22) {
-            this.position.y = 22 - this.radius;
+        // Top boundary (ceiling) - expanded for taller play area
+        if (this.position.y + this.radius > 71.5) {  // 10% larger (65 * 1.1)
+            this.position.y = 71.5 - this.radius;
             this.velocity.y = -Math.abs(this.velocity.y);
             this.onWallHit();
         }

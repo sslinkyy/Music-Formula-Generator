@@ -1,10 +1,10 @@
 class Brick {
     constructor(scene, x, y, z, type = 'normal') {
         this.scene = scene;
-        this.position = { x, y, z };
-        this.width = 2;  // Smaller for more bricks
-        this.height = 0.8;
-        this.depth = 2;
+        this.position = { x: x * 3.3, y: (y * 1.65) + 16.5, z };  // 10% larger scaling (3x->3.3x, 1.5x->1.65x, 15->16.5)
+        this.width = 6.6;  // 10% larger (6 * 1.1)
+        this.height = 1.32;  // 10% larger (1.2 * 1.1)
+        this.depth = 2.2;  // 10% larger (2 * 1.1)
         this.type = type;
         this.destroyed = false;
 
@@ -423,6 +423,9 @@ class Brick {
         game.controlsReversed = true;
         game.reverseEffectTimer = 5.0;
 
+        // Add to active effects tracker
+        game.addActiveEffect('reverse', 'Reversed Controls', 'negative', 5.0, '🔄');
+
         // Show warning indicator
         this.showEffectWarning('CONTROLS REVERSED!', '#ff0066', 5000);
 
@@ -449,6 +452,9 @@ class Brick {
             }
         });
 
+        // Add to active effects tracker
+        game.addActiveEffect('crazy', 'Crazy Ball', 'negative', 5.0, '🌀');
+
         this.showEffectWarning('CRAZY BALL!', '#ff00ff', 5000);
         AudioManager.play('powerup');
     }
@@ -465,6 +471,9 @@ class Brick {
         paddle.width = originalWidth * 0.5;
         paddle.paddleMesh.geometry.dispose();
         paddle.paddleMesh.geometry = new THREE.BoxGeometry(paddle.width, paddle.height, paddle.depth);
+
+        // Add to active effects tracker
+        game.addActiveEffect('shrink', 'Shrink Paddle', 'negative', 5.0, '📉');
 
         // Restore after 5 seconds
         setTimeout(() => {

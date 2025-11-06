@@ -3,11 +3,11 @@ class Paddle {
         this.scene = scene;
         this.position = { x: 0, y: 0, z: -1 };  // Bottom center of playfield
         this.targetX = 0;
-        this.width = 5;  // Reduced for better gameplay challenge
-        this.baseWidth = 5;
-        this.height = 1.2;
-        this.depth = 2.5;
-        this.speed = 20;
+        this.width = 8.8;  // 10% larger (8 * 1.1)
+        this.baseWidth = 8.8;
+        this.height = 1.65;  // 10% larger (1.5 * 1.1)
+        this.depth = 3.3;  // 10% larger (3 * 1.1)
+        this.speed = 66; // 10% faster (60 * 1.1)
 
         // Power-up states
         this.isExpanded = false;
@@ -77,9 +77,9 @@ class Paddle {
     }
 
     setTargetX(x) {
-        // Clamp target position to game boundaries
+        // Clamp target position to game boundaries (10% larger: 48 * 1.1 = 52.8)
         const halfWidth = this.width / 2;
-        this.targetX = Math.max(-16 + halfWidth, Math.min(16 - halfWidth, x));
+        this.targetX = Math.max(-52.8 + halfWidth, Math.min(52.8 - halfWidth, x));
     }
 
     update(deltaTime) {
@@ -145,6 +145,12 @@ class Paddle {
         // Change paddle color
         this.paddleMesh.material.color.setHex(0xffe66d);
         this.paddleMesh.material.emissive.setHex(0xffe66d);
+
+        // Add to active effects tracker
+        const game = window.game;
+        if (game) {
+            game.addActiveEffect('laser', 'Laser', 'positive', duration, '⚡');
+        }
 
         // Revert after duration
         setTimeout(() => {

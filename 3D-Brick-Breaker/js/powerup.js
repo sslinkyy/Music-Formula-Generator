@@ -389,6 +389,9 @@ class PowerUp {
         const paddle = game.paddle;
         const duration = this.type.duration;
 
+        // Add to active effects tracker
+        game.addActiveEffect('mega-paddle', 'Mega Paddle', 'positive', duration, '📏');
+
         // Clear any existing paddle timer
         if (paddle.megaPaddleTimeout) {
             clearTimeout(paddle.megaPaddleTimeout);
@@ -471,6 +474,9 @@ class PowerUp {
 
         const duration = this.type.duration;
 
+        // Add to active effects tracker
+        game.addActiveEffect('shield', 'Shield', 'positive', duration, '🛡️');
+
         // Activate shield
         game.hasShield = true;
         game.shieldHits = 1; // One free miss
@@ -508,6 +514,9 @@ class PowerUp {
 
     activateTimeSlow(game) {
         const duration = this.type.duration;
+
+        // Add to active effects tracker
+        game.addActiveEffect('time-slow', 'Time Slow', 'positive', duration, '⏱️');
 
         // Slow down time to 50%
         game.timeScale = 0.5;
@@ -550,6 +559,9 @@ class PowerUp {
 
     activateMagnet(game) {
         const duration = this.type.duration;
+
+        // Add to active effects tracker
+        game.addActiveEffect('magnet', 'Magnet', 'positive', duration, '🧲');
 
         // Activate magnet
         game.hasMagnet = true;

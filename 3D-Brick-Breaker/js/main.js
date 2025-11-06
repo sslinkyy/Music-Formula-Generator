@@ -44,6 +44,9 @@ class Game {
         this.shieldMesh = null;
         this.hasMagnet = false;
 
+        // Active effects tracking
+        this.activeEffects = new Map(); // id -> {name, type, duration, startTime}
+
         // Game objects
         this.paddle = null;
         this.balls = [];
@@ -84,22 +87,23 @@ class Game {
         // Scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0a1a);
-        this.scene.fog = new THREE.Fog(0x0a0a1a, 40, 100);
+        this.scene.fog = new THREE.Fog(0x0a0a1a, 60, 150); // Expanded fog for wider play area
 
-        // Camera - 2.5D perspective for wall view
+        // Camera - 2.5D perspective for wall view (FULLSCREEN - fills entire viewport)
         const aspect = window.innerWidth / window.innerHeight;
-        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-        this.camera.position.set(0, 10, 25);  // View entire playfield from front
-        this.camera.lookAt(0, 8, -1);  // Look at center of play area
+        this.camera = new THREE.PerspectiveCamera(95, aspect, 0.1, 1000);  // Very wide FOV to fill screen
+        this.camera.position.set(0, 33, 49.5);  // 10% larger (30*1.1=33, 45*1.1=49.5)
+        this.camera.lookAt(0, 33, -1);  // Look at middle of 10% larger vertical range
 
         // Renderer
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
             antialias: true,
-            alpha: false
+            alpha: false,
+            powerPreference: 'high-performance'
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -179,8 +183,8 @@ class Game {
     }
 
     createBoundaries() {
-        // Create glowing floor
-        const floorGeometry = new THREE.PlaneGeometry(30, 50);
+        // Create glowing floor (10% larger: 90*1.1=99, 120*1.1=132)
+        const floorGeometry = new THREE.PlaneGeometry(99, 132);  // 10% larger floor
         const floorMaterial = new THREE.MeshStandardMaterial({
             color: 0x1a1a2e,
             metalness: 0.8,
@@ -194,17 +198,12 @@ class Game {
         floor.receiveShadow = true;
         this.scene.add(floor);
 
-        // Create grid lines on floor
-        const gridHelper = new THREE.GridHelper(30, 30, 0x00ff88, 0x1a1a2e);
-        gridHelper.position.y = -0.99;
-        gridHelper.material.opacity = 0.3;
-        gridHelper.material.transparent = true;
-        this.scene.add(gridHelper);
+        // Grid removed for cleaner visual aesthetic
 
-        // Create side walls (invisible but with glowing edges)
-        this.createWallEdge(-15, 0, 0, 50);  // Left wall
-        this.createWallEdge(15, 0, 0, 50);   // Right wall
-        this.createWallEdge(0, 0, -25, 30);  // Back wall
+        // Create side walls (10% larger: 45*1.1=49.5, 30*1.1=33, 120*1.1=132, 90*1.1=99)
+        this.createWallEdge(-49.5, 33, 0, 132);  // Left wall (10% larger)
+        this.createWallEdge(49.5, 33, 0, 132);   // Right wall (10% larger)
+        this.createWallEdge(0, 33, -25, 99);  // Back wall (10% larger)
     }
 
     createWallEdge(x, y, z, length) {
@@ -350,8 +349,8 @@ class Game {
             y: -(event.clientY / window.innerHeight) * 2 + 1
         };
 
-        // Convert mouse position to world position
-        const targetX = mouse.x * 12; // Limit to playfield width
+        // Convert mouse position to world position (10% larger: 36 * 1.1 = 39.6)
+        const targetX = mouse.x * 39.6; // Scaled for enlarged playfield
         this.paddle.setTargetX(targetX);
     }
 
@@ -468,6 +467,9 @@ class Game {
 
     initLevelWithAnimation() {
         console.log('[Game] Initializing level', this.level, 'with smooth intro');
+
+        // Show level preview
+        this.showLevelPreview();
 
         // Clear existing objects
         this.clearLevel();
@@ -913,7 +915,7 @@ class Game {
 
         // Handle keyboard paddle movement
         if (this.paddle) {
-            const keyboardSpeed = 15; // Units per second
+            const keyboardSpeed = 49.5; // Units per second (10% faster: 45 * 1.1)
 
             if (this.keys.left) {
                 const newX = this.paddle.position.x - keyboardSpeed * deltaTime;
@@ -1000,10 +1002,13 @@ class Game {
         // Check collisions
         PhysicsManager.checkCollisions(this);
 
-        // Check level complete
-        const activeBricks = this.bricks.filter(brick => !brick.destroyed);
-        if (this.bricks.length === 0) {
-            console.log('[Game] All bricks destroyed, level complete!');
+        // Update active effects display every frame
+        this.updateActiveEffectsDisplay();
+
+        // Check level complete (exclude unbreakable obstacle bricks)
+        const breakableBricks = this.bricks.filter(brick => !brick.destroyed && !brick.isUnbreakable);
+        if (breakableBricks.length === 0) {
+            console.log('[Game] All breakable bricks destroyed, level complete!');
             this.levelComplete();
         }
     }
@@ -1030,6 +1035,99 @@ class Game {
                 this.renderer.shadowMap.enabled = true;
                 break;
         }
+    }
+
+    // Active Effects Management
+    addActiveEffect(id, name, type, duration, icon = '⚡') {
+        this.activeEffects.set(id, {
+            name,
+            type, // 'positive' or 'negative'
+            duration,
+            startTime: Date.now(),
+            icon
+        });
+        this.updateActiveEffectsDisplay();
+    }
+
+    removeActiveEffect(id) {
+        this.activeEffects.delete(id);
+        this.updateActiveEffectsDisplay();
+    }
+
+    updateActiveEffectsDisplay() {
+        const container = document.getElementById('active-effects');
+        if (!container) return;
+
+        // Clear existing
+        container.innerHTML = '';
+
+        // Add each active effect
+        this.activeEffects.forEach((effect, id) => {
+            const elapsed = (Date.now() - effect.startTime) / 1000;
+            const remaining = Math.max(0, effect.duration - elapsed);
+
+            // Auto-remove expired effects
+            if (remaining <= 0) {
+                this.activeEffects.delete(id);
+                return;
+            }
+
+            const effectEl = document.createElement('div');
+            effectEl.className = `active-effect ${effect.type}`;
+            effectEl.innerHTML = `
+                <span class="icon">${effect.icon}</span>
+                <span class="name">${effect.name}</span>
+                <span class="timer">${Math.ceil(remaining)}s</span>
+            `;
+
+            container.appendChild(effectEl);
+        });
+    }
+
+    showLevelPreview() {
+        // Show level info on start
+        const levelInfo = document.createElement('div');
+        levelInfo.style.position = 'fixed';
+        levelInfo.style.top = '30%';
+        levelInfo.style.left = '50%';
+        levelInfo.style.transform = 'translateX(-50%)';
+        levelInfo.style.background = 'rgba(0, 0, 0, 0.9)';
+        levelInfo.style.padding = '30px 50px';
+        levelInfo.style.borderRadius = '20px';
+        levelInfo.style.border = '3px solid #00ff88';
+        levelInfo.style.zIndex = '1000';
+        levelInfo.style.textAlign = 'center';
+        levelInfo.style.fontSize = '36px';
+        levelInfo.style.fontWeight = 'bold';
+        levelInfo.style.color = '#00ff88';
+        levelInfo.style.textShadow = '0 0 20px #00ff88';
+        levelInfo.style.animation = 'pulse 0.5s ease';
+
+        // Get level tier name
+        let tierName = 'Tutorial';
+        if (this.level > 15) tierName = 'Master';
+        else if (this.level > 10) tierName = 'Advanced';
+        else if (this.level > 6) tierName = 'Expert';
+        else if (this.level > 3) tierName = 'Challenge';
+
+        levelInfo.innerHTML = `
+            <div style="font-size: 18px; opacity: 0.7; margin-bottom: 10px;">${tierName}</div>
+            <div>LEVEL ${this.level}</div>
+            <div style="font-size: 18px; opacity: 0.7; margin-top: 10px;">GET READY!</div>
+        `;
+
+        document.body.appendChild(levelInfo);
+
+        // Remove after 2 seconds
+        setTimeout(() => {
+            levelInfo.style.opacity = '0';
+            levelInfo.style.transition = 'opacity 0.5s';
+            setTimeout(() => {
+                if (levelInfo.parentNode) {
+                    document.body.removeChild(levelInfo);
+                }
+            }, 500);
+        }, 2000);
     }
 
     animate() {

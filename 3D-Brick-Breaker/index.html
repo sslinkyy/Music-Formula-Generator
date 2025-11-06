@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>3D Brick Breaker</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -29,6 +32,9 @@
             </div>
 
             <div id="power-ups"></div>
+
+            <!-- Active Effects Status Bar -->
+            <div id="active-effects" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100;"></div>
 
             <div id="menu" class="modal">
                 <h1>3D BRICK BREAKER</h1>

@@ -64,16 +64,16 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const rowCount = 5;
-            const bricksPerRow = 8;
+            const rowCount = 15;  // Increased to fill vertical space (was 10)
+            const bricksPerRow = 10;  // Increased to fill horizontal space (was 8)
 
             for (let row = 0; row < rowCount; row++) {
                 const startX = -(bricksPerRow - 1) * 2.5 / 2;
-                const y = 16 - row * 1.5;
+                const y = 22 - row * 1.5;  // Adjusted starting Y position
 
                 for (let col = 0; col < bricksPerRow; col++) {
                     const x = startX + col * 2.5;
-                    let type = row < 2 ? 'weak' : (row < 4 ? 'normal' : 'strong');
+                    let type = row < 5 ? 'weak' : (row < 10 ? 'normal' : 'strong');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
                 }
@@ -87,16 +87,16 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const maxBricks = 7;
+            const maxBricks = 13;  // Increased to fill space (was 10, ~91 bricks total)
 
             for (let row = 0; row < maxBricks; row++) {
                 const bricksInRow = maxBricks - row;
                 const startX = -(bricksInRow - 1) * 3 / 2;
-                const y = 18 - row * 1.6;
+                const y = 24 - row * 1.6;  // Adjusted starting Y position
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 3;
-                    let type = row < 2 ? 'weak' : (row < 5 ? 'normal' : 'strong');
+                    let type = row < 4 ? 'weak' : (row < 9 ? 'normal' : 'strong');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
                 }
@@ -110,19 +110,19 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const centerRow = 3;
+            const centerRow = 5;  // Increased from 3 to 5
 
-            for (let row = 0; row < 7; row++) {
+            for (let row = 0; row < 11; row++) {  // Increased from 7 to 11 rows (~61 bricks)
                 const distance = Math.abs(row - centerRow);
-                const bricksInRow = 7 - distance * 2;
+                const bricksInRow = 11 - distance * 2;
                 if (bricksInRow <= 0) continue;
 
                 const startX = -(bricksInRow - 1) * 3 / 2;
-                const y = 18 - row * 1.8;
+                const y = 26 - row * 1.8;  // Adjusted starting Y position
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 3;
-                    let type = distance === 0 ? 'strong' : (distance === 1 ? 'normal' : 'weak');
+                    let type = distance === 0 ? 'strong' : (distance <= 2 ? 'normal' : 'weak');
 
                     // Center brick is explosive
                     if (row === centerRow && col === Math.floor(bricksInRow / 2)) {
@@ -143,11 +143,11 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const gridSize = 7;
+            const gridSize = 10;  // Increased from 7 to 10 (~50 bricks)
 
             for (let row = 0; row < gridSize; row++) {
                 const startX = -(gridSize - 1) * 2.5 / 2;
-                const y = 18 - row * 1.8;
+                const y = 24 - row * 1.8;  // Adjusted starting Y position
 
                 for (let col = 0; col < gridSize; col++) {
                     if ((row + col) % 2 === 1) continue; // Checkerboard gaps
@@ -168,9 +168,9 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            // Top walls (armored)
-            for (let row = 0; row < 2; row++) {
-                const y = 18 - row * 1.6;
+            // Top walls (armored) - doubled rows
+            for (let row = 0; row < 4; row++) {  // Increased from 2 to 4
+                const y = 24 - row * 1.6;  // Adjusted starting Y
                 const positions = [-10, -6, 6, 10];
 
                 positions.forEach(x => {
@@ -180,9 +180,9 @@ const LevelManager = {
                 });
             }
 
-            // Middle section with gap
-            for (let row = 2; row < 5; row++) {
-                const y = 18 - row * 1.6;
+            // Middle section with gap - doubled rows
+            for (let row = 4; row < 10; row++) {  // Increased from 3 to 6 rows
+                const y = 24 - row * 1.6;
 
                 for (let col = 0; col < 7; col++) {
                     if (col === 3) continue; // Middle gap
@@ -194,13 +194,15 @@ const LevelManager = {
                 }
             }
 
-            // Bottom filled with powerups
-            const y = 18 - 5 * 1.6;
-            for (let col = 0; col < 7; col++) {
-                const x = -9 + col * 3;
-                let type = col === 3 ? 'powerup' : 'normal';
-                type = LevelManager.addSpecialBricks(type, level);
-                bricks.push({ x, y, z: -1, type });
+            // Bottom filled with powerups - doubled rows
+            for (let bottomRow = 10; bottomRow < 12; bottomRow++) {  // Added 2 rows instead of 1
+                const y = 24 - bottomRow * 1.6;
+                for (let col = 0; col < 7; col++) {
+                    const x = -9 + col * 3;
+                    let type = col === 3 ? 'powerup' : 'normal';
+                    type = LevelManager.addSpecialBricks(type, level);
+                    bricks.push({ x, y, z: -1, type });
+                }
             }
 
             rows.push({ bricks });
@@ -212,8 +214,8 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 14;
-            const turns = 3;
+            const centerY = 18;  // Adjusted center Y
+            const turns = 6;  // Doubled from 3 to 6 turns (~60 bricks)
             const bricksPerTurn = 10;
 
             for (let i = 0; i < turns * bricksPerTurn; i++) {
@@ -223,7 +225,7 @@ const LevelManager = {
                 const x = centerX + Math.cos(angle) * radius;
                 const y = centerY + Math.sin(angle) * radius * 0.6;
 
-                let type = i < 10 ? 'weak' : (i < 20 ? 'normal' : 'strong');
+                let type = i < 20 ? 'weak' : (i < 40 ? 'normal' : 'strong');
                 if (i % 12 === 0) {
                     type = 'explosive';
                 } else {
@@ -242,30 +244,34 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            // Vertical line
+            // Double vertical lines (two parallel lines)
             for (let row = 0; row < 8; row++) {
-                const x = 0;
-                const y = 18 - row * 1.5;
-                let type = 'normal';
-                type = LevelManager.addSpecialBricks(type, level);
-                bricks.push({ x, y, z: -1, type });
+                for (let offset of [-1.5, 1.5]) {  // Two vertical lines
+                    const x = offset;
+                    const y = 26 - row * 1.5;  // Adjusted starting Y
+                    let type = 'normal';
+                    type = LevelManager.addSpecialBricks(type, level);
+                    bricks.push({ x, y, z: -1, type });
+                }
             }
 
-            // Horizontal line
-            for (let col = 0; col < 9; col++) {
-                if (col === 4) continue; // Skip center (already has vertical)
+            // Double horizontal lines (two parallel lines)
+            for (let horizontalRow of [0, 1]) {  // Two horizontal lines
+                for (let col = 0; col < 9; col++) {
+                    if (col === 4) continue; // Skip center
 
-                const x = -10 + col * 2.5;
-                const y = 14;
-                let type = 'strong';
-                type = LevelManager.addSpecialBricks(type, level);
-                bricks.push({ x, y, z: -1, type });
+                    const x = -10 + col * 2.5;
+                    const y = 18 - horizontalRow * 2;
+                    let type = 'strong';
+                    type = LevelManager.addSpecialBricks(type, level);
+                    bricks.push({ x, y, z: -1, type });
+                }
             }
 
-            // Corner decorations
+            // Double corner decorations (2 bricks per corner)
             const corners = [
-                { x: -10, y: 18 }, { x: 10, y: 18 },
-                { x: -10, y: 8 }, { x: 10, y: 8 }
+                { x: -12, y: 26 }, { x: -10, y: 26 }, { x: 10, y: 26 }, { x: 12, y: 26 },
+                { x: -12, y: 10 }, { x: -10, y: 10 }, { x: 10, y: 10 }, { x: 12, y: 10 }
             ];
 
             corners.forEach(corner => {
@@ -283,15 +289,15 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            // Create vertical walls with gaps
-            for (let wall = 0; wall < 3; wall++) {
-                const x = -9 + wall * 9;
+            // Create vertical walls with gaps - doubled to 6 walls
+            for (let wall = 0; wall < 6; wall++) {  // Increased from 3 to 6 walls
+                const x = -13.5 + wall * 5.4;  // Adjusted spacing
 
                 for (let row = 0; row < 8; row++) {
                     // Create gaps at different heights for each wall
-                    if (row === 2 + wall || row === 5 + wall) continue;
+                    if (row === 2 + (wall % 3) || row === 5 + (wall % 3)) continue;
 
-                    const y = 18 - row * 1.6;
+                    const y = 24 - row * 1.6;  // Adjusted starting Y
                     let type = 'strong';
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
@@ -306,11 +312,11 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const brickCount = 45;
+            const brickCount = 120;  // Increased to fill expanded area (was 90)
 
             for (let i = 0; i < brickCount; i++) {
-                const x = (Math.random() - 0.5) * 26;
-                const y = 8 + Math.random() * 12;
+                const x = (Math.random() - 0.5) * 30;  // Wider spread
+                const y = 10 + Math.random() * 20;  // Taller spread
 
                 const roll = Math.random();
                 let type;
@@ -332,23 +338,26 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            // Create maze walls
+            // Create maze walls - expanded to 10x10 pattern (~64 bricks)
             const mazePattern = [
-                [1, 1, 1, 0, 1, 1, 1],
-                [1, 0, 0, 0, 0, 0, 1],
-                [1, 0, 1, 1, 1, 0, 1],
-                [0, 0, 1, 0, 1, 0, 0],
-                [1, 0, 1, 0, 1, 0, 1],
-                [1, 0, 0, 0, 0, 0, 1],
-                [1, 1, 1, 0, 1, 1, 1]
+                [1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+                [0, 0, 1, 0, 1, 0, 0, 1, 0, 0],
+                [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 1, 1],
+                [1, 1, 1, 0, 1, 1, 1, 0, 1, 1]
             ];
 
             for (let row = 0; row < mazePattern.length; row++) {
                 for (let col = 0; col < mazePattern[row].length; col++) {
                     if (mazePattern[row][col] === 0) continue;
 
-                    const x = -9 + col * 3;
-                    const y = 18 - row * 1.8;
+                    const x = -13.5 + col * 3;
+                    const y = 28 - row * 1.8;  // Adjusted starting Y
                     let type = 'strong';
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
@@ -364,8 +373,8 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 14;
-            const rings = 4;
+            const centerY = 18;  // Adjusted center Y
+            const rings = 8;  // Doubled from 4 to 8 rings (~120 bricks)
 
             for (let ring = 0; ring < rings; ring++) {
                 const radius = (ring + 1) * 2.5;
@@ -376,7 +385,7 @@ const LevelManager = {
                     const x = centerX + Math.cos(angle) * radius;
                     const y = centerY + Math.sin(angle) * radius * 0.6;
 
-                    let type = ring === 0 ? 'explosive' : (ring === 1 ? 'strong' : 'normal');
+                    let type = ring === 0 ? 'explosive' : (ring <= 2 ? 'strong' : 'normal');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
                 }
@@ -391,16 +400,16 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            for (let row = 0; row < 9; row++) {
-                const distance = Math.abs(row - 4);
+            for (let row = 0; row < 17; row++) {  // Doubled from 9 to 17 rows (~90 bricks)
+                const distance = Math.abs(row - 8);  // Center at row 8
                 const bricksInRow = 3 + distance;
 
                 const startX = -(bricksInRow - 1) * 2.5 / 2;
-                const y = 18 - row * 1.5;
+                const y = 30 - row * 1.5;  // Adjusted starting Y
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 2.5;
-                    let type = distance < 2 ? 'armored' : (distance < 4 ? 'strong' : 'normal');
+                    let type = distance < 3 ? 'armored' : (distance < 6 ? 'strong' : 'normal');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
                 }
@@ -410,44 +419,35 @@ const LevelManager = {
             return rows;
         },
 
-        // Level 13: Double Diamond
+        // Level 13: Quad Diamond (doubled to 4 diamonds)
         function(level) {
             const rows = [];
             const bricks = [];
 
-            // Left diamond
-            for (let row = 0; row < 5; row++) {
-                const distance = Math.abs(row - 2);
-                const bricksInRow = 5 - distance * 2;
-                if (bricksInRow <= 0) continue;
+            const diamondPositions = [
+                { centerX: -12, centerY: 22, type: 'normal' },
+                { centerX: 12, centerY: 22, type: 'strong' },
+                { centerX: -12, centerY: 12, type: 'strong' },
+                { centerX: 12, centerY: 12, type: 'armored' }
+            ];
 
-                const startX = -12 - (bricksInRow - 1) * 1.5 / 2;
-                const y = 16 - row * 2;
+            diamondPositions.forEach(diamond => {
+                for (let row = 0; row < 5; row++) {
+                    const distance = Math.abs(row - 2);
+                    const bricksInRow = 5 - distance * 2;
+                    if (bricksInRow <= 0) continue;
 
-                for (let col = 0; col < bricksInRow; col++) {
-                    const x = startX + col * 1.5;
-                    let type = 'normal';
-                    type = LevelManager.addSpecialBricks(type, level);
-                    bricks.push({ x, y, z: -1, type });
+                    const startX = diamond.centerX - (bricksInRow - 1) * 1.5 / 2;
+                    const y = diamond.centerY - row * 2;
+
+                    for (let col = 0; col < bricksInRow; col++) {
+                        const x = startX + col * 1.5;
+                        let type = diamond.type;
+                        type = LevelManager.addSpecialBricks(type, level);
+                        bricks.push({ x, y, z: -1, type });
+                    }
                 }
-            }
-
-            // Right diamond
-            for (let row = 0; row < 5; row++) {
-                const distance = Math.abs(row - 2);
-                const bricksInRow = 5 - distance * 2;
-                if (bricksInRow <= 0) continue;
-
-                const startX = 12 - (bricksInRow - 1) * 1.5 / 2;
-                const y = 16 - row * 2;
-
-                for (let col = 0; col < bricksInRow; col++) {
-                    const x = startX + col * 1.5;
-                    let type = 'strong';
-                    type = LevelManager.addSpecialBricks(type, level);
-                    bricks.push({ x, y, z: -1, type });
-                }
-            }
+            });
 
             rows.push({ bricks });
             return rows;
@@ -457,15 +457,15 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const steps = 7;
+            const steps = 14;  // Doubled from 7 to 14 steps (~42 bricks)
 
             for (let step = 0; step < steps; step++) {
-                const y = 18 - step * 1.8;
+                const y = 30 - step * 1.6;  // Adjusted starting Y and spacing
                 const bricksInStep = 3;
 
                 for (let col = 0; col < bricksInStep; col++) {
-                    const x = -10 + step * 3 + col * 1.5;
-                    let type = step < 3 ? 'normal' : (step < 5 ? 'strong' : 'armored');
+                    const x = -16 + step * 2.5 + col * 1.5;  // Adjusted starting X
+                    let type = step < 5 ? 'normal' : (step < 10 ? 'strong' : 'armored');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
                 }
@@ -479,18 +479,19 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const gridSize = 8;
+            const gridSize = 11;  // Increased from 8 to 11 (~112 bricks)
 
             for (let row = 0; row < gridSize; row++) {
                 for (let col = 0; col < gridSize; col++) {
-                    // Create holes in a pattern
-                    if ((row === 2 && col === 2) || (row === 2 && col === 5) ||
-                        (row === 5 && col === 2) || (row === 5 && col === 5)) {
+                    // Create holes in a pattern (9 holes total)
+                    if ((row === 2 && col === 2) || (row === 2 && col === 5) || (row === 2 && col === 8) ||
+                        (row === 5 && col === 2) || (row === 5 && col === 5) || (row === 5 && col === 8) ||
+                        (row === 8 && col === 2) || (row === 8 && col === 5) || (row === 8 && col === 8)) {
                         continue; // Holes
                     }
 
-                    const x = -10 + col * 2.5;
-                    const y = 18 - row * 1.6;
+                    const x = -13 + col * 2.5;
+                    const y = 26 - row * 1.6;  // Adjusted starting Y
                     let type = 'normal';
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
@@ -506,9 +507,9 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            for (let row = 0; row < 10; row++) {
+            for (let row = 0; row < 20; row++) {  // Doubled from 10 to 20 rows (~100 bricks)
                 const offset = (row % 2) * 6; // Alternating offset
-                const y = 18 - row * 1.4;
+                const y = 32 - row * 1.4;  // Adjusted starting Y
 
                 for (let col = 0; col < 5; col++) {
                     const x = -12 + offset + col * 2.5;
@@ -527,8 +528,8 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 14;
-            const petals = 6;
+            const centerY = 18;  // Adjusted center Y
+            const petals = 12;  // Doubled from 6 to 12 petals (~50 bricks)
 
             // Center
             bricks.push({ x: centerX, y: centerY, z: -1, type: 'explosive' });
@@ -558,28 +559,28 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
 
-            // Towers
-            for (let tower = 0; tower < 2; tower++) {
-                const x = tower === 0 ? -10 : 10;
+            // Towers (doubled height and added 2 more towers)
+            for (let tower = 0; tower < 4; tower++) {  // Increased from 2 to 4 towers
+                const x = tower === 0 ? -14 : (tower === 1 ? -6 : (tower === 2 ? 6 : 14));
 
-                for (let row = 0; row < 6; row++) {
-                    const y = 18 - row * 1.6;
+                for (let row = 0; row < 10; row++) {  // Doubled from 6 to 10 rows
+                    const y = 28 - row * 1.6;  // Adjusted starting Y
                     let type = 'armored';
                     type = LevelManager.addSpecialBricks(type, level, true); // Force obstacles
                     bricks.push({ x, y, z: -1, type });
                 }
 
                 // Tower top (battlements)
-                bricks.push({ x: x - 2, y: 18 + 1.6, z: -1, type: 'strong' });
-                bricks.push({ x: x + 2, y: 18 + 1.6, z: -1, type: 'strong' });
+                bricks.push({ x: x - 2, y: 28 + 1.6, z: -1, type: 'strong' });
+                bricks.push({ x: x + 2, y: 28 + 1.6, z: -1, type: 'strong' });
             }
 
-            // Castle wall
-            for (let col = 0; col < 7; col++) {
-                if (col === 3) continue; // Gate
+            // Castle wall (doubled length)
+            for (let col = 0; col < 13; col++) {  // Increased from 7 to 13
+                if (col === 6) continue; // Gate (center)
 
-                const x = -8 + col * 2.5;
-                const y = 13;
+                const x = -15 + col * 2.5;
+                const y = 14;
                 let type = 'strong';
                 type = LevelManager.addSpecialBricks(type, level);
                 bricks.push({ x, y, z: -1, type });
@@ -594,14 +595,14 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const waves = 3;
-            const bricksPerWave = 30;
+            const bricksPerWave = 60;  // Doubled from 30 to 60
 
             for (let i = 0; i < bricksPerWave; i++) {
-                const x = -12 + (i / bricksPerWave) * 24;
-                const waveOffset = Math.sin(i * 0.5) * 4;
-                const y = 14 + waveOffset;
+                const x = -14 + (i / bricksPerWave) * 28;
+                const waveOffset = Math.sin(i * 0.5) * 5;  // Increased amplitude
+                const y = 18 + waveOffset;  // Adjusted center Y
 
-                let type = i < 10 ? 'normal' : (i < 20 ? 'strong' : 'armored');
+                let type = i < 20 ? 'normal' : (i < 40 ? 'strong' : 'armored');
                 type = LevelManager.addSpecialBricks(type, level);
                 bricks.push({ x, y, z: -1, type });
             }
@@ -614,20 +615,20 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const gridSize = 10;
+            const gridSize = 18;  // Increased to fill expanded area (was 14, ~324 bricks)
 
             for (let row = 0; row < gridSize; row++) {
                 for (let col = 0; col < gridSize; col++) {
-                    const x = -11.25 + col * 2.5;
-                    const y = 18 - row * 1.4;
+                    const x = -20 + col * 2.5;
+                    const y = 35 - row * 1.5;  // Adjusted starting Y
 
                     // Center explosive
-                    if (row === 4 && col === 4) {
+                    if (row === 9 && col === 9) {
                         bricks.push({ x, y, z: -1, type: 'explosive' });
                         continue;
                     }
 
-                    let type = row < 3 ? 'normal' : (row < 7 ? 'strong' : 'armored');
+                    let type = row < 6 ? 'normal' : (row < 12 ? 'strong' : 'armored');
                     type = LevelManager.addSpecialBricks(type, level, true); // Force many obstacles
                     bricks.push({ x, y, z: -1, type });
                 }

@@ -49,7 +49,7 @@ const PhysicsManager = {
         );
 
         // Debug: log when ball is near paddle
-        if (ball.position.y < -8 && ball.position.y > -12) {
+        if (ball.position.y < -2 && ball.position.y > -10) {
             console.log('[Physics] Ball near paddle - ballY:', ball.position.y.toFixed(2), 'paddleY:', paddle.position.y.toFixed(2), 'distance:', distance.toFixed(2), 'threshold:', ball.radius);
         }
 
