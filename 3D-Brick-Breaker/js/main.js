@@ -198,12 +198,10 @@ class Game {
         floor.receiveShadow = true;
         this.scene.add(floor);
 
-        // Grid removed for cleaner visual aesthetic
-
-        // Create side walls (10% larger: 45*1.1=49.5, 30*1.1=33, 120*1.1=132, 90*1.1=99)
-        this.createWallEdge(-49.5, 33, 0, 132);  // Left wall (10% larger)
-        this.createWallEdge(49.5, 33, 0, 132);   // Right wall (10% larger)
-        this.createWallEdge(0, 33, -25, 99);  // Back wall (10% larger)
+        // Grid and wall edges removed for cleaner visual aesthetic
+        // this.createWallEdge(-49.5, 33, 0, 132);  // Left wall
+        // this.createWallEdge(49.5, 33, 0, 132);   // Right wall
+        // this.createWallEdge(0, 33, -25, 99);  // Back wall (this was the green band)
     }
 
     createWallEdge(x, y, z, length) {
