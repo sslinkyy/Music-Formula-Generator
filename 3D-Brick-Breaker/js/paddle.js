@@ -1,7 +1,7 @@
 class Paddle {
     constructor(scene) {
         this.scene = scene;
-        this.position = { x: 0, y: -10, z: 0 };
+        this.position = { x: 0, y: -5, z: 5 };  // Repositioned for proper view
         this.targetX = 0;
         this.width = 6;  // Increased from 4 for better visibility
         this.baseWidth = 6;  // Increased from 4

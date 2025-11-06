@@ -76,7 +76,7 @@ class Game {
         // Camera - 2.5D perspective
         const aspect = window.innerWidth / window.innerHeight;
         this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-        this.camera.position.set(0, 25, 40);
+        this.camera.position.set(0, 20, 30);  // Closer and lower for better gameplay view
         this.camera.lookAt(0, 0, 0);
 
         // Renderer
@@ -287,7 +287,7 @@ class Game {
         console.log('[Game] Paddle created at', this.paddle.position);
 
         // Create ball attached to paddle
-        const ball = new Ball(this.scene, 0, -8, 0);  // Fix: start at z=0 to match paddle
+        const ball = new Ball(this.scene, 0, -3, 5);  // Start at new paddle Z position
         ball.attachToPaddle(this.paddle);
         this.balls.push(ball);
         console.log('[Game] Ball created and attached, position:', ball.position, 'attached:', ball.attached);
