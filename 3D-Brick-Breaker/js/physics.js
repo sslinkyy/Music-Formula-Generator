@@ -111,7 +111,7 @@ const PhysicsManager = {
         if (minDist === distRight) return { x: 1, y: 0, z: 0 };
         if (minDist === distBottom) return { x: 0, y: -1, z: 0 };
         if (minDist === distTop) return { x: 0, y: 1, z: 0 };
-        if (minDist === distBack) return { x: 0, y: 0, -1 };
+        if (minDist === distBack) return { x: 0, y: 0, z: -1 };
         if (minDist === distFront) return { x: 0, y: 0, z: 1 };
 
         // Default to top face
