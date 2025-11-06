@@ -259,6 +259,7 @@ class Game {
     }
 
     startGame() {
+        console.log('[Game] Starting new game');
         this.hideModal('menu');
         this.state = GameState.PLAYING;
         this.score = 0;
@@ -271,23 +272,33 @@ class Game {
         this.updateLevel();
 
         this.initLevel();
+        console.log('[Game] Game state:', this.state, 'Lives:', this.lives);
         AudioManager.playMusic();
     }
 
     initLevel() {
+        console.log('[Game] Initializing level', this.level);
+
         // Clear existing objects
         this.clearLevel();
 
         // Create paddle
         this.paddle = new Paddle(this.scene);
+        console.log('[Game] Paddle created at', this.paddle.position);
 
         // Create ball attached to paddle
         const ball = new Ball(this.scene, 0, -8, 2);
         ball.attachToPaddle(this.paddle);
         this.balls.push(ball);
+        console.log('[Game] Ball created and attached, position:', ball.position, 'attached:', ball.attached);
 
         // Create bricks for current level
         this.bricks = LevelManager.createLevel(this.level, this.scene);
+        console.log('[Game] Created', this.bricks.length, 'bricks');
+
+        if (this.bricks.length === 0) {
+            console.error('[Game] ERROR: No bricks were created!');
+        }
     }
 
     clearLevel() {
@@ -370,9 +381,12 @@ class Game {
     }
 
     launchBalls() {
+        console.log('[Game] Launching balls, count:', this.balls.length);
         this.balls.forEach(ball => {
             if (ball.attached) {
+                console.log('[Game] Launching ball from position:', ball.position);
                 ball.launch();
+                console.log('[Game] Ball launched with velocity:', ball.velocity);
                 AudioManager.play('launch');
             }
         });
@@ -547,10 +561,12 @@ class Game {
 
             // Check if ball is out of bounds
             if (ball.position.y < -15) {
+                console.log('[Game] Ball out of bounds at position:', ball.position, 'attached:', ball.attached);
                 ball.destroy();
                 this.balls.splice(index, 1);
 
                 if (this.balls.length === 0) {
+                    console.log('[Game] All balls lost, losing life');
                     this.loseLife();
                 }
             }
@@ -585,7 +601,9 @@ class Game {
         PhysicsManager.checkCollisions(this);
 
         // Check level complete
-        if (this.bricks.every(brick => brick.destroyed)) {
+        const activeBricks = this.bricks.filter(brick => !brick.destroyed);
+        if (activeBricks.length === 0 && this.bricks.length > 0) {
+            console.log('[Game] All bricks destroyed, level complete!');
             this.levelComplete();
         }
     }
