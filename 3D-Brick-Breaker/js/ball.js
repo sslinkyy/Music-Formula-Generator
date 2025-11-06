@@ -57,7 +57,9 @@ class Ball {
         this.attachedPaddle = paddle;
         this.attachOffset = 0;
 
+        this.position.x = paddle.position.x;
         this.position.y = paddle.position.y + paddle.height / 2 + this.radius + 0.2;
+        this.position.z = paddle.position.z;  // Fix: align ball with paddle in Z
         this.velocity = { x: 0, y: 0, z: 0 };
     }
 
@@ -81,6 +83,7 @@ class Ball {
             // Follow paddle when attached
             this.position.x = this.attachedPaddle.position.x + this.attachOffset;
             this.position.y = this.attachedPaddle.position.y + this.attachedPaddle.height / 2 + this.radius + 0.2;
+            this.position.z = this.attachedPaddle.position.z;  // Fix: keep ball aligned with paddle in Z
 
             // Gentle bobbing animation
             this.position.y += Math.sin(Date.now() * 0.005) * 0.1;

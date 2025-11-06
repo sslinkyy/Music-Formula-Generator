@@ -287,7 +287,7 @@ class Game {
         console.log('[Game] Paddle created at', this.paddle.position);
 
         // Create ball attached to paddle
-        const ball = new Ball(this.scene, 0, -8, 2);
+        const ball = new Ball(this.scene, 0, -8, 0);  // Fix: start at z=0 to match paddle
         ball.attachToPaddle(this.paddle);
         this.balls.push(ball);
         console.log('[Game] Ball created and attached, position:', ball.position, 'attached:', ball.attached);
