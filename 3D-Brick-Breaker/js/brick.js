@@ -52,6 +52,44 @@ class Brick {
                 this.points = 75;
                 this.hasPowerUp = true;
                 break;
+
+            // Obstacle brick types
+            case 'unbreakable':
+                this.hits = 999;  // Effectively indestructible
+                this.color = 0x808080;  // Gray
+                this.emissive = 0x404040;
+                this.points = 0;
+                this.isUnbreakable = true;
+                break;
+            case 'warp':
+                this.hits = 1;
+                this.color = 0x9b30ff;  // Purple
+                this.emissive = 0x9b30ff;
+                this.points = 100;
+                this.isWarp = true;
+                break;
+            case 'reverse':
+                this.hits = 1;
+                this.color = 0xff0066;  // Red/Pink
+                this.emissive = 0xff0066;
+                this.points = 100;
+                this.isReverse = true;
+                break;
+            case 'crazy':
+                this.hits = 1;
+                this.color = 0xff00ff;  // Magenta (rainbow effect added in mesh)
+                this.emissive = 0xff00ff;
+                this.points = 100;
+                this.isCrazy = true;
+                break;
+            case 'shrink':
+                this.hits = 1;
+                this.color = 0xff6600;  // Orange
+                this.emissive = 0xff6600;
+                this.points = 50;
+                this.isShrink = true;
+                break;
+
             default:
                 this.hits = 1;
                 this.color = 0x00ff88;
@@ -134,6 +172,41 @@ class Brick {
         if (this.hasPowerUp) {
             this.mesh.rotation.y += deltaTime;
         }
+
+        // Obstacle brick animations
+        if (this.isUnbreakable) {
+            // Metallic shimmer effect
+            this.mesh.material.metalness = 0.9;
+            this.mesh.material.roughness = 0.1;
+        }
+
+        if (this.isWarp) {
+            // Swirling rotation
+            this.mesh.rotation.x += deltaTime * 2;
+            this.mesh.rotation.y += deltaTime * 2;
+            this.mesh.rotation.z += deltaTime * 2;
+        }
+
+        if (this.isReverse) {
+            // Split color pulsing (simulate red/blue split)
+            const splitPulse = Math.sin(time * 4);
+            const hue = splitPulse > 0 ? 0xff0000 : 0x0000ff;
+            this.mesh.material.color.setHex(hue);
+        }
+
+        if (this.isCrazy) {
+            // Rainbow color cycling
+            const hue = (time * 0.5) % 1;
+            this.mesh.material.color.setHSL(hue, 1, 0.5);
+            this.mesh.material.emissive.setHSL(hue, 1, 0.3);
+            this.mesh.rotation.y += deltaTime * 3;
+        }
+
+        if (this.isShrink) {
+            // Warning pulse (orange flash)
+            const warnPulse = Math.sin(time * 3) * 0.5 + 0.5;
+            this.mesh.material.emissiveIntensity = warnPulse * 1.5;
+        }
     }
 
     hit() {
@@ -195,6 +268,23 @@ class Brick {
                 powerUpData
             );
             window.game.powerUps.push(powerUp);
+        }
+
+        // Handle obstacle brick special effects
+        if (this.isWarp && window.game) {
+            this.applyWarpEffect();
+        }
+
+        if (this.isReverse && window.game) {
+            this.applyReverseEffect();
+        }
+
+        if (this.isCrazy && window.game) {
+            this.applyCrazyBallEffect();
+        }
+
+        if (this.isShrink && window.game) {
+            this.applyShrinkEffect();
         }
 
         // Handle explosive bricks
@@ -301,6 +391,142 @@ class Brick {
                 this.scene.remove(shockwave);
             }
         }, 16);
+    }
+
+    applyWarpEffect() {
+        // Teleport ball to random position
+        const game = window.game;
+        if (!game || !game.balls.length) return;
+
+        game.balls.forEach(ball => {
+            if (!ball.attached) {
+                // Random position within bounds
+                ball.position.x = (Math.random() - 0.5) * 28;  // ±14 bounds
+                ball.position.y = Math.random() * 15 + 5;  // 5-20 range
+                ball.position.z = ball.position.z;  // Keep same Z
+
+                // Create portal effect
+                this.createPortalEffect(ball.position);
+
+                console.log('[Brick] Warp effect! Ball teleported to:', ball.position);
+            }
+        });
+
+        AudioManager.play('powerup');  // Use powerup sound for warp
+    }
+
+    applyReverseEffect() {
+        // Reverse paddle controls for 5 seconds
+        const game = window.game;
+        if (!game || !game.paddle) return;
+
+        game.controlsReversed = true;
+        game.reverseEffectTimer = 5.0;
+
+        // Show warning indicator
+        this.showEffectWarning('CONTROLS REVERSED!', '#ff0066', 5000);
+
+        console.log('[Brick] Reverse effect activated for 5 seconds');
+        AudioManager.play('powerup');
+    }
+
+    applyCrazyBallEffect() {
+        // Make ball bounce erratically for 5 seconds
+        const game = window.game;
+        if (!game || !game.balls.length) return;
+
+        game.balls.forEach(ball => {
+            if (!ball.attached) {
+                ball.isCrazy = true;
+                ball.crazyTimer = 5.0;
+
+                // Add random velocity components
+                ball.velocity.x += (Math.random() - 0.5) * 5;
+                ball.velocity.y += (Math.random() - 0.5) * 5;
+                ball.normalizeVelocity();
+
+                console.log('[Brick] Crazy ball effect activated');
+            }
+        });
+
+        this.showEffectWarning('CRAZY BALL!', '#ff00ff', 5000);
+        AudioManager.play('powerup');
+    }
+
+    applyShrinkEffect() {
+        // Shrink paddle for 5 seconds
+        const game = window.game;
+        if (!game || !game.paddle) return;
+
+        const paddle = game.paddle;
+        const originalWidth = paddle.width;
+
+        // Shrink paddle
+        paddle.width = originalWidth * 0.5;
+        paddle.paddleMesh.geometry.dispose();
+        paddle.paddleMesh.geometry = new THREE.BoxGeometry(paddle.width, paddle.height, paddle.depth);
+
+        // Restore after 5 seconds
+        setTimeout(() => {
+            if (paddle && paddle.paddleMesh) {
+                paddle.width = originalWidth;
+                paddle.paddleMesh.geometry.dispose();
+                paddle.paddleMesh.geometry = new THREE.BoxGeometry(paddle.width, paddle.height, paddle.depth);
+                console.log('[Brick] Paddle size restored');
+            }
+        }, 5000);
+
+        this.showEffectWarning('PADDLE SHRUNK!', '#ff6600', 5000);
+        console.log('[Brick] Shrink effect activated');
+        AudioManager.play('powerup');
+    }
+
+    createPortalEffect(position) {
+        // Create swirling portal particles
+        for (let i = 0; i < 20; i++) {
+            const particle = new Particle(
+                this.scene,
+                position.x,
+                position.y,
+                position.z,
+                0x9b30ff  // Purple
+            );
+            const angle = (i / 20) * Math.PI * 2;
+            particle.velocity.x = Math.cos(angle) * 5;
+            particle.velocity.y = Math.sin(angle) * 5;
+            particle.velocity.z = (Math.random() - 0.5) * 3;
+
+            if (window.game) {
+                window.game.particles.push(particle);
+            }
+        }
+    }
+
+    showEffectWarning(text, color, duration) {
+        // Show warning text overlay
+        const warning = document.createElement('div');
+        warning.style.position = 'fixed';
+        warning.style.top = '30%';
+        warning.style.left = '50%';
+        warning.style.transform = 'translateX(-50%)';
+        warning.style.color = color;
+        warning.style.fontSize = '48px';
+        warning.style.fontWeight = 'bold';
+        warning.style.textShadow = '0 0 10px black, 0 0 20px black';
+        warning.style.zIndex = '1000';
+        warning.style.pointerEvents = 'none';
+        warning.textContent = text;
+
+        document.body.appendChild(warning);
+
+        // Fade out and remove
+        setTimeout(() => {
+            warning.style.transition = 'opacity 0.5s';
+            warning.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(warning);
+            }, 500);
+        }, duration - 500);
     }
 
     getBox() {

@@ -34,6 +34,10 @@ class Game {
         // Game timing
         this.timeScale = 1.0;  // For smooth transitions and slow-motion effects
 
+        // Obstacle effects
+        this.controlsReversed = false;
+        this.reverseEffectTimer = 0;
+
         // Game objects
         this.paddle = null;
         this.balls = [];
@@ -762,6 +766,15 @@ class Game {
                 this.particles.splice(index, 1);
             }
         });
+
+        // Update obstacle effect timers
+        if (this.reverseEffectTimer > 0) {
+            this.reverseEffectTimer -= deltaTime;
+            if (this.reverseEffectTimer <= 0) {
+                this.controlsReversed = false;
+                console.log('[Game] Reverse effect ended');
+            }
+        }
 
         // Check collisions
         PhysicsManager.checkCollisions(this);

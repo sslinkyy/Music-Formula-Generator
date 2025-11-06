@@ -85,7 +85,11 @@ class Paddle {
     update(deltaTime) {
         // Smooth movement towards target
         const dx = this.targetX - this.position.x;
-        const moveAmount = Math.sign(dx) * Math.min(Math.abs(dx), this.speed * deltaTime);
+
+        // Apply reversed controls if active
+        const game = window.game;
+        const moveDirection = (game && game.controlsReversed) ? -1 : 1;
+        const moveAmount = Math.sign(dx) * Math.min(Math.abs(dx), this.speed * deltaTime) * moveDirection;
 
         this.position.x += moveAmount;
         this.mesh.position.x = this.position.x;

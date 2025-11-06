@@ -12,6 +12,10 @@ class Ball {
         this.attachedPaddle = null;
         this.attachOffset = 0;
 
+        // Obstacle effects
+        this.isCrazy = false;
+        this.crazyTimer = 0;
+
         this.createMesh();
     }
 
@@ -92,6 +96,32 @@ class Ball {
             this.position.x += this.velocity.x * deltaTime;
             this.position.y += this.velocity.y * deltaTime;
             this.position.z += this.velocity.z * deltaTime;
+
+            // Handle crazy ball effect
+            if (this.crazyTimer > 0) {
+                this.crazyTimer -= deltaTime;
+
+                // Add erratic velocity changes (10% chance per frame)
+                if (Math.random() < 0.1) {
+                    this.velocity.x += (Math.random() - 0.5) * 3;
+                    this.velocity.y += (Math.random() - 0.5) * 3;
+                    this.normalizeVelocity();
+                }
+
+                // Visual effect for crazy ball
+                if (this.mesh && this.mesh.material) {
+                    const hue = (Date.now() * 0.001) % 1;
+                    this.mesh.material.emissive.setHSL(hue, 1, 0.5);
+                }
+
+                if (this.crazyTimer <= 0) {
+                    this.isCrazy = false;
+                    // Restore normal emissive color
+                    if (this.mesh && this.mesh.material) {
+                        this.mesh.material.emissive.setHex(0x00ccff);
+                    }
+                }
+            }
 
             // Check wall collisions
             this.checkWallCollisions();
