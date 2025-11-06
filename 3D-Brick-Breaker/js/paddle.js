@@ -30,7 +30,7 @@ class Paddle {
             metalness: 0.8,
             roughness: 0.2,
             emissive: 0x00ff88,
-            emissiveIntensity: 0.3
+            emissiveIntensity: 1.0  // Increased from 0.3 to make more visible
         });
 
         const paddle = new THREE.Mesh(geometry, material);
@@ -62,6 +62,9 @@ class Paddle {
 
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.scene.add(this.mesh);
+
+        console.log('[Paddle] Created and added to scene at position:', this.position, 'size:', {width: this.width, height: this.height, depth: this.depth});
+        console.log('[Paddle] Mesh:', this.mesh, 'Children count:', this.mesh.children.length);
 
         // Store references
         this.paddleMesh = paddle;

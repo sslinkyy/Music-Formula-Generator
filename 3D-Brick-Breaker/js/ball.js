@@ -72,6 +72,8 @@ class Ball {
         this.velocity.x = Math.sin(angle) * this.speed;
         this.velocity.y = Math.cos(angle) * this.speed;
         this.velocity.z = 0;
+
+        console.log('[Ball] Launched with angle:', angle, 'velocity:', this.velocity, 'position:', this.position);
     }
 
     update(deltaTime) {
