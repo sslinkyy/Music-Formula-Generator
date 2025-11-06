@@ -73,11 +73,11 @@ class Game {
         this.scene.background = new THREE.Color(0x0a0a1a);
         this.scene.fog = new THREE.Fog(0x0a0a1a, 40, 100);
 
-        // Camera - 2.5D perspective
+        // Camera - 2.5D perspective for wall view
         const aspect = window.innerWidth / window.innerHeight;
         this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-        this.camera.position.set(0, 20, 30);  // Closer and lower for better gameplay view
-        this.camera.lookAt(0, 0, 0);
+        this.camera.position.set(0, 10, 25);  // View entire playfield from front
+        this.camera.lookAt(0, 8, -1);  // Look at center of play area
 
         // Renderer
         this.renderer = new THREE.WebGLRenderer({
@@ -287,7 +287,7 @@ class Game {
         console.log('[Game] Paddle created at', this.paddle.position);
 
         // Create ball attached to paddle
-        const ball = new Ball(this.scene, 0, -3, 5);  // Start at new paddle Z position
+        const ball = new Ball(this.scene, 0, 2, -1);  // Start above paddle at same Z
         ball.attachToPaddle(this.paddle);
         this.balls.push(ball);
         console.log('[Game] Ball created and attached, position:', ball.position, 'attached:', ball.attached);
@@ -559,8 +559,8 @@ class Game {
         this.balls.forEach((ball, index) => {
             ball.update(deltaTime);
 
-            // Check if ball is out of bounds
-            if (ball.position.y < -15) {
+            // Check if ball is out of bounds (below paddle area)
+            if (ball.position.y < -3) {
                 console.log('[Game] Ball out of bounds at position:', ball.position, 'attached:', ball.attached);
                 ball.destroy();
                 this.balls.splice(index, 1);

@@ -3,7 +3,7 @@ class Ball {
         this.scene = scene;
         this.position = { x, y, z };
         this.velocity = { x: 0, y: 0, z: 0 };
-        this.radius = 0.4;
+        this.radius = 0.6;  // Increased for better visibility
         this.speed = 15;
         this.baseSpeed = 15;
         this.maxSpeed = 30;
@@ -116,7 +116,7 @@ class Ball {
     }
 
     checkWallCollisions() {
-        const bounds = 14; // Game boundary
+        const bounds = 16; // Game boundary (expanded)
 
         // Left wall
         if (this.position.x - this.radius < -bounds) {
@@ -140,8 +140,8 @@ class Ball {
         }
 
         // Top boundary (ceiling)
-        if (this.position.y + this.radius > 15) {
-            this.position.y = 15 - this.radius;
+        if (this.position.y + this.radius > 22) {
+            this.position.y = 22 - this.radius;
             this.velocity.y = -Math.abs(this.velocity.y);
             this.onWallHit();
         }

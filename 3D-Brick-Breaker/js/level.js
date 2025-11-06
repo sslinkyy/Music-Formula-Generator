@@ -35,12 +35,12 @@ const LevelManager = {
             for (let row = 0; row < rowCount; row++) {
                 const bricks = [];
                 const bricksPerRow = 6;
-                const startX = -(bricksPerRow - 1) * 2.2 / 2;
-                const y = 8 - row * 1.2;
+                const startX = -(bricksPerRow - 1) * 3.3 / 2;  // Adjusted for wider bricks
+                const y = 18 - row * 1.6;  // Start higher, more spacing
                 const typeIndex = Math.min(row % types.length, types.length - 1);
 
                 for (let col = 0; col < bricksPerRow; col++) {
-                    const x = startX + col * 2.2;
+                    const x = startX + col * 3.3;  // Wider spacing
 
                     // Add power-up brick occasionally
                     let type = types[typeIndex];
@@ -48,7 +48,7 @@ const LevelManager = {
                         type = 'powerup';
                     }
 
-                    bricks.push({ x, y, z: -15, type });
+                    bricks.push({ x, y, z: -1, type });  // Same Z as paddle
                 }
 
                 rows.push({ bricks });
@@ -66,19 +66,19 @@ const LevelManager = {
             for (let row = 0; row < maxBricks; row++) {
                 const bricks = [];
                 const bricksInRow = maxBricks - row;
-                const startX = -(bricksInRow - 1) * 2.2 / 2;
-                const y = 10 - row * 1.2;
+                const startX = -(bricksInRow - 1) * 3.3 / 2;  // Adjusted spacing
+                const y = 20 - row * 1.6;  // Higher position, more spacing
                 const type = types[Math.min(row, types.length - 1)];
 
                 for (let col = 0; col < bricksInRow; col++) {
-                    const x = startX + col * 2.2;
+                    const x = startX + col * 3.3;  // Wider spacing
 
                     let brickType = type;
                     if (Math.random() < 0.12) {
                         brickType = 'powerup';
                     }
 
-                    bricks.push({ x, y, z: -15, type: brickType });
+                    bricks.push({ x, y, z: -1, type: brickType });  // Same Z as paddle
                 }
 
                 rows.push({ bricks });
@@ -100,12 +100,12 @@ const LevelManager = {
 
                 if (bricksInRow <= 0) continue;
 
-                const startX = -(bricksInRow - 1) * 2.2 / 2;
-                const y = 10 - row * 1.2;
+                const startX = -(bricksInRow - 1) * 3.3 / 2;  // Adjusted spacing
+                const y = 20 - row * 1.6;  // Higher position
                 const type = types[Math.min(distance, types.length - 1)];
 
                 for (let col = 0; col < bricksInRow; col++) {
-                    const x = startX + col * 2.2;
+                    const x = startX + col * 3.3;  // Wider spacing
 
                     let brickType = type;
                     if (row === centerRow && col === Math.floor(bricksInRow / 2)) {
@@ -114,7 +114,7 @@ const LevelManager = {
                         brickType = 'powerup';
                     }
 
-                    bricks.push({ x, y, z: -15, type: brickType });
+                    bricks.push({ x, y, z: -1, type: brickType });  // Same Z as paddle
                 }
 
                 rows.push({ bricks });
@@ -132,14 +132,14 @@ const LevelManager = {
 
             for (let row = 0; row < rowCount; row++) {
                 const bricks = [];
-                const y = 10 - row * 1.2;
-                const startX = -(colCount - 1) * 2.2 / 2;
+                const y = 20 - row * 1.6;  // Higher position
+                const startX = -(colCount - 1) * 3.3 / 2;  // Adjusted spacing
 
                 for (let col = 0; col < colCount; col++) {
                     // Checkerboard pattern
                     if ((row + col) % 2 === 1) continue;
 
-                    const x = startX + col * 2.2;
+                    const x = startX + col * 3.3;  // Wider spacing
                     let type = types[(row + col) % types.length];
 
                     if (Math.random() < 0.08) {
@@ -148,7 +148,7 @@ const LevelManager = {
                         type = 'powerup';
                     }
 
-                    bricks.push({ x, y, z: -15, type });
+                    bricks.push({ x, y, z: -1, type });  // Same Z as paddle
                 }
 
                 rows.push({ bricks });
@@ -165,11 +165,11 @@ const LevelManager = {
             // Top walls
             for (let row = 0; row < 2; row++) {
                 const bricks = [];
-                const y = 10 - row * 1.2;
-                const positions = [-6.6, -4.4, 4.4, 6.6]; // Walls
+                const y = 20 - row * 1.6;  // Higher position
+                const positions = [-9.9, -6.6, 6.6, 9.9]; // Walls (adjusted spacing)
 
                 positions.forEach(x => {
-                    bricks.push({ x, y, z: -15, type: 'armored' });
+                    bricks.push({ x, y, z: -1, type: 'armored' });  // Same Z as paddle
                 });
 
                 rows.push({ bricks });
@@ -178,20 +178,20 @@ const LevelManager = {
             // Middle section with gap
             for (let row = 2; row < 5; row++) {
                 const bricks = [];
-                const y = 10 - row * 1.2;
+                const y = 20 - row * 1.6;  // Higher position
 
                 for (let col = 0; col < 6; col++) {
                     // Leave gap in middle
                     if (col === 2 || col === 3) continue;
 
-                    const x = -5.5 + col * 2.2;
+                    const x = -8.25 + col * 3.3;  // Wider spacing
                     let type = types[row % types.length];
 
                     if (Math.random() < 0.15) {
                         type = 'explosive';
                     }
 
-                    bricks.push({ x, y, z: -15, type });
+                    bricks.push({ x, y, z: -1, type });  // Same Z as paddle
                 }
 
                 rows.push({ bricks });
@@ -199,16 +199,16 @@ const LevelManager = {
 
             // Bottom filled
             const bricks = [];
-            const y = 10 - 5 * 1.2;
+            const y = 20 - 5 * 1.6;  // Higher position
             for (let col = 0; col < 6; col++) {
-                const x = -5.5 + col * 2.2;
+                const x = -8.25 + col * 3.3;  // Wider spacing
 
                 let type = 'strong';
                 if (col === 2 || col === 3) {
                     type = 'powerup';
                 }
 
-                bricks.push({ x, y, z: -15, type });
+                bricks.push({ x, y, z: -1, type });  // Same Z as paddle
             }
             rows.push({ bricks });
 
@@ -223,13 +223,13 @@ const LevelManager = {
             // Create a spiral pattern
             const bricks = [];
             const centerX = 0;
-            const centerY = 7;
+            const centerY = 14;  // Higher center position
             const turns = 3;
             const bricksPerTurn = 8;
 
             for (let i = 0; i < turns * bricksPerTurn; i++) {
                 const angle = (i / bricksPerTurn) * Math.PI * 2;
-                const radius = 2 + (i / bricksPerTurn) * 1.5;
+                const radius = 3 + (i / bricksPerTurn) * 2;  // Larger spiral
 
                 const x = centerX + Math.cos(angle) * radius;
                 const y = centerY + Math.sin(angle) * radius * 0.7;
@@ -242,7 +242,7 @@ const LevelManager = {
                     type = 'powerup';
                 }
 
-                bricks.push({ x, y, z: -15, type });
+                bricks.push({ x, y, z: -1, type });  // Same Z as paddle
             }
 
             rows.push({ bricks });
@@ -257,8 +257,8 @@ const LevelManager = {
             const types = ['weak', 'normal', 'strong', 'armored', 'explosive'];
 
             for (let i = 0; i < brickCount; i++) {
-                const x = (Math.random() - 0.5) * 24;
-                const y = 4 + Math.random() * 8;
+                const x = (Math.random() - 0.5) * 28;  // Wider spread
+                const y = 8 + Math.random() * 10;  // Higher position range
 
                 // Weighted random type
                 let type;
@@ -273,7 +273,7 @@ const LevelManager = {
                     type = 'powerup';
                 }
 
-                bricks.push({ x, y, z: -15, type });
+                bricks.push({ x, y, z: -1, type });  // Same Z as paddle
             }
 
             rows.push({ bricks });

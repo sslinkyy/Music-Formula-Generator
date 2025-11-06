@@ -2,9 +2,9 @@ class Brick {
     constructor(scene, x, y, z, type = 'normal') {
         this.scene = scene;
         this.position = { x, y, z };
-        this.width = 2;
-        this.height = 0.8;
-        this.depth = 1;
+        this.width = 3;  // Increased for better visibility
+        this.height = 1.2;
+        this.depth = 2;
         this.type = type;
         this.destroyed = false;
 

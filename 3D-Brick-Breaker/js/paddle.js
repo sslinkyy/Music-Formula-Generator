@@ -1,12 +1,12 @@
 class Paddle {
     constructor(scene) {
         this.scene = scene;
-        this.position = { x: 0, y: -5, z: 5 };  // Repositioned for proper view
+        this.position = { x: 0, y: 0, z: -1 };  // Bottom center of playfield
         this.targetX = 0;
-        this.width = 6;  // Increased from 4 for better visibility
-        this.baseWidth = 6;  // Increased from 4
-        this.height = 0.8;  // Increased from 0.5
-        this.depth = 2;  // Increased from 1.5
+        this.width = 10;  // Much bigger for visibility and gameplay
+        this.baseWidth = 10;
+        this.height = 1.2;
+        this.depth = 2.5;
         this.speed = 20;
 
         // Power-up states
@@ -24,9 +24,13 @@ class Paddle {
         // Main paddle body
         const geometry = new THREE.BoxGeometry(this.width, this.height, this.depth);
 
-        // Create bright unlit material for maximum visibility
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x00ff88
+        // Create bright material with proper lighting support
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x00ff88,
+            metalness: 0.7,
+            roughness: 0.3,
+            emissive: 0x00ff88,
+            emissiveIntensity: 0.5
         });
 
         const paddle = new THREE.Mesh(geometry, material);
@@ -75,7 +79,7 @@ class Paddle {
     setTargetX(x) {
         // Clamp target position to game boundaries
         const halfWidth = this.width / 2;
-        this.targetX = Math.max(-14 + halfWidth, Math.min(14 - halfWidth, x));
+        this.targetX = Math.max(-16 + halfWidth, Math.min(16 - halfWidth, x));
     }
 
     update(deltaTime) {
