@@ -3,7 +3,7 @@ class Ball {
         this.scene = scene;
         this.position = { x, y, z };
         this.velocity = { x: 0, y: 0, z: 0 };
-        this.radius = 1.0;  // 10% larger (0.9 * 1.1 ≈ 1.0)
+        this.radius = 1.2;  // 20% larger for better visibility (1.0 * 1.2)
         this.speed = 20;  // 10% faster (18 * 1.1 ≈ 20)
         this.baseSpeed = 20;
         this.maxSpeed = 40;  // 10% faster (36 * 1.1 ≈ 40)

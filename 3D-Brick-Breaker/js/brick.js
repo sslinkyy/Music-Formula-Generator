@@ -1,7 +1,7 @@
 class Brick {
     constructor(scene, x, y, z, type = 'normal') {
         this.scene = scene;
-        this.position = { x: x * 3.3, y: (y * 1.65) + 16.5, z };  // 10% larger scaling (3x->3.3x, 1.5x->1.65x, 15->16.5)
+        this.position = { x: x * 3.3, y: (y * 1.8) + 20, z };  // Higher positioning to fill top space (1.65->1.8, 16.5->20)
         this.width = 6.6;  // 10% larger (6 * 1.1)
         this.height = 1.32;  // 10% larger (1.2 * 1.1)
         this.depth = 2.2;  // 10% larger (2 * 1.1)

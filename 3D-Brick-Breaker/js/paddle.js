@@ -3,10 +3,10 @@ class Paddle {
         this.scene = scene;
         this.position = { x: 0, y: 0, z: -1 };  // Bottom center of playfield
         this.targetX = 0;
-        this.width = 8.8;  // 10% larger (8 * 1.1)
-        this.baseWidth = 8.8;
-        this.height = 1.65;  // 10% larger (1.5 * 1.1)
-        this.depth = 3.3;  // 10% larger (3 * 1.1)
+        this.width = 10.56;  // 20% larger (8.8 * 1.2)
+        this.baseWidth = 10.56;
+        this.height = 1.98;  // 20% larger (1.65 * 1.2)
+        this.depth = 3.96;  // 20% larger (3.3 * 1.2)
         this.speed = 66; // 10% faster (60 * 1.1)
 
         // Power-up states

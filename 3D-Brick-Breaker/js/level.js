@@ -64,16 +64,16 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const rowCount = 15;  // Increased to fill vertical space (was 10)
+            const rowCount = 18;  // Increased to fill top space (was 15)
             const bricksPerRow = 10;  // Increased to fill horizontal space (was 8)
 
             for (let row = 0; row < rowCount; row++) {
                 const startX = -(bricksPerRow - 1) * 2.5 / 2;
-                const y = 22 - row * 1.5;  // Adjusted starting Y position
+                const y = 25 - row * 1.5;  // Higher starting Y to fill top space
 
                 for (let col = 0; col < bricksPerRow; col++) {
                     const x = startX + col * 2.5;
-                    let type = row < 5 ? 'weak' : (row < 10 ? 'normal' : 'strong');
+                    let type = row < 6 ? 'weak' : (row < 12 ? 'normal' : 'strong');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
                 }
@@ -92,7 +92,7 @@ const LevelManager = {
             for (let row = 0; row < maxBricks; row++) {
                 const bricksInRow = maxBricks - row;
                 const startX = -(bricksInRow - 1) * 3 / 2;
-                const y = 24 - row * 1.6;  // Adjusted starting Y position
+                const y = 28 - row * 1.6;  // Higher starting Y to fill top space
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 3;
@@ -170,7 +170,7 @@ const LevelManager = {
 
             // Top walls (armored) - doubled rows
             for (let row = 0; row < 4; row++) {  // Increased from 2 to 4
-                const y = 24 - row * 1.6;  // Adjusted starting Y
+                const y = 28 - row * 1.6;  // Higher starting Y to fill top space
                 const positions = [-10, -6, 6, 10];
 
                 positions.forEach(x => {
@@ -182,7 +182,7 @@ const LevelManager = {
 
             // Middle section with gap - doubled rows
             for (let row = 4; row < 10; row++) {  // Increased from 3 to 6 rows
-                const y = 24 - row * 1.6;
+                const y = 28 - row * 1.6;
 
                 for (let col = 0; col < 7; col++) {
                     if (col === 3) continue; // Middle gap
@@ -196,7 +196,7 @@ const LevelManager = {
 
             // Bottom filled with powerups - doubled rows
             for (let bottomRow = 10; bottomRow < 12; bottomRow++) {  // Added 2 rows instead of 1
-                const y = 24 - bottomRow * 1.6;
+                const y = 28 - bottomRow * 1.6;
                 for (let col = 0; col < 7; col++) {
                     const x = -9 + col * 3;
                     let type = col === 3 ? 'powerup' : 'normal';
@@ -214,7 +214,7 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 18;  // Adjusted center Y
+            const centerY = 25;  // Higher center Y to fill top space
             const turns = 6;  // Doubled from 3 to 6 turns (~60 bricks)
             const bricksPerTurn = 10;
 
@@ -297,7 +297,7 @@ const LevelManager = {
                     // Create gaps at different heights for each wall
                     if (row === 2 + (wall % 3) || row === 5 + (wall % 3)) continue;
 
-                    const y = 24 - row * 1.6;  // Adjusted starting Y
+                    const y = 28 - row * 1.6;  // Higher starting Y to fill top space
                     let type = 'strong';
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
@@ -316,7 +316,7 @@ const LevelManager = {
 
             for (let i = 0; i < brickCount; i++) {
                 const x = (Math.random() - 0.5) * 30;  // Wider spread
-                const y = 10 + Math.random() * 20;  // Taller spread
+                const y = 15 + Math.random() * 25;  // Taller spread to fill top space (Y 15-40)
 
                 const roll = Math.random();
                 let type;
@@ -373,7 +373,7 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 18;  // Adjusted center Y
+            const centerY = 25;  // Higher center Y to fill top space
             const rings = 8;  // Doubled from 4 to 8 rings (~120 bricks)
 
             for (let ring = 0; ring < rings; ring++) {
@@ -425,10 +425,10 @@ const LevelManager = {
             const bricks = [];
 
             const diamondPositions = [
-                { centerX: -12, centerY: 22, type: 'normal' },
-                { centerX: 12, centerY: 22, type: 'strong' },
-                { centerX: -12, centerY: 12, type: 'strong' },
-                { centerX: 12, centerY: 12, type: 'armored' }
+                { centerX: -12, centerY: 28, type: 'normal' },
+                { centerX: 12, centerY: 28, type: 'strong' },
+                { centerX: -12, centerY: 18, type: 'strong' },
+                { centerX: 12, centerY: 18, type: 'armored' }
             ];
 
             diamondPositions.forEach(diamond => {
@@ -528,7 +528,7 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 18;  // Adjusted center Y
+            const centerY = 25;  // Higher center Y to fill top space
             const petals = 12;  // Doubled from 6 to 12 petals (~50 bricks)
 
             // Center
@@ -600,7 +600,7 @@ const LevelManager = {
             for (let i = 0; i < bricksPerWave; i++) {
                 const x = -14 + (i / bricksPerWave) * 28;
                 const waveOffset = Math.sin(i * 0.5) * 5;  // Increased amplitude
-                const y = 18 + waveOffset;  // Adjusted center Y
+                const y = 25 + waveOffset;  // Higher center Y to fill top space
 
                 let type = i < 20 ? 'normal' : (i < 40 ? 'strong' : 'armored');
                 type = LevelManager.addSpecialBricks(type, level);
