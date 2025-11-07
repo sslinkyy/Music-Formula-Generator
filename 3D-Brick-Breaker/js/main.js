@@ -288,7 +288,7 @@ class Game {
 
         this.initLevel();
         console.log('[Game] Game state:', this.state, 'Lives:', this.lives);
-        AudioManager.playMusic();
+        // AudioManager.playMusic();  // Disabled - placeholder music causes constant beeping
     }
 
     initLevel() {
