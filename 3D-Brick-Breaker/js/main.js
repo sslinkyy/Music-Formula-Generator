@@ -53,6 +53,17 @@ class Game {
         this.bricks = [];
         this.powerUps = [];
         this.particles = [];
+        this.musicalCollectibles = [];
+
+        // Musical collection tracking
+        this.collectedMusic = {
+            genre: [],
+            beat: [],
+            melody: [],
+            sfx: [],
+            tempo: [],
+            style: []
+        };
 
         // Keyboard controls
         this.keys = {
@@ -266,6 +277,7 @@ class Game {
         this.updateLives();
         this.updateLevel();
         this.updateCombo();
+        this.updateMusicalCollectionUI();
     }
 
     startGame() {
@@ -332,11 +344,13 @@ class Game {
         this.bricks.forEach(brick => brick.destroy());
         this.powerUps.forEach(powerUp => powerUp.destroy());
         this.particles.forEach(particle => particle.destroy());
+        this.musicalCollectibles.forEach(collectible => collectible.destroy());
 
         this.balls = [];
         this.bricks = [];
         this.powerUps = [];
         this.particles = [];
+        this.musicalCollectibles = [];
     }
 
     onMouseMove(event) {
@@ -978,6 +992,23 @@ class Game {
             }
         });
 
+        // Update musical collectibles
+        this.musicalCollectibles.forEach((collectible, index) => {
+            const alive = collectible.update(deltaTime);
+
+            // Check paddle collision
+            if (this.paddle && collectible.checkPaddleCollision(this.paddle)) {
+                this.musicalCollectibles.splice(index, 1);
+                return;
+            }
+
+            // Remove if dead or out of bounds
+            if (!alive || collectible.position.y < -10) {
+                collectible.destroy();
+                this.musicalCollectibles.splice(index, 1);
+            }
+        });
+
         // Update shield visual
         if (this.shieldMesh && this.hasShield) {
             // Pulse animation
@@ -1126,6 +1157,55 @@ class Game {
                 }
             }, 500);
         }, 2000);
+    }
+
+    collectMusicalElement(type, value, data) {
+        // Add to collection
+        if (!this.collectedMusic[type].includes(value)) {
+            this.collectedMusic[type].push(value);
+            console.log(`[Game] Collected ${type}: ${value}`);
+        }
+
+        // Update UI
+        this.updateMusicalCollectionUI();
+
+        // Add score bonus
+        this.addScore(50);
+    }
+
+    updateMusicalCollectionUI() {
+        const collectionList = document.getElementById('collection-list');
+        if (!collectionList) return;
+
+        let html = '';
+
+        // Display collected items by category
+        const categories = [
+            { key: 'genre', label: 'Genres', icon: '🎵', color: '#ff6b9d' },
+            { key: 'beat', label: 'Beats', icon: '🥁', color: '#4ecdc4' },
+            { key: 'melody', label: 'Melodies', icon: '🎹', color: '#ffe66d' },
+            { key: 'sfx', label: 'SFX', icon: '🔊', color: '#95e1d3' },
+            { key: 'tempo', label: 'Tempos', icon: '⏱️', color: '#f38181' },
+            { key: 'style', label: 'Styles', icon: '✨', color: '#aa96da' }
+        ];
+
+        categories.forEach(cat => {
+            const items = this.collectedMusic[cat.key];
+            if (items.length > 0) {
+                html += `<div style="margin-bottom: 10px;">`;
+                html += `<strong style="color: ${cat.color};">${cat.icon} ${cat.label} (${items.length})</strong><br/>`;
+                items.forEach(item => {
+                    html += `<span style="font-size: 10px; opacity: 0.8;">• ${item}</span><br/>`;
+                });
+                html += `</div>`;
+            }
+        });
+
+        if (html === '') {
+            html = '<div style="opacity: 0.5; text-align: center;">Break bricks to collect<br/>musical elements!</div>';
+        }
+
+        collectionList.innerHTML = html;
     }
 
     animate() {

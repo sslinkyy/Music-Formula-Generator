@@ -36,6 +36,12 @@
             <!-- Active Effects Status Bar -->
             <div id="active-effects" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100;"></div>
 
+            <!-- Musical Collection UI -->
+            <div id="musical-collection" style="position: fixed; top: 100px; right: 20px; background: rgba(0, 0, 0, 0.8); padding: 15px; border-radius: 10px; border: 2px solid #00ff88; max-width: 250px; max-height: 500px; overflow-y: auto; z-index: 100;">
+                <h3 style="margin: 0 0 10px 0; color: #00ff88; font-size: 16px; text-align: center;">🎵 MUSIC COLLECTION</h3>
+                <div id="collection-list" style="font-size: 12px; color: #fff;"></div>
+            </div>
+
             <div id="menu" class="modal">
                 <h1>3D BRICK BREAKER</h1>
                 <p>Break all the bricks to advance!</p>
@@ -104,6 +110,7 @@
     <script src="js/audio.js"></script>
     <script src="js/particles.js"></script>
     <script src="js/powerup.js"></script>
+    <script src="js/musical-collectible.js"></script>
     <script src="js/difficulty.js"></script>
     <script src="js/brick.js"></script>
     <script src="js/ball.js"></script>

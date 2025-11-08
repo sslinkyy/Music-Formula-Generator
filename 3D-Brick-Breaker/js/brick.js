@@ -270,6 +270,20 @@ class Brick {
             window.game.powerUps.push(powerUp);
         }
 
+        // Drop musical collectible (30% chance)
+        if (window.game && Math.random() < 0.3) {
+            const types = ['genre', 'beat', 'melody', 'sfx', 'tempo', 'style'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            const collectible = new MusicalCollectible(
+                this.scene,
+                this.position.x,
+                this.position.y,
+                this.position.z,
+                randomType
+            );
+            window.game.musicalCollectibles.push(collectible);
+        }
+
         // Handle obstacle brick special effects
         if (this.isWarp && window.game) {
             this.applyWarpEffect();
