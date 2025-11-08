@@ -3,10 +3,10 @@ class MusicalCollectible {
     constructor(scene, x, y, z, type) {
         this.scene = scene;
         this.position = { x, y, z };
-        this.velocity = { x: 0, y: -5, z: 0 };  // Falls down
+        this.velocity = { x: 0, y: -2, z: 0 };  // Falls down slowly (was -5)
         this.type = type;  // genre, beat, melody, sfx, tempo, style
         this.collected = false;
-        this.lifetime = 8;  // Seconds before disappearing
+        this.lifetime = 20;  // Seconds before disappearing (increased from 8)
         this.age = 0;
 
         // Define collectible types and their properties
@@ -123,6 +123,17 @@ class MusicalCollectible {
         this.position.y += this.velocity.y * deltaTime;
         this.position.z += this.velocity.z * deltaTime;
 
+        // Gentle drift toward paddle for easier collection
+        const game = window.game;
+        if (game && game.paddle) {
+            const paddleX = game.paddle.position.x;
+            const dx = paddleX - this.position.x;
+            const driftSpeed = 3;  // Units per second toward paddle
+            if (Math.abs(dx) > 0.5) {
+                this.position.x += Math.sign(dx) * driftSpeed * deltaTime;
+            }
+        }
+
         // Rotate cube continuously
         this.cubeMesh.rotation.x += deltaTime * 2;
         this.cubeMesh.rotation.y += deltaTime * 3;
@@ -141,8 +152,8 @@ class MusicalCollectible {
         this.lightMesh.intensity = pulse * 1.5;
 
         // Fade out near end of lifetime
-        if (this.age > this.lifetime - 2) {
-            const fadeProgress = (this.age - (this.lifetime - 2)) / 2;
+        if (this.age > this.lifetime - 3) {
+            const fadeProgress = (this.age - (this.lifetime - 3)) / 3;
             this.mesh.scale.setScalar(1 - fadeProgress * 0.5);
             this.cubeMesh.material.opacity = 1 - fadeProgress;
             this.glowMesh.material.opacity *= (1 - fadeProgress);

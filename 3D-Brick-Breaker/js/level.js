@@ -96,7 +96,7 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const maxBricks = 13;  // Increased to fill space (was 10, ~91 bricks total)
+            const maxBricks = 11;  // Reduced to fit within ball reach (was 13, ±15*3.3=±49.5 < ±52.8)
 
             for (let row = 0; row < maxBricks; row++) {
                 const bricksInRow = maxBricks - row;
@@ -105,7 +105,7 @@ const LevelManager = {
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 3;
-                    let type = row < 4 ? 'weak' : (row < 9 ? 'normal' : 'strong');
+                    let type = row < 4 ? 'weak' : (row < 8 ? 'normal' : 'strong');
                     type = LevelManager.addPowerupsOnly(type);  // Add powerups but no obstacles
                     bricks.push({ x, y, z: -1, type });
                 }
