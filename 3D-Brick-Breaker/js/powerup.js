@@ -198,11 +198,19 @@ const PowerUpManager = {
     }
 };
 
+const POWERUP_FALL_SETTINGS = {
+    baseSpeed: 4.8,      // Initial downward speed (units per second)
+    acceleration: 9.5,   // Gravity-like acceleration
+    maxSpeed: 16         // Clamp to keep items catchable
+};
+
 class PowerUp {
     constructor(scene, x, y, z, type, data = null) {
         this.scene = scene;
         this.position = { x, y, z };
-        this.velocity = { x: 0, y: -6, z: 0 };  // Increased from -3 to -6 for faster drop
+        this.fallSettings = { ...POWERUP_FALL_SETTINGS };
+        this.currentFallSpeed = this.fallSettings.baseSpeed;
+        this.velocity = { x: 0, y: -this.currentFallSpeed, z: 0 };
         this.type = type;
         this.data = data;  // Music data (genre name, style tag, etc.)
         this.collected = false;
@@ -244,6 +252,8 @@ class PowerUp {
     update(deltaTime) {
         if (this.collected) return;
 
+        let magnetActive = false;
+
         // Magnet effect - pull towards paddle
         if (window.game && window.game.hasMagnet && window.game.paddle) {
             const paddle = window.game.paddle;
@@ -256,8 +266,11 @@ class PowerUp {
                 const magnetStrength = 15;
                 this.velocity.x = (dx / distance) * magnetStrength;
                 this.velocity.y = (dy / distance) * magnetStrength;
+                magnetActive = true;
             }
         }
+
+        this.applyFallPhysics(deltaTime, magnetActive);
 
         // Update position
         this.position.x += this.velocity.x * deltaTime;
@@ -281,6 +294,20 @@ class PowerUp {
             if (paddleBox.intersectsBox(powerUpBox)) {
                 this.collect();
             }
+        }
+    }
+
+    applyFallPhysics(deltaTime, magnetActive) {
+        if (!magnetActive) {
+            this.currentFallSpeed = Math.min(
+                this.currentFallSpeed + this.fallSettings.acceleration * deltaTime,
+                this.fallSettings.maxSpeed
+            );
+            this.velocity.y = -this.currentFallSpeed;
+
+            // Bleed off stray horizontal velocity so drops fall straight again
+            const dampFactor = Math.min(deltaTime * 6, 1);
+            this.velocity.x += (0 - this.velocity.x) * dampFactor;
         }
     }
 

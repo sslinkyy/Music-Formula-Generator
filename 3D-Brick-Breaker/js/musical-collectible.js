@@ -1,9 +1,17 @@
 // Musical Collectible: drops from bricks and can be collected to build songs
+const COLLECTIBLE_FALL_SETTINGS = {
+    baseSpeed: 2.8,      // Initial fall speed (units per second)
+    acceleration: 7.5,   // Gravity-like acceleration
+    maxSpeed: 11.5       // Clamp so items don't become impossible to catch
+};
+
 class MusicalCollectible {
     constructor(scene, x, y, z, type) {
         this.scene = scene;
         this.position = { x, y, z };
-        this.velocity = { x: 0, y: -2, z: 0 };  // Falls down slowly (was -5)
+        this.fallSettings = { ...COLLECTIBLE_FALL_SETTINGS };
+        this.currentFallSpeed = this.fallSettings.baseSpeed;
+        this.velocity = { x: 0, y: -this.currentFallSpeed, z: 0 };
         this.type = type;  // genre, beat, melody, sfx, tempo, style
         this.collected = false;
         this.lifetime = 20;  // Seconds before disappearing (increased from 8)
@@ -118,6 +126,8 @@ class MusicalCollectible {
 
         this.age += deltaTime;
 
+        this.applyGravity(deltaTime);
+
         // Apply gravity/velocity
         this.position.x += this.velocity.x * deltaTime;
         this.position.y += this.velocity.y * deltaTime;
@@ -166,6 +176,16 @@ class MusicalCollectible {
         }
 
         return true;
+    }
+
+    applyGravity(deltaTime) {
+        if (this.currentFallSpeed < this.fallSettings.maxSpeed) {
+            this.currentFallSpeed = Math.min(
+                this.currentFallSpeed + this.fallSettings.acceleration * deltaTime,
+                this.fallSettings.maxSpeed
+            );
+            this.velocity.y = -this.currentFallSpeed;
+        }
     }
 
     checkPaddleCollision(paddle) {
