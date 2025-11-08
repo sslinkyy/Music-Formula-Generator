@@ -73,8 +73,8 @@ const LevelManager = {
 
                 for (let col = 0; col < bricksPerRow; col++) {
                     const x = startX + col * 2.5;
-                    let type = row < 6 ? 'weak' : (row < 12 ? 'normal' : 'strong');
-                    type = LevelManager.addSpecialBricks(type, level);
+                    const type = row < 6 ? 'weak' : (row < 12 ? 'normal' : 'strong');
+                    // Don't call addSpecialBricks - level 1 should have NO obstacles
                     bricks.push({ x, y, z: -1, type });
                 }
             }
@@ -83,7 +83,7 @@ const LevelManager = {
             return rows;
         },
 
-        // Level 2: Easy Pyramid
+        // Level 2: Easy Pyramid (No obstacles - tutorial level)
         function(level) {
             const rows = [];
             const bricks = [];
@@ -96,8 +96,8 @@ const LevelManager = {
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 3;
-                    let type = row < 4 ? 'weak' : (row < 9 ? 'normal' : 'strong');
-                    type = LevelManager.addSpecialBricks(type, level);
+                    const type = row < 4 ? 'weak' : (row < 9 ? 'normal' : 'strong');
+                    // Don't call addSpecialBricks - level 2 should have NO obstacles
                     bricks.push({ x, y, z: -1, type });
                 }
             }
@@ -106,7 +106,7 @@ const LevelManager = {
             return rows;
         },
 
-        // Level 3: Diamond Shape
+        // Level 3: Diamond Shape (No obstacles - tutorial level)
         function(level) {
             const rows = [];
             const bricks = [];
@@ -127,9 +127,8 @@ const LevelManager = {
                     // Center brick is explosive
                     if (row === centerRow && col === Math.floor(bricksInRow / 2)) {
                         type = 'explosive';
-                    } else {
-                        type = LevelManager.addSpecialBricks(type, level);
                     }
+                    // Don't call addSpecialBricks - level 3 should have NO obstacles
 
                     bricks.push({ x, y, z: -1, type });
                 }
