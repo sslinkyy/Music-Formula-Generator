@@ -30,6 +30,11 @@ const AudioManager = {
     },
 
     play(soundName) {
+        // Disabled - placeholder sounds are simple beeps that become annoying
+        // TODO: Replace with proper sound effects
+        return;
+
+        /* Original implementation:
         if (!this.initialized) this.init();
 
         const sound = this.sounds[soundName];
@@ -46,6 +51,7 @@ const AudioManager = {
         } catch (e) {
             console.log('Audio error:', e);
         }
+        */
     },
 
     playMusic() {

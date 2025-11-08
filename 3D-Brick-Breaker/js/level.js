@@ -59,6 +59,15 @@ const LevelManager = {
         return baseType;
     },
 
+    // Helper: Add only powerups (for tutorial levels 1-3)
+    addPowerupsOnly(baseType) {
+        const roll = Math.random();
+        if (roll < 0.08) {  // 8% chance for powerups in tutorial levels
+            return 'powerup';
+        }
+        return baseType;
+    },
+
     patterns: [
         // Level 1: Simple Rows (Tutorial - no obstacles)
         function(level) {
@@ -73,8 +82,8 @@ const LevelManager = {
 
                 for (let col = 0; col < bricksPerRow; col++) {
                     const x = startX + col * 2.5;
-                    const type = row < 6 ? 'weak' : (row < 12 ? 'normal' : 'strong');
-                    // Don't call addSpecialBricks - level 1 should have NO obstacles
+                    let type = row < 6 ? 'weak' : (row < 12 ? 'normal' : 'strong');
+                    type = LevelManager.addPowerupsOnly(type);  // Add powerups but no obstacles
                     bricks.push({ x, y, z: -1, type });
                 }
             }
@@ -96,8 +105,8 @@ const LevelManager = {
 
                 for (let col = 0; col < bricksInRow; col++) {
                     const x = startX + col * 3;
-                    const type = row < 4 ? 'weak' : (row < 9 ? 'normal' : 'strong');
-                    // Don't call addSpecialBricks - level 2 should have NO obstacles
+                    let type = row < 4 ? 'weak' : (row < 9 ? 'normal' : 'strong');
+                    type = LevelManager.addPowerupsOnly(type);  // Add powerups but no obstacles
                     bricks.push({ x, y, z: -1, type });
                 }
             }
@@ -127,8 +136,9 @@ const LevelManager = {
                     // Center brick is explosive
                     if (row === centerRow && col === Math.floor(bricksInRow / 2)) {
                         type = 'explosive';
+                    } else {
+                        type = LevelManager.addPowerupsOnly(type);  // Add powerups but no obstacles
                     }
-                    // Don't call addSpecialBricks - level 3 should have NO obstacles
 
                     bricks.push({ x, y, z: -1, type });
                 }
