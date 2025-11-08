@@ -270,6 +270,30 @@ class Game {
             this.settings.quality = e.target.value;
             this.updateGraphicsQuality();
         });
+
+        // Save-to-app buttons (if present)
+        const saveBtnGameOver = document.getElementById('save-to-generator-gameover');
+        if (saveBtnGameOver) {
+            saveBtnGameOver.addEventListener('click', () => {
+                try {
+                    this.saveCollectionToLocalStorage();
+                    this.showSaveConfirmation();
+                } catch (e) {
+                    console.error('[Game] Save to Music Generator failed:', e);
+                }
+            });
+        }
+        const saveBtnLevel = document.getElementById('save-to-generator-level');
+        if (saveBtnLevel) {
+            saveBtnLevel.addEventListener('click', () => {
+                try {
+                    this.saveCollectionToLocalStorage();
+                    this.showSaveConfirmation();
+                } catch (e) {
+                    console.error('[Game] Save to Music Generator failed:', e);
+                }
+            });
+        }
     }
 
     setupUI() {
@@ -566,6 +590,8 @@ class Game {
         this.showModal('game-over');
         AudioManager.play('gameOver');
         AudioManager.stopMusic();
+        // Render collected musical elements summary
+        this.renderCollectedMusicSummary('collected-summary-gameover');
     }
 
     levelComplete() {
@@ -598,6 +624,8 @@ class Game {
 
             // Show collected music powerups summary
             this.showCollectedPowerups();
+            // Also show musical collectible summary
+            this.renderCollectedMusicSummary('collected-summary-level');
 
             // Smooth fade-in modal
             const modal = document.getElementById('level-complete');
@@ -809,6 +837,63 @@ class Game {
                 container.innerHTML += '</div>';
             }
         }
+    }
+
+    renderCollectedMusicSummary(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        const categories = [
+            { key: 'genre', label: 'Genres' },
+            { key: 'style', label: 'Styles' },
+            { key: 'beat', label: 'Beats' },
+            { key: 'melody', label: 'Melodies' },
+            { key: 'sfx', label: 'SFX' },
+            { key: 'tempo', label: 'Tempos' },
+        ];
+
+        let html = '<h4>Musical Elements:</h4>';
+        let any = false;
+        categories.forEach(cat => {
+            const items = (this.collectedMusic && this.collectedMusic[cat.key]) || [];
+            if (items.length > 0) {
+                any = true;
+                html += `<div class="collected-category"><strong>${cat.label}:</strong> ${items.join(', ')}</div>`;
+            }
+        });
+
+        if (!any) {
+            html += '<div style="opacity:0.8">No musical elements collected yet.</div>';
+        } else {
+            const totalCount = Object.values(this.collectedMusic).reduce((sum, arr) => sum + (arr ? arr.length : 0), 0);
+            html += `<div style=\"margin-top:8px; font-size:12px; opacity:0.8;\">Total saved: ${totalCount}. Open Music Generator to import.</div>`;
+        }
+
+        target.innerHTML = html;
+    }
+
+    showSaveConfirmation() {
+        // Simple ephemeral toast centered at bottom
+        const toast = document.createElement('div');
+        toast.textContent = 'Saved to Music Generator';
+        toast.style.position = 'fixed';
+        toast.style.left = '50%';
+        toast.style.bottom = '40px';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.background = 'rgba(0,0,0,0.8)';
+        toast.style.color = '#00ff88';
+        toast.style.padding = '10px 16px';
+        toast.style.border = '1px solid #00ff88';
+        toast.style.borderRadius = '8px';
+        toast.style.zIndex = '1000';
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.2s ease-in';
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => { toast.style.opacity = '1'; });
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
+        }, 1500);
     }
 
     showModal(id) {
@@ -1169,8 +1254,37 @@ class Game {
         // Update UI
         this.updateMusicalCollectionUI();
 
+        // Auto-save to localStorage for Music Generator integration
+        this.saveCollectionToLocalStorage();
+
         // Add score bonus
         this.addScore(50);
+    }
+
+    saveCollectionToLocalStorage() {
+        try {
+            const totalCount = Object.values(this.collectedMusic).reduce((sum, arr) => sum + arr.length, 0);
+
+            const payload = {
+                timestamp: Date.now(),
+                version: '1.0',
+                collections: this.collectedMusic,
+                stats: {
+                    totalGenres: this.collectedMusic.genre.length,
+                    totalBeats: this.collectedMusic.beat.length,
+                    totalMelodies: this.collectedMusic.melody.length,
+                    totalSFX: this.collectedMusic.sfx.length,
+                    totalTempos: this.collectedMusic.tempo.length,
+                    totalStyles: this.collectedMusic.style.length,
+                    total: totalCount
+                }
+            };
+
+            localStorage.setItem('musicGenerator_brickBreakerCollected', JSON.stringify(payload));
+            console.log('[Game] Saved', totalCount, 'musical elements to localStorage');
+        } catch (e) {
+            console.error('[Game] Failed to save to localStorage:', e);
+        }
     }
 
     updateMusicalCollectionUI() {
@@ -1203,6 +1317,13 @@ class Game {
 
         if (html === '') {
             html = '<div style="opacity: 0.5; text-align: center;">Break bricks to collect<br/>musical elements!</div>';
+        } else {
+            // Add auto-save indicator
+            const totalCount = Object.values(this.collectedMusic).reduce((sum, arr) => sum + arr.length, 0);
+            html += `<div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(0,255,136,0.3); font-size: 10px; opacity: 0.7; text-align: center;">
+                💾 ${totalCount} element${totalCount !== 1 ? 's' : ''} saved<br/>
+                <span style="font-size: 9px; opacity: 0.8;">Open Music Generator to import</span>
+            </div>`;
         }
 
         collectionList.innerHTML = html;
