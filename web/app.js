@@ -1,4 +1,4 @@
-﻿import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
+import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, MUSICAL_KEY_OPTIONS, MUSICAL_KEY_DEFAULT, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
 import { computeScores } from './js/scoring.js';
 import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
@@ -49,6 +49,14 @@ import {
   toggleMode,
   initMode
 } from './js/utils/mode.js';
+
+import {
+  checkForBrickBreakerData,
+  mapBrickBreakerToState,
+  applyBrickBreakerToState,
+  clearBrickBreakerData,
+  getAgeString
+} from './js/brick-breaker-bridge.js';
 
 import {
   STORAGE_KEYS,
@@ -245,7 +253,7 @@ function renderWeightsSummary() {
 
   if (isOff) {
     const normalizeBtn = document.createElement('button');
-    normalizeBtn.textContent = '⚡ Normalize';
+    normalizeBtn.textContent = '? Normalize';
     normalizeBtn.className = 'btn-tertiary';
     normalizeBtn.style.padding = '0.35rem 0.75rem';
     normalizeBtn.style.fontSize = '0.85rem';
@@ -254,7 +262,7 @@ function renderWeightsSummary() {
       normalizeWeights();
       renderWeights();
       recompute();
-      showToast('⚡ Weights normalized to 1.0');
+      showToast('? Weights normalized to 1.0');
     });
     summary.appendChild(normalizeBtn);
   }
@@ -532,7 +540,7 @@ function suggestArtistProfiles(name, limit=5) {
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.className = 'chip-remove';
-          removeBtn.textContent = '×';
+          removeBtn.textContent = '�';
           removeBtn.title = 'Remove';
 
           removeBtn.addEventListener('click', (e) => {
@@ -870,7 +878,7 @@ function renderGenreMixTotal() {
 
   if (isOff && total > 0) {
     const normalizeBtn = document.createElement('button');
-    normalizeBtn.textContent = '⚡ Normalize';
+    normalizeBtn.textContent = '? Normalize';
     normalizeBtn.className = 'btn-tertiary';
     normalizeBtn.style.padding = '0.35rem 0.75rem';
     normalizeBtn.style.fontSize = '0.85rem';
@@ -879,7 +887,7 @@ function renderGenreMixTotal() {
       normalizeGenreMix();
       renderGenreMix();
       recompute();
-      showToast(`⚡ Genre mix normalized to ${GENRE_SLOT_WEIGHT_TOTAL}%`);
+      showToast(`? Genre mix normalized to ${GENRE_SLOT_WEIGHT_TOTAL}%`);
     });
     totalEl.appendChild(normalizeBtn);
   }
@@ -917,7 +925,7 @@ function renderPremise() {
     custom = document.createElement('input');
     custom.type = 'text';
     custom.id = 'premise-custom-input';
-    custom.placeholder = 'Type custom premiseâ€¦';
+    custom.placeholder = 'Type custom premise…';
     custom.value = state.customPremise || '';
     custom.style.minWidth = '220px';
     custom.style.marginLeft = '8px';
@@ -941,6 +949,19 @@ function renderPremise() {
   });
   custom.addEventListener('input', () => {
     state.customPremise = custom.value;
+    try { scheduleAutoSave(); } catch (_) {}
+  });
+}
+
+function renderMusicalKey() {
+  const select = document.getElementById('musical-key-select');
+  if (!select) return;
+
+  select.innerHTML = MUSICAL_KEY_OPTIONS.map(key => `<option value="${key}">${key}</option>`).join('');
+  select.value = state.musicalKey || MUSICAL_KEY_DEFAULT;
+
+  select.addEventListener('change', () => {
+    state.musicalKey = select.value;
     try { scheduleAutoSave(); } catch (_) {}
   });
 }
@@ -1010,7 +1031,7 @@ function renderLanguage() {
 // Utility: clean VBA artifact tokens from structure strings for display
 function cleanStructureDisplay(text) {
   return String(text || '')
-    .replace(/\s*a-[\'â€™]\s*/g, ' | ')
+    .replace(/\s*a-[\'’]\s*/g, ' | ')
     .replace(/\s+\|\s+/g, ' | ')
     .trim();
 }
@@ -1052,14 +1073,14 @@ function renderComputed() {
     ];
   } else {
     entries = [
-      { label: 'Core', value: 'â€”' },
-      { label: 'Tech', value: 'â€”' },
-      { label: 'Anthem', value: 'â€”' },
-      { label: 'StyleSig', value: 'â€”' },
-      { label: 'Group', value: 'â€”' },
-      { label: 'Perf', value: 'â€”' },
-      { label: 'Regularizer', value: 'â€”' },
-      { label: 'Final Score', value: 'â€”' }
+      { label: 'Core', value: '—' },
+      { label: 'Tech', value: '—' },
+      { label: 'Anthem', value: '—' },
+      { label: 'StyleSig', value: '—' },
+      { label: 'Group', value: '—' },
+      { label: 'Perf', value: '—' },
+      { label: 'Regularizer', value: '—' },
+      { label: 'Final Score', value: '—' }
     ];
   }
   // Build grid with meters for numeric values
@@ -1131,7 +1152,23 @@ function renderOutputs() {
   document.getElementById('creative-brief').textContent = state.outputs.brief || '';
   document.getElementById('suno-output').textContent = state.outputs.suno || '';
   document.getElementById('ai-prompt').textContent = state.outputs.prompt || '';
-  document.getElementById('ai-response').textContent = state.outputs.aiResponse || '';
+  
+  // Render AI response with code block parsing
+  const aiResponseEl = document.getElementById('ai-response');
+  if (aiResponseEl) {
+    const response = state.outputs.aiResponse || '';
+    if (response && response.includes('```')) {
+      // Parse and format code blocks
+      const parsed = parseCodeBlocks(response);
+      if (parsed.blocks.length > 0) {
+        aiResponseEl.textContent = formatCodeBlocks(parsed);
+      } else {
+        aiResponseEl.textContent = response;
+      }
+    } else {
+      aiResponseEl.textContent = response;
+    }
+  }
 }
 
 function renderStaticGrid(entries) {
@@ -1257,6 +1294,24 @@ function setupButtons() {
       renderOutputs();
     }
   });
+  
+  const copyAiResponseBtn = document.getElementById('copy-ai-response');
+  if (copyAiResponseBtn) {
+    copyAiResponseBtn.addEventListener('click', async () => {
+      const text = (state.outputs.aiResponse || '').trim();
+      if (!text) {
+        flashButton(copyAiResponseBtn, 'Nothing to copy', 900);
+        return;
+      }
+      try {
+        await copyToClipboard(text);
+        flashButton(copyAiResponseBtn, 'Copied!', 900);
+      } catch (err) {
+        console.error('Copy failed', err);
+        flashButton(copyAiResponseBtn, 'Copy failed', 1200);
+      }
+    });
+  }
   document.getElementById('apply-genre-mix').addEventListener('click', () => {
     const analysis = analyzeGenreMix(state.genreMix);
     state.genreAnalysis = analysis.mix.length ? analysis : null;
@@ -1431,7 +1486,7 @@ function buildGenreLibraryTable() {
 
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
-  searchInput.placeholder = '🔍 Search genres by name, tempo, style, or tags...';
+  searchInput.placeholder = '?? Search genres by name, tempo, style, or tags...';
   searchInput.style.width = '100%';
   searchInput.style.padding = '0.75rem 1rem';
   searchInput.style.fontSize = '0.95rem';
@@ -1464,8 +1519,8 @@ function buildGenreLibraryTable() {
   const splitStructure = (text) => {
     const raw = String(text || '').trim();
     if (!raw) return [];
-    // Split on the VBA artifact token a-' or a-â€™ and clean pieces
-    return raw.split(/\s*a-[\'â€™]\s*/i).map(s => s.trim()).filter(Boolean);
+    // Split on the VBA artifact token a-' or a-’ and clean pieces
+    return raw.split(/\s*a-[\'’]\s*/i).map(s => s.trim()).filter(Boolean);
   };
   const splitCsv = (text) => String(text || '')
     .split(',')
@@ -1580,7 +1635,7 @@ function buildAccentLibraryTable() {
 
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
-  searchInput.placeholder = '🔍 Search accents by name, instruction, or style...';
+  searchInput.placeholder = '?? Search accents by name, instruction, or style...';
   searchInput.style.width = '100%';
   searchInput.style.padding = '0.75rem 1rem';
   searchInput.style.fontSize = '0.95rem';
@@ -1722,11 +1777,16 @@ function buildCreativeBrief() {
 
   const mixSummary = state.genreAnalysis ? state.genreAnalysis.mixSummary : (analysis.mixSummary || 'Custom blend');
 
+  const musicalKeyInfo = (state.musicalKey && state.musicalKey !== 'Not Specified')
+    ? state.musicalKey
+    : 'Not Specified';
+
   const lines = [
     'Creative Brief (Auto-generated)',
     '`',
     `Final Score: ${formatNumber(computed.final.clamped, 1)}`,
     `Feel: ${analysis.tempoHint || tempo}`,
+    `Musical Key: ${musicalKeyInfo}`,
     `Structure: ${cleanStructureDisplay(analysis.structureHint || structure)}`,
     `Hook Plan: ${hookPlan}`,
     `Flow Plan: ${flowPlan}`,
@@ -1795,6 +1855,7 @@ function buildSunoBlocks() {
   const __structurePB = cleanStructureDisplay(analysis.structureHint || '');
   const __productionLines = [];
   if (__structurePB) __productionLines.push('Structure: ' + __structurePB);
+  if (state.musicalKey && state.musicalKey !== 'Not Specified') __productionLines.push('Musical Key: ' + state.musicalKey);
   if (__instListPB && __instListPB.length) __productionLines.push('Instruments: ' + __instListPB.join(', '));
   if (__prodPB && __prodPB.tempoLine) __productionLines.push(__prodPB.tempoLine);
   if (__prodPB && Array.isArray(__prodPB.sidechain) && __prodPB.sidechain.length) { __productionLines.push('Sidechain:'); __prodPB.sidechain.forEach(s => __productionLines.push('- ' + s)); }
@@ -1930,7 +1991,7 @@ function buildProductionDirectives(analysis) {
   const mastering = [
     'Master bus: gentle glue 1.5:1, slow attack, auto release',
     'True peak: -1.0 dBTP; streaming target: ~-14 LUFS; optional club alt: ~-9 LUFS',
-    'Low cut 20–30 Hz on mix bus; bass mono below ~120 Hz',
+    'Low cut 20�30 Hz on mix bus; bass mono below ~120 Hz',
     'Avoid clipping; preserve dynamics; tasteful stereo width'
   ];
   return {
@@ -2031,7 +2092,7 @@ function buildProductionDirectives(analysis) {
   // Check for instrumental mode
   if (state.creativeInputs.instrumental) {
     lines.push("");
-    lines.push("⚠️ INSTRUMENTAL MODE ENABLED ⚠️");
+    lines.push("?? INSTRUMENTAL MODE ENABLED ??");
     lines.push("This is an INSTRUMENTAL track. Do NOT generate full lyrics or sung/rapped verses.");
     lines.push("Focus on:");
     lines.push("- Title (instrumental theme)");
@@ -2073,6 +2134,7 @@ function buildProductionDirectives(analysis) {
     cheat.forEach(line => lines.push(`- ${line}`));
   }
   lines.push(`Genre Mix: ${analysis.mixSummary || "custom blend"}`);
+  if (state.musicalKey && state.musicalKey !== 'Not Specified') lines.push(`Musical Key: ${state.musicalKey}`);
   if (analysis.sfxCsv) lines.push(`Suggested SFX: ${analysis.sfxCsv}`);
   lines.push("");
   if (state.creativeInputs.theme) lines.push(`Theme: ${state.creativeInputs.theme}`);
@@ -2158,7 +2220,7 @@ function buildPhoneticCheatsheet(label) {
       'Crisp consonants; careful enunciation.'
     ],
     'british english (london)': [
-      'Glottal stops (bottle ? boâ€™ul).',
+      'Glottal stops (bottle ? bo’ul).',
       'TH-fronting (think ? fink).',
       'L-vocalisation (milk ? miwk).'
     ],
@@ -2561,7 +2623,7 @@ function init() {
   try { loadState(); } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
-  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = 'Ã—'; } catch (_) {}
+  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
   renderConstants();
   renderControls();
   renderWeights();
@@ -2570,6 +2632,7 @@ function init() {
   renderCreativeInputs();
   renderGenreMix();
   renderPremise();
+  renderMusicalKey();
   renderAccent();
   renderLanguage();
   renderUserSections();
@@ -2612,7 +2675,7 @@ function setupKeyboardShortcuts() {
     if (ctrlKey && e.key === 's') {
       e.preventDefault();
       persistState();
-      showToast('⌨️ Settings saved');
+      showToast('?? Settings saved');
       return;
     }
 
@@ -2624,11 +2687,11 @@ function setupKeyboardShortcuts() {
         updateHiddenDirective();
         renderOutputs();
         selectTab('outputs');
-        showToast('⌨️ Prompt built');
+        showToast('?? Prompt built');
         try { addPromptHistoryLocal(state.outputs.prompt); } catch (_) {}
       } catch (err) {
         console.error('Build Prompt failed:', err);
-        showToast('❌ Build failed');
+        showToast('? Build failed');
       }
       return;
     }
@@ -2638,7 +2701,7 @@ function setupKeyboardShortcuts() {
       e.preventDefault();
       const briefBtn = document.getElementById('generate-brief');
       if (briefBtn) briefBtn.click();
-      showToast('⌨️ Brief generated');
+      showToast('?? Brief generated');
       return;
     }
 
@@ -2647,7 +2710,7 @@ function setupKeyboardShortcuts() {
       e.preventDefault();
       const sunoBtn = document.getElementById('generate-suno');
       if (sunoBtn) sunoBtn.click();
-      showToast('⌨️ Suno generated');
+      showToast('?? Suno generated');
       return;
     }
 
@@ -2670,19 +2733,19 @@ function setupKeyboardShortcuts() {
       if (e.key === '1' && !ctrlKey && !e.shiftKey) {
         e.preventDefault();
         selectTab('inputs');
-        showToast('📝 Inputs');
+        showToast('?? Inputs');
         return;
       }
       if (e.key === '2' && !ctrlKey && !e.shiftKey) {
         e.preventDefault();
         selectTab('outputs');
-        showToast('📤 Outputs');
+        showToast('?? Outputs');
         return;
       }
       if (e.key === '3' && !ctrlKey && !e.shiftKey) {
         e.preventDefault();
         selectTab('ai');
-        showToast('🤖 AI');
+        showToast('?? AI');
         return;
       }
     }
@@ -2692,7 +2755,7 @@ function setupKeyboardShortcuts() {
 // Show keyboard shortcuts help dialog
 function showKeyboardShortcutsDialog() {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  const modKey = isMac ? '⌘' : 'Ctrl';
+  const modKey = isMac ? '?' : 'Ctrl';
 
   const shortcuts = [
     { key: `${modKey} + S`, desc: 'Save current state' },
@@ -2706,7 +2769,7 @@ function showKeyboardShortcutsDialog() {
 
   const content = `
     <div style="padding: 1rem;">
-      <h3 style="margin-top: 0; font-family: var(--font-display);">⌨️ Keyboard Shortcuts</h3>
+      <h3 style="margin-top: 0; font-family: var(--font-display);">?? Keyboard Shortcuts</h3>
       <table style="width: 100%; border-collapse: collapse;">
         ${shortcuts.map(s => `
           <tr style="border-bottom: 1px solid var(--panel-border);">
@@ -2720,7 +2783,7 @@ function showKeyboardShortcutsDialog() {
         `).join('')}
       </table>
       <p style="margin-top: 1.5rem; color: var(--muted); font-size: 0.85rem;">
-        💡 Tip: Most shortcuts work from anywhere in the app
+        ?? Tip: Most shortcuts work from anywhere in the app
       </p>
     </div>
   `;
@@ -2752,10 +2815,10 @@ function exportConfiguration() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showToast('📥 Configuration exported');
+    showToast('?? Configuration exported');
   } catch (err) {
     console.error('Export failed:', err);
-    showToast('❌ Export failed');
+    showToast('? Export failed');
   }
 }
 
@@ -2800,10 +2863,10 @@ function importConfiguration() {
         rerenderAll();
         recompute();
 
-        showToast('📤 Configuration imported');
+        showToast('?? Configuration imported');
       } catch (err) {
         console.error('Import failed:', err);
-        showToast('❌ Import failed: Invalid file');
+        showToast('? Import failed: Invalid file');
       }
     };
 
@@ -2851,11 +2914,122 @@ function showOnboarding() {
   }
 }
 
+/**
+ * Check for brick breaker data and show import modal if available
+ */
+function checkAndShowBrickBreakerImport() {
+  const data = checkForBrickBreakerData();
+  if (!data) return;
+
+  const { collections, stats, age } = data;
+  const dialog = document.getElementById('brick-breaker-import-dialog');
+  const previewDiv = document.getElementById('brick-breaker-preview');
+  const ageSpan = document.getElementById('brick-breaker-age');
+  const importBtn = document.getElementById('brick-breaker-import');
+  const dismissBtn = document.getElementById('brick-breaker-dismiss');
+  const closeBtn = document.getElementById('close-brick-breaker-dialog');
+
+  if (!dialog || !previewDiv || !ageSpan || !importBtn || !dismissBtn || !closeBtn) {
+    console.error('[App] Brick breaker import modal elements not found');
+    return;
+  }
+
+  // Populate preview with collected elements
+  let preview = '';
+  if (stats.totalGenres > 0) {
+    preview += `<div><strong>?? Genres:</strong> ${collections.genre.join(', ')}</div>`;
+  }
+  if (stats.totalStyles > 0) {
+    preview += `<div><strong>?? Styles:</strong> ${collections.style.join(', ')}</div>`;
+  }
+  if (stats.totalBeats > 0) {
+    preview += `<div><strong>?? Beats:</strong> ${collections.beat.join(', ')}</div>`;
+  }
+  if (stats.totalMelodies > 0) {
+    preview += `<div><strong>?? Melodies:</strong> ${collections.melody.join(', ')}</div>`;
+  }
+  if (stats.totalSFX > 0) {
+    preview += `<div><strong>?? SFX:</strong> ${collections.sfx.join(', ')}</div>`;
+  }
+  if (stats.totalTempos > 0) {
+    preview += `<div><strong>?? Tempos:</strong> ${collections.tempo.join(', ')}</div>`;
+  }
+
+  previewDiv.innerHTML = preview || '<em>No elements collected yet</em>';
+  ageSpan.textContent = getAgeString(age);
+
+  // Handle import button
+  const handleImport = () => {
+    try {
+      // Map brick breaker data to Music Generator state format
+      const mapped = mapBrickBreakerToState(collections);
+
+      // Apply to current state
+      const updatedState = applyBrickBreakerToState(state, mapped);
+
+      // Update state
+      Object.assign(state, updatedState);
+
+      // Save state
+      try { persistState(); } catch (_) {}
+
+      // Re-render UI to show imported data
+      renderGenreMix();
+      renderCreativeInputs();
+
+      // Clear brick breaker data from localStorage
+      clearBrickBreakerData();
+
+      // Show success toast
+      const totalElements = stats.total || 0;
+      showToast(`Successfully imported ${totalElements} musical element${totalElements !== 1 ? 's' : ''} from Brick Breaker!`, 'success');
+
+      // Close dialog
+      dialog.close();
+
+      console.log('[App] Successfully imported brick breaker data:', mapped);
+    } catch (error) {
+      console.error('[App] Error importing brick breaker data:', error);
+      showToast('Failed to import brick breaker data', 'error');
+    }
+  };
+
+  // Handle dismiss button
+  const handleDismiss = () => {
+    dialog.close();
+  };
+
+  // Handle close button
+  const handleClose = () => {
+    dialog.close();
+  };
+
+  // Remove any existing listeners to prevent duplicates
+  const newImportBtn = importBtn.cloneNode(true);
+  const newDismissBtn = dismissBtn.cloneNode(true);
+  const newCloseBtn = closeBtn.cloneNode(true);
+  importBtn.replaceWith(newImportBtn);
+  dismissBtn.replaceWith(newDismissBtn);
+  closeBtn.replaceWith(newCloseBtn);
+
+  // Add event listeners
+  newImportBtn.addEventListener('click', handleImport);
+  newDismissBtn.addEventListener('click', handleDismiss);
+  newCloseBtn.addEventListener('click', handleClose);
+
+  // Show dialog
+  dialog.showModal();
+  console.log('[App] Showing brick breaker import dialog with', stats.total, 'elements');
+}
+
 document.addEventListener('DOMContentLoaded', init);
 
 // Enhance UX with collapsible sections and toolbar controls
 document.addEventListener('DOMContentLoaded', setupCollapsibleSections);
 document.addEventListener('DOMContentLoaded', setupDropdowns);
+
+// Check for brick breaker import on load
+document.addEventListener('DOMContentLoaded', checkAndShowBrickBreakerImport);
 
 function setupDropdowns() {
   const dropdowns = document.querySelectorAll('.dropdown');
@@ -3130,7 +3304,7 @@ Formatting rules (MANDATORY):
 - Do NOT reference any instruments in the lyrics.
 
 Creative guidance:
-- Treat songs as stories told through metaphor and innuendo — life lessons expressed with different examples but the same underlying principles.
+- Treat songs as stories told through metaphor and innuendo � life lessons expressed with different examples but the same underlying principles.
 - Do not always tell the story directly; think bigger.
 
 Output only valid Suno blocks as instructed.`;
@@ -3194,9 +3368,68 @@ Output only valid Suno blocks as instructed.`;
 
   const data = await response.json();
   if (data.choices && data.choices[0]?.message?.content) {
-    return data.choices[0].message.content.trim();
+    const content = data.choices[0].message.content.trim();
+    // Parse code blocks from the response
+    const parsed = parseCodeBlocks(content);
+    if (parsed.blocks.length > 0) {
+      return formatCodeBlocks(parsed);
+    }
+    return content;
   }
   return JSON.stringify(data, null, 2);
+}
+
+// Parse code blocks from AI response
+function parseCodeBlocks(text) {
+  const blocks = [];
+  const regex = /```(?:(\w+)?\n)?([\s\S]*?)```/g;
+  let match;
+  let blockIndex = 0;
+  
+  while ((match = regex.exec(text)) !== null) {
+    const content = match[2].trim();
+    if (content) {
+      blocks.push({
+        index: blockIndex++,
+        language: match[1] || '',
+        content: content
+      });
+    }
+  }
+  
+  return {
+    blocks: blocks,
+    raw: text
+  };
+}
+
+// Format code blocks for display
+function formatCodeBlocks(parsed) {
+  if (parsed.blocks.length === 0) {
+    return parsed.raw;
+  }
+  
+  const labels = ['Title', 'Style', 'Exclude', 'Lyrics'];
+  const parts = [];
+  
+  parsed.blocks.forEach((block, idx) => {
+    const label = labels[idx] || `Block ${idx + 1}`;
+    parts.push(`--- ${label} ---`);
+    parts.push(block.content);
+    parts.push('');
+  });
+  
+  // If there are extra blocks beyond the expected 4, append them
+  if (parsed.blocks.length > 4) {
+    parts.push('--- Additional Blocks ---');
+    parsed.blocks.slice(4).forEach((block, idx) => {
+      parts.push(`Block ${idx + 5}:`);
+      parts.push(block.content);
+      parts.push('');
+    });
+  }
+  
+  return parts.join('\n');
 }
 
 // ---------- UX helpers: Toasts, Theme, Persistence ----------
@@ -3498,7 +3731,7 @@ function renderPromptHistory() {
     <div class="history-item" data-idx="${idx}" style="border:1px solid var(--panel-border); border-radius:10px; padding:0.6rem; margin:0.5rem 0; background: var(--panel);">
       <div class="history-head" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
         <div style="font-size:.9rem; color: var(--muted);">
-          <strong>${safe(item.language)}</strong> â€¢ ${safe(item.accent)}${item.score?` â€¢ Score ${safe(item.score)}`:''}${item.mix?` â€¢ ${safe(item.mix)}`:''}
+          <strong>${safe(item.language)}</strong> • ${safe(item.accent)}${item.score?` • Score ${safe(item.score)}`:''}${item.mix?` • ${safe(item.mix)}`:''}
           <div style="font-size:.8rem;">${safe(fmt(item.ts))}</div>
         </div>
         <div style="display:flex; gap:.4rem;">
@@ -3531,40 +3764,40 @@ function renderPromptHistory() {
 const __GAMIFY_KEY = 'rgf_gamify_v1';
 // Known achievements registry for consistent labeling + icons
 const ACHIEVEMENTS = {
-  firstPrompt: { label: 'First Prompt!', icon: 'âœ¨', desc: 'Build your first prompt.' },
-  perfectWeights: { label: 'Perfect Weights', icon: 'âš–ï¸', desc: 'Make weights sum to exactly 1.00.' },
-  fusionChef: { label: 'Fusion Chef', icon: 'ðŸ³', desc: 'Use 3 or more genres in a mix.' },
-  build5: { label: '5 Prompts', icon: '5ï¸âƒ£', desc: 'Build 5 prompts total.' },
-  build10: { label: '10 Prompts', icon: 'ðŸ”Ÿ', desc: 'Build 10 prompts total.' },
-  build25: { label: '25 Prompts', icon: 'ðŸ†', desc: 'Build 25 prompts total.' },
-  readyToRoll: { label: 'Ready to Roll', icon: 'ðŸš€', desc: 'Reach 100% readiness and build.' },
-  streak3: { label: '3-Day Streak', icon: 'ðŸ“†', desc: 'Build prompts 3 days in a row.' },
-  streak7: { label: '7-Day Streak', icon: 'ðŸ“…', desc: 'Build prompts 7 days in a row.' },
-  apprenticeWizard: { label: 'Apprentice Wizard', icon: 'ðŸ§™', desc: 'Turn on Wizard Mode.' },
-  wizardGraduate: { label: 'Wizard Graduate', icon: 'ðŸŽ“', desc: 'Reach the Build step in Wizard Mode.' },
-  demoExplorer: { label: 'Demo Explorer', icon: 'ðŸ§ª', desc: 'Load the demo setup.' },
-  muse: { label: 'Muse', icon: 'ðŸŽ¨', desc: 'Use Suggest for Premise.' },
-  djBlend: { label: 'Blend DJ', icon: 'ðŸŽ›ï¸', desc: 'Use Suggest Blend for Genre Mix.' },
-  curator: { label: 'Curator', icon: 'ðŸ—‚ï¸', desc: 'Apply a curated Blend Preset.' },
-  promptCopier: { label: 'Prompt Copier', icon: 'ðŸ“‹', desc: 'Copy the AI prompt to clipboard.' },
-  briefCopier: { label: 'Brief Copier', icon: 'ðŸ“', desc: 'Copy the Creative Brief.' },
-  sunoCopier: { label: 'Suno Copier', icon: 'ðŸ”Š', desc: 'Copy the Suno blocks.' },
-  apiCaller: { label: 'API Caller', icon: 'ðŸ”Œ', desc: 'Call the AI endpoint successfully.' },
-  voiceActor: { label: 'Voice Actor', icon: 'ðŸŽ™ï¸', desc: 'Select a non-neutral accent.' },
-  accentExplorer: { label: 'Accent Explorer', icon: 'ðŸ§­', desc: 'Use 3 or more different accents.' },
-  polyglot1: { label: 'Polyglot I', icon: 'ðŸŒ', desc: 'Select a non-English language.' },
-  polyglot2: { label: 'Polyglot II', icon: 'ðŸŒ', desc: 'Enter a custom language.' },
-  polyglotExplorer: { label: 'Polyglot Explorer', icon: 'ðŸ—ºï¸', desc: 'Use 3 or more different languages.' },
-  presetDriver: { label: 'Preset Driver', icon: 'ðŸŽšï¸', desc: 'Apply a weight preset.' },
-  presetMaestro: { label: 'Preset Maestro', icon: 'ðŸ…', desc: 'Apply weight presets 5 times.' },
-  lyricist: { label: 'Lyricist', icon: 'âœï¸', desc: 'Enter any user section (title/intro/hook/etc.).' },
-  composer: { label: 'Composer', icon: 'ðŸŽ¼', desc: 'Enter 3 or more user sections.' },
-  crateDigger: { label: 'Crate Digger', icon: 'ðŸ“¦', desc: 'Use 5 unique genres across mixes.' },
-  crateCurator: { label: 'Crate Curator', icon: 'ðŸ§°', desc: 'Use 10 unique genres across mixes.' },
-  rhythmFirst: { label: 'Rhythm First Round', icon: 'ðŸ¥', desc: 'Finish a Rhythm Tapper round.' },
-  rhythmAce: { label: 'Rhythm Ace', icon: 'ðŸ’¯', desc: 'Finish Rhythm with =90% accuracy.' },
-  comboMaster: { label: 'Combo Master', icon: 'ðŸ”¥', desc: 'Reach a 30+ combo in Rhythm.' },
-  hazardAvoider: { label: 'Hazard Avoider', icon: 'ðŸ›¡ï¸', desc: 'Finish Rhythm with 0 hazards collected.' }
+  firstPrompt: { label: 'First Prompt!', icon: '✨', desc: 'Build your first prompt.' },
+  perfectWeights: { label: 'Perfect Weights', icon: '⚖️', desc: 'Make weights sum to exactly 1.00.' },
+  fusionChef: { label: 'Fusion Chef', icon: '🍳', desc: 'Use 3 or more genres in a mix.' },
+  build5: { label: '5 Prompts', icon: '5️⃣', desc: 'Build 5 prompts total.' },
+  build10: { label: '10 Prompts', icon: '🔟', desc: 'Build 10 prompts total.' },
+  build25: { label: '25 Prompts', icon: '🏆', desc: 'Build 25 prompts total.' },
+  readyToRoll: { label: 'Ready to Roll', icon: '🚀', desc: 'Reach 100% readiness and build.' },
+  streak3: { label: '3-Day Streak', icon: '📆', desc: 'Build prompts 3 days in a row.' },
+  streak7: { label: '7-Day Streak', icon: '📅', desc: 'Build prompts 7 days in a row.' },
+  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙', desc: 'Turn on Wizard Mode.' },
+  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓', desc: 'Reach the Build step in Wizard Mode.' },
+  demoExplorer: { label: 'Demo Explorer', icon: '🧪', desc: 'Load the demo setup.' },
+  muse: { label: 'Muse', icon: '🎨', desc: 'Use Suggest for Premise.' },
+  djBlend: { label: 'Blend DJ', icon: '🎛️', desc: 'Use Suggest Blend for Genre Mix.' },
+  curator: { label: 'Curator', icon: '🗂️', desc: 'Apply a curated Blend Preset.' },
+  promptCopier: { label: 'Prompt Copier', icon: '📋', desc: 'Copy the AI prompt to clipboard.' },
+  briefCopier: { label: 'Brief Copier', icon: '📝', desc: 'Copy the Creative Brief.' },
+  sunoCopier: { label: 'Suno Copier', icon: '🔊', desc: 'Copy the Suno blocks.' },
+  apiCaller: { label: 'API Caller', icon: '🔌', desc: 'Call the AI endpoint successfully.' },
+  voiceActor: { label: 'Voice Actor', icon: '🎙️', desc: 'Select a non-neutral accent.' },
+  accentExplorer: { label: 'Accent Explorer', icon: '🧭', desc: 'Use 3 or more different accents.' },
+  polyglot1: { label: 'Polyglot I', icon: '🌐', desc: 'Select a non-English language.' },
+  polyglot2: { label: 'Polyglot II', icon: '🌍', desc: 'Enter a custom language.' },
+  polyglotExplorer: { label: 'Polyglot Explorer', icon: '🗺️', desc: 'Use 3 or more different languages.' },
+  presetDriver: { label: 'Preset Driver', icon: '🎚️', desc: 'Apply a weight preset.' },
+  presetMaestro: { label: 'Preset Maestro', icon: '🏅', desc: 'Apply weight presets 5 times.' },
+  lyricist: { label: 'Lyricist', icon: '✍️', desc: 'Enter any user section (title/intro/hook/etc.).' },
+  composer: { label: 'Composer', icon: '🎼', desc: 'Enter 3 or more user sections.' },
+  crateDigger: { label: 'Crate Digger', icon: '📦', desc: 'Use 5 unique genres across mixes.' },
+  crateCurator: { label: 'Crate Curator', icon: '🧰', desc: 'Use 10 unique genres across mixes.' },
+  rhythmFirst: { label: 'Rhythm First Round', icon: '🥁', desc: 'Finish a Rhythm Tapper round.' },
+  rhythmAce: { label: 'Rhythm Ace', icon: '💯', desc: 'Finish Rhythm with =90% accuracy.' },
+  comboMaster: { label: 'Combo Master', icon: '🔥', desc: 'Reach a 30+ combo in Rhythm.' },
+  hazardAvoider: { label: 'Hazard Avoider', icon: '🛡️', desc: 'Finish Rhythm with 0 hazards collected.' }
 };
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
@@ -3704,7 +3937,7 @@ function buildGameHubDialog() {
     const sample = document.createElement('button'); sample.textContent = 'Sample';
     sample.addEventListener('click', () => {
       const out = sampleFn();
-      openLibraryDialog(`${title} â€¢ Summary`, buildGameSummary(out, key));
+      openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
     });
     row.appendChild(sample);
     if (opts.start) {
@@ -3721,18 +3954,18 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildRhythmGameDialog((output) => {
-        openLibraryDialog('Rhythm â€¢ Summary', buildGameSummary(output, 'rhythm'));
+        openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('Rhythm Tapper', content);
     }
   }));
-  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3â€“4 turns to compose your blend.', sampleGridOutput, 'grid', {
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
     start: () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildGridGameDialog((output) => {
-        openLibraryDialog('Grid â€¢ Summary', buildGameSummary(output, 'grid'));
+        openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
       }, { difficulty: 'normal' });
       openLibraryDialog('Grid Picker', content);
     }
@@ -3743,7 +3976,7 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildShooterGameDialog((output) => {
-        openLibraryDialog('Shooter â€¢ Summary', buildGameSummary(output, 'shooter'));
+        openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
       }, { durationSec: 60 });
       openLibraryDialog('Shooter (Concept)', content);
     }
@@ -3793,6 +4026,7 @@ function resetInputsForGame() {
     // Reset premise and language/accent
     state.premise = '(custom)';
     state.customPremise = '';
+    state.musicalKey = MUSICAL_KEY_DEFAULT;
     state.language = 'English';
     state.customLanguage = '';
     state.accent = ACCENT_DEFAULT;
