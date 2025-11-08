@@ -91,6 +91,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    z-index: 500;  /* Ensure above music collection panel (z-index 100) */
 }
 
 .power-up-indicator {

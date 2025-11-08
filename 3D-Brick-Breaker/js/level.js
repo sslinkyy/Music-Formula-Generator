@@ -229,7 +229,7 @@ const LevelManager = {
 
             for (let i = 0; i < turns * bricksPerTurn; i++) {
                 const angle = (i / bricksPerTurn) * Math.PI * 2;
-                const radius = 2 + (i / bricksPerTurn) * 2.5;
+                const radius = 2 + (i / bricksPerTurn) * 2.0;  // Reduced from 2.5 to 2.0 (max radius now ~13.8)
 
                 const x = centerX + Math.cos(angle) * radius;
                 const y = centerY + Math.sin(angle) * radius * 0.6;
@@ -383,10 +383,10 @@ const LevelManager = {
             const bricks = [];
             const centerX = 0;
             const centerY = 25;  // Higher center Y to fill top space
-            const rings = 8;  // Doubled from 4 to 8 rings (~120 bricks)
+            const rings = 6;  // Reduced from 8 to 6 to fit within bounds (~90 bricks)
 
             for (let ring = 0; ring < rings; ring++) {
-                const radius = (ring + 1) * 2.5;
+                const radius = (ring + 1) * 2.4;  // Adjusted from 2.5 (max radius now 6*2.4=14.4)
                 const bricksInRing = 8 + ring * 4;
 
                 for (let i = 0; i < bricksInRing; i++) {
@@ -473,7 +473,7 @@ const LevelManager = {
                 const bricksInStep = 3;
 
                 for (let col = 0; col < bricksInStep; col++) {
-                    const x = -16 + step * 2.5 + col * 1.5;  // Adjusted starting X
+                    const x = -11 + step * 2.0 + col * 1.5;  // Reduced from -16 and 2.5 (max x now ~14.5)
                     let type = step < 5 ? 'normal' : (step < 10 ? 'strong' : 'armored');
                     type = LevelManager.addSpecialBricks(type, level);
                     bricks.push({ x, y, z: -1, type });
@@ -570,7 +570,7 @@ const LevelManager = {
 
             // Towers (doubled height and added 2 more towers)
             for (let tower = 0; tower < 4; tower++) {  // Increased from 2 to 4 towers
-                const x = tower === 0 ? -14 : (tower === 1 ? -6 : (tower === 2 ? 6 : 14));
+                const x = tower === 0 ? -12 : (tower === 1 ? -5 : (tower === 2 ? 5 : 12));  // Reduced from ±14/±6 to ±12/±5
 
                 for (let row = 0; row < 10; row++) {  // Doubled from 6 to 10 rows
                     const y = 28 - row * 1.6;  // Adjusted starting Y
@@ -579,16 +579,16 @@ const LevelManager = {
                     bricks.push({ x, y, z: -1, type });
                 }
 
-                // Tower top (battlements)
-                bricks.push({ x: x - 2, y: 28 + 1.6, z: -1, type: 'strong' });
-                bricks.push({ x: x + 2, y: 28 + 1.6, z: -1, type: 'strong' });
+                // Tower top (battlements) - moved closer to stay within bounds
+                bricks.push({ x: x - 1.5, y: 28 + 1.6, z: -1, type: 'strong' });  // Reduced from ±2 to ±1.5
+                bricks.push({ x: x + 1.5, y: 28 + 1.6, z: -1, type: 'strong' });
             }
 
             // Castle wall (doubled length)
-            for (let col = 0; col < 13; col++) {  // Increased from 7 to 13
-                if (col === 6) continue; // Gate (center)
+            for (let col = 0; col < 11; col++) {  // Reduced from 13 to 11
+                if (col === 5) continue; // Gate (center, adjusted from col 6)
 
-                const x = -15 + col * 2.5;
+                const x = -12.5 + col * 2.5;  // Adjusted from -15 (max x now ±12.5)
                 const y = 14;
                 let type = 'strong';
                 type = LevelManager.addSpecialBricks(type, level);
@@ -624,15 +624,15 @@ const LevelManager = {
         function(level) {
             const rows = [];
             const bricks = [];
-            const gridSize = 18;  // Increased to fill expanded area (was 14, ~324 bricks)
+            const gridSize = 13;  // Reduced from 18 to 13 to fit within bounds (~169 bricks)
 
             for (let row = 0; row < gridSize; row++) {
                 for (let col = 0; col < gridSize; col++) {
-                    const x = -20 + col * 2.5;
+                    const x = -15 + col * 2.5;  // Reduced from -20 (max x now ±15)
                     const y = 35 - row * 1.5;  // Adjusted starting Y
 
                     // Center explosive
-                    if (row === 9 && col === 9) {
+                    if (row === 6 && col === 6) {  // Adjusted center from (9,9) to (6,6)
                         bricks.push({ x, y, z: -1, type: 'explosive' });
                         continue;
                     }

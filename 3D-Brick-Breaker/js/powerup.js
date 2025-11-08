@@ -202,7 +202,7 @@ class PowerUp {
     constructor(scene, x, y, z, type, data = null) {
         this.scene = scene;
         this.position = { x, y, z };
-        this.velocity = { x: 0, y: -3, z: 0 };
+        this.velocity = { x: 0, y: -6, z: 0 };  // Increased from -3 to -6 for faster drop
         this.type = type;
         this.data = data;  // Music data (genre name, style tag, etc.)
         this.collected = false;
