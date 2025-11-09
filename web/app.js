@@ -137,7 +137,6 @@ function getGenreCategory(name, fallback) {
 }
 import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
-import { buildShooterGameDialog } from './games/shooter/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
 import { ARTIST_PROFILES } from './data/artists.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
@@ -3994,10 +3993,12 @@ function buildGameHubDialog() {
     }
   }));
   grid.appendChild(mkCard('Shooter (concept)', 'Arena shooter mapping hits to influences.', sampleShooterOutput, 'shooter', {
-    start: () => {
+    start: async () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
+      // Lazy load the shooter game module to avoid passive event listener violations on page load
+      const { buildShooterGameDialog } = await import('./games/shooter/index.js');
       const content = buildShooterGameDialog((output) => {
         openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
       }, { durationSec: 60 });
