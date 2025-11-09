@@ -1417,17 +1417,6 @@ function setupButtons() {
     } catch(_) {}
   }
   updateBrickBreakerIndicator();
-  const importBrickBtn = document.getElementById('import-brick-breaker');
-  if (importBrickBtn) importBrickBtn.addEventListener('click', () => {
-    try {
-      const data = checkForBrickBreakerData();
-      if (!data) { showToast('No recent Brick Breaker data to import'); return; }
-      checkAndShowBrickBreakerImport();
-    } catch (e) {
-      console.error('[App] Brick Breaker import error:', e);
-      showToast('Import failed');
-    }
-  });
 
   // Wizard controls
   try {
@@ -4433,7 +4422,6 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleAutoSave(); } catch(_){}
 }
-
 
 
 
