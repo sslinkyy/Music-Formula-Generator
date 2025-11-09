@@ -1407,6 +1407,27 @@ function setupButtons() {
     }
   });
 
+  // Show indicator dot if Brick Breaker data exists
+  function updateBrickBreakerIndicator(){
+    try {
+      const data = checkForBrickBreakerData();
+      const badge = document.getElementById('brick-breaker-indicator');
+      if (badge) badge.hidden = !data;
+    } catch(_) {}
+  }
+  updateBrickBreakerIndicator();
+  const importBrickBtn = document.getElementById('import-brick-breaker');
+  if (importBrickBtn) importBrickBtn.addEventListener('click', () => {
+    try {
+      const data = checkForBrickBreakerData();
+      if (!data) { showToast('No recent Brick Breaker data to import'); return; }
+      checkAndShowBrickBreakerImport();
+    } catch (e) {
+      console.error('[App] Brick Breaker import error:', e);
+      showToast('Import failed');
+    }
+  });
+
   // Wizard controls
   try {
     const wzToggle = document.getElementById('wizard-toggle');
@@ -2989,7 +3010,7 @@ function checkAndShowBrickBreakerImport() {
       renderCreativeInputs();
 
       // Clear brick breaker data from localStorage
-      clearBrickBreakerData();
+      clearBrickBreakerData();\r\n      const badge = document.getElementById('brick-breaker-indicator');\r\n      if (badge) badge.hidden = true;
 
       // Show success toast
       const totalElements = stats.total || 0;
@@ -4388,6 +4409,8 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleAutoSave(); } catch(_){}
 }
+
+
 
 
 
