@@ -3000,7 +3000,9 @@ function checkAndShowBrickBreakerImport() {
       renderCreativeInputs();
 
       // Clear brick breaker data from localStorage
-      clearBrickBreakerData();\r\n      const badge = document.getElementById('brick-breaker-indicator');\r\n      if (badge) badge.hidden = true;
+      clearBrickBreakerData();
+      const badge = document.getElementById('brick-breaker-indicator');
+      if (badge) badge.hidden = true;
 
       // Show success toast
       const totalElements = stats.total || 0;
@@ -4422,7 +4424,6 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleAutoSave(); } catch(_){}
 }
-
 
 
 
