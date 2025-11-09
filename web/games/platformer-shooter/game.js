@@ -1,5 +1,8 @@
 // Core game logic with Three.js
 import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
+
+// Side-scroll camera state
+let SCROLL = { x: 0, speed: 10, viewWidth: 30, viewHeight: 24 };
 import { GENRE_LIBRARY } from '../../data/genres.js';
 
 // Enemy types based on genres
@@ -26,15 +29,21 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
   scene.background = new THREE.Color(0x0a0a14);
   scene.fog = new THREE.Fog(0x0a0a14, 50, 200);
 
-  // Camera — side-scrolling view (2.5D)
-  const camera = new THREE.PerspectiveCamera(
-    60,
-    container.clientWidth / container.clientHeight,
+  // Camera — orthographic 2D side-scroller
+  const aspect = container.clientWidth / container.clientHeight;
+  SCROLL.viewHeight = 24;
+  SCROLL.viewWidth = SCROLL.viewHeight * aspect;
+  const camera = new THREE.OrthographicCamera(
+    -SCROLL.viewWidth / 2,
+    SCROLL.viewWidth / 2,
+    SCROLL.viewHeight / 2,
+    -SCROLL.viewHeight / 2,
     0.1,
     1000
   );
-  camera.position.set(0, 12, 40);
-  camera.lookAt(0, 8, 0);
+  SCROLL.x = 0;
+  camera.position.set(SCROLL.x, 0, 100);
+  camera.lookAt(SCROLL.x, 0, 0);
 
   // Renderer
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -148,7 +157,12 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
 
   // Resize handler
   window.addEventListener('resize', () => {
-    camera.aspect = container.clientWidth / container.clientHeight;
+    const aspectN = container.clientWidth / container.clientHeight;
+    SCROLL.viewWidth = SCROLL.viewHeight * aspectN;
+    camera.left = -SCROLL.viewWidth / 2;
+    camera.right = SCROLL.viewWidth / 2;
+    camera.top = SCROLL.viewHeight / 2;
+    camera.bottom = -SCROLL.viewHeight / 2;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
   });
@@ -210,14 +224,22 @@ export function updateGame(gameState, dt, playSfx) {
     difficulty
   } = gameState;
 
+  // Auto-scroll camera
+  SCROLL.x += SCROLL.speed * dt;
+
   // Get input state from global
   const keys = window.__gameKeys || {};
   const mouse = window.__gameMouse || { x: 0, y: 0, buttons: 0 };
 
   // Update player movement (side-scroll)
   updatePlayer(player, keys, platforms, dt, playSfx);
-  // Camera follow (side view)
-  updateCamera(player, mouse);
+  // Camera follow (side view, driven by SCROLL.x)
+  updateCamera(player);
+
+  // Keep floor under camera
+  if (gameState.floor) {
+    gameState.floor.position.x = SCROLL.x;
+  }
 
   // Spawn enemies
   if (Math.random() < 0.02) {
@@ -292,20 +314,23 @@ function updatePlayer(player, keys, platforms, dt, playSfx) {
     player.glow.position.copy(player.position);
   }
 
-  // Bounds (horizontal)
-  const limit = 240;
-  player.position.x = Math.max(-limit, Math.min(limit, player.position.x));
+  // Bounds (keep player within view window)
+  const margin = 2;
+  const minX = SCROLL.x - SCROLL.viewWidth / 2 + margin;
+  const maxX = SCROLL.x + SCROLL.viewWidth / 2 - margin;
+  player.position.x = Math.max(minX, Math.min(maxX, player.position.x));
   player.position.z = 0;
 }
 
 function updateCamera(player) {
   if (!player.mesh.parent) return;
   const camera = player.mesh.parent.children.find(child => child instanceof THREE.PerspectiveCamera);
-  if (!camera) return;
-  camera.position.x = player.position.x;
-  camera.position.y = Math.max(8, player.position.y + 8);
-  camera.position.z = 40;
-  camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 4, 0));
+  const orthoCam = camera || player.mesh.parent.children.find(child => child instanceof THREE.OrthographicCamera);
+  if (!orthoCam) return;
+  orthoCam.position.x = SCROLL.x;
+  orthoCam.position.y = 0;
+  orthoCam.position.z = 100;
+  orthoCam.lookAt(new THREE.Vector3(SCROLL.x, 0, 0));
 }
 
 function spawnEnemy(gameState) {
@@ -325,10 +350,9 @@ function spawnEnemy(gameState) {
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
   const mesh = new THREE.Sprite(mat);
   mesh.scale.set(2.5, 2.5, 1);
-  // Spawn to left or right
-  const side = Math.random() < 0.5 ? -1 : 1;
-  const startX = (player.position?.x || 0) + side * (30 + Math.random() * 20);
-  mesh.position.set(startX, 2.5 + Math.random() * 3, 0);
+  // Spawn ahead of camera (right side)
+  const startX = SCROLL.x + SCROLL.viewWidth * 0.6 + Math.random() * 10;
+  mesh.position.set(startX, 2.5 + Math.random() * 6, 0);
   scene.add(mesh);
 
   const enemy = {
@@ -348,9 +372,11 @@ function updateEnemies(gameState, dt, playSfx) {
   for (let i = enemies.length - 1; i >= 0; i--) {
     const enemy = enemies[i];
 
-    // Move toward player along X only
-    const dirX = Math.sign((player.position.x) - (enemy.mesh.position.x));
-    enemy.mesh.position.x += dirX * enemy.speed * 8 * dt;
+    // Move left with some tracking toward player
+    const base = -1; // Left
+    const chase = Math.sign((player.position.x) - (enemy.mesh.position.x)) * 0.3;
+    const vx = (base + chase) * enemy.speed * 8;
+    enemy.mesh.position.x += vx * dt;
 
     // Check collision with player
     const dx = Math.abs(enemy.mesh.position.x - player.position.x);
