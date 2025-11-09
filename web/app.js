@@ -3091,7 +3091,7 @@ function setupDropdowns() {
     toggle.addEventListener('touchstart', (e) => {
       touchHandled = true;
       e.stopPropagation();
-    });
+    }, { passive: true });
 
     toggle.addEventListener('touchend', (e) => {
       e.preventDefault();
@@ -3118,7 +3118,7 @@ function setupDropdowns() {
       button.addEventListener('touchstart', (e) => {
         touchHandled = true;
         e.stopPropagation();
-      });
+      }, { passive: true });
 
       button.addEventListener('touchend', (e) => {
         e.preventDefault();
