@@ -1,5 +1,5 @@
 // Core game logic with Three.js
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.module.js';
+import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
 import { GENRE_LIBRARY } from '../../data/genres.js';
 
 // Enemy types based on genres

@@ -2,7 +2,7 @@
 // Exports: buildPlatformerShooterDialog(onFinish, options)
 import { GENRE_LIBRARY } from '../../data/genres.js';
 import { ACCENT_LIBRARY } from '../../data/accents.js';
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.module.js';
+import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
 
 export function buildPlatformerShooterDialog(onFinish, options = {}) {
   const wrap = document.createElement('div');
