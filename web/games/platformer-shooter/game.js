@@ -2,7 +2,8 @@
 import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
 
 // Side-scroll camera state
-let SCROLL = { x: 0, speed: 10, viewWidth: 30, viewHeight: 24 };
+let SCROLL = { x: 0, speed: 0, viewWidth: 30, viewHeight: 24 };
+const WORLD = { minX: -240, maxX: 240 };
 import { GENRE_LIBRARY } from '../../data/genres.js';
 
 // Enemy types based on genres
@@ -224,8 +225,11 @@ export function updateGame(gameState, dt, playSfx) {
     difficulty
   } = gameState;
 
-  // Auto-scroll camera
-  SCROLL.x += SCROLL.speed * dt;
+  // Camera target is player; SCROLL.x follows player within world bounds
+  SCROLL.x = Math.max(
+    WORLD.minX + SCROLL.viewWidth / 2,
+    Math.min(WORLD.maxX - SCROLL.viewWidth / 2, gameState.player.position.x)
+  );
 
   // Get input state from global
   const keys = window.__gameKeys || {};
@@ -236,10 +240,7 @@ export function updateGame(gameState, dt, playSfx) {
   // Camera follow (side view, driven by SCROLL.x)
   updateCamera(player);
 
-  // Keep floor under camera
-  if (gameState.floor) {
-    gameState.floor.position.x = SCROLL.x;
-  }
+  // Floor remains static (wide enough to cover the scene)
 
   // Spawn enemies
   if (Math.random() < 0.02) {
@@ -314,11 +315,8 @@ function updatePlayer(player, keys, platforms, dt, playSfx) {
     player.glow.position.copy(player.position);
   }
 
-  // Bounds (keep player within view window)
-  const margin = 2;
-  const minX = SCROLL.x - SCROLL.viewWidth / 2 + margin;
-  const maxX = SCROLL.x + SCROLL.viewWidth / 2 - margin;
-  player.position.x = Math.max(minX, Math.min(maxX, player.position.x));
+  // Bounds (keep player within world limits)
+  player.position.x = Math.max(WORLD.minX, Math.min(WORLD.maxX, player.position.x));
   player.position.z = 0;
 }
 
@@ -328,9 +326,9 @@ function updateCamera(player) {
   const orthoCam = camera || player.mesh.parent.children.find(child => child instanceof THREE.OrthographicCamera);
   if (!orthoCam) return;
   orthoCam.position.x = SCROLL.x;
-  orthoCam.position.y = 0;
+  orthoCam.position.y = Math.max(8, player.position.y + 4);
   orthoCam.position.z = 100;
-  orthoCam.lookAt(new THREE.Vector3(SCROLL.x, 0, 0));
+  orthoCam.lookAt(new THREE.Vector3(SCROLL.x, player.position.y + 2, 0));
 }
 
 function spawnEnemy(gameState) {
