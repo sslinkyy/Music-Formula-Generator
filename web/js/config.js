@@ -118,6 +118,38 @@ export const PREMISE_OPTIONS = [
   '(auto)'
 ];
 
+export const MUSICAL_KEY_OPTIONS = [
+  'Not Specified',
+  // Major keys
+  'C Major',
+  'C# Major / Db Major',
+  'D Major',
+  'D# Major / Eb Major',
+  'E Major',
+  'F Major',
+  'F# Major / Gb Major',
+  'G Major',
+  'G# Major / Ab Major',
+  'A Major',
+  'A# Major / Bb Major',
+  'B Major',
+  // Minor keys
+  'C Minor',
+  'C# Minor / Db Minor',
+  'D Minor',
+  'D# Minor / Eb Minor',
+  'E Minor',
+  'F Minor',
+  'F# Minor / Gb Minor',
+  'G Minor',
+  'G# Minor / Ab Minor',
+  'A Minor',
+  'A# Minor / Bb Minor',
+  'B Minor'
+];
+
+export const MUSICAL_KEY_DEFAULT = 'Not Specified';
+
 // Allow more genre slots in the mix
 export const GENRE_SLOTS = 6;
 export const GENRE_SLOT_WEIGHT_TOTAL = 100;
