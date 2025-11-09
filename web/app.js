@@ -3050,8 +3050,9 @@ document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('DOMContentLoaded', setupCollapsibleSections);
 document.addEventListener('DOMContentLoaded', setupDropdowns);
 
-// Check for brick breaker import on load
-document.addEventListener('DOMContentLoaded', checkAndShowBrickBreakerImport);
+// Do not auto-open Brick Breaker import dialog on load.
+// The dialog should only appear when the user clicks the Import button
+// after finishing a game; we still show an indicator via updateBrickBreakerIndicator().
 
 function setupDropdowns() {
   const dropdowns = document.querySelectorAll('.dropdown');
