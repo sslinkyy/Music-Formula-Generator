@@ -1,4 +1,4 @@
-import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, MUSICAL_KEY_OPTIONS, MUSICAL_KEY_DEFAULT, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
+ï»¿import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, MUSICAL_KEY_OPTIONS, MUSICAL_KEY_DEFAULT, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js';
 import { computeScores } from './js/scoring.js';
 import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
@@ -540,7 +540,7 @@ function suggestArtistProfiles(name, limit=5) {
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.className = 'chip-remove';
-          removeBtn.textContent = '×';
+          removeBtn.textContent = 'ï¿½';
           removeBtn.title = 'Remove';
 
           removeBtn.addEventListener('click', (e) => {
@@ -1395,6 +1395,17 @@ function setupButtons() {
   if (gamesBtn) gamesBtn.addEventListener('click', () => openLibraryDialog('Game Hub (Wireframe)', buildGameHubDialog()));
   const guideBtn = document.getElementById('open-guide');
   if (guideBtn) guideBtn.addEventListener('click', () => openLibraryDialog('How to Earn Trophies', buildTrophyGuideContent()));
+  const importBrickBtn = document.getElementById('import-brick-breaker');
+  if (importBrickBtn) importBrickBtn.addEventListener('click', () => {
+    try {
+      const data = checkForBrickBreakerData();
+      if (!data) { showToast('No recent Brick Breaker data to import'); return; }
+      checkAndShowBrickBreakerImport();
+    } catch (e) {
+      console.error('[App] Brick Breaker import error:', e);
+      showToast('Import failed');
+    }
+  });
 
   // Wizard controls
   try {
@@ -1991,7 +2002,7 @@ function buildProductionDirectives(analysis) {
   const mastering = [
     'Master bus: gentle glue 1.5:1, slow attack, auto release',
     'True peak: -1.0 dBTP; streaming target: ~-14 LUFS; optional club alt: ~-9 LUFS',
-    'Low cut 20–30 Hz on mix bus; bass mono below ~120 Hz',
+    'Low cut 20ï¿½30 Hz on mix bus; bass mono below ~120 Hz',
     'Avoid clipping; preserve dynamics; tasteful stereo width'
   ];
   return {
@@ -3304,7 +3315,7 @@ Formatting rules (MANDATORY):
 - Do NOT reference any instruments in the lyrics.
 
 Creative guidance:
-- Treat songs as stories told through metaphor and innuendo — life lessons expressed with different examples but the same underlying principles.
+- Treat songs as stories told through metaphor and innuendo ï¿½ life lessons expressed with different examples but the same underlying principles.
 - Do not always tell the story directly; think bigger.
 
 Output only valid Suno blocks as instructed.`;
@@ -4377,6 +4388,7 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleAutoSave(); } catch(_){}
 }
+
 
 
 

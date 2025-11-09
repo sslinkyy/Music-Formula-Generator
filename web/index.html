@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -63,6 +63,7 @@
     <div class="dropdown" id="games-dropdown">
       <button type="button" class="dropdown-toggle">Games</button>
       <div class="dropdown-menu">
+        <button type="button" id="import-brick-breaker">Import from Brick Breaker</button>
         <button type="button" id="open-games">Play Games</button>
         <button type="button" id="open-trophies">View Trophies</button>
         <button type="button" id="open-guide">Trophy Guide</button>
@@ -161,6 +162,10 @@
             <button type="button" id="premise-suggest" title="Suggest a premise" style="margin-left:8px">Suggest</button>
           </label>
           <label class="field">
+            <span>Musical Key</span>
+            <select id="musical-key-select"></select>
+          </label>
+          <label class="field">
             <span>Language</span>
             <select id="language-select"></select>
           </label>
@@ -240,6 +245,7 @@
           </form>
           <div class="actions">
             <button type="button" id="call-ai" class="btn-primary">Call AI</button>
+            <button type="button" id="copy-ai-response" title="Copy AI response to clipboard">Copy</button>
           </div>
           <pre id="ai-response" class="output-block"></pre>
         </section>
@@ -272,6 +278,33 @@
         <button type="button" id="onboarding-demo" class="btn-primary">Load Demo</button>
         <button type="button" id="onboarding-gotit">Got it</button>
       </div>
+    </div>
+  </dialog>
+
+  <!-- Brick Breaker Import Modal -->
+  <dialog id="brick-breaker-import-dialog">
+    <div class="dialog-header">
+      <h2>🎮 Import from Brick Breaker</h2>
+      <button type="button" id="close-brick-breaker-dialog" aria-label="Close">&times;</button>
+    </div>
+    <div class="dialog-content">
+      <p id="brick-breaker-intro" style="margin-bottom: 15px;">
+        You've collected musical elements while playing 3D Brick Breaker! Would you like to import them?
+      </p>
+
+      <div id="brick-breaker-stats" style="background: var(--bg-secondary, #f5f5f5); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <strong>Collected Elements:</strong>
+        <div id="brick-breaker-preview" style="margin-top: 10px; font-size: 14px;"></div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" id="brick-breaker-dismiss" class="btn-secondary">Dismiss</button>
+        <button type="button" id="brick-breaker-import" class="btn-primary">Import All</button>
+      </div>
+
+      <p style="margin-top: 15px; font-size: 12px; opacity: 0.7;">
+        <em>Collected <span id="brick-breaker-age">recently</span>. Genres will be added to Genre Mix, other elements as keywords.</em>
+      </p>
     </div>
   </dialog>
 
