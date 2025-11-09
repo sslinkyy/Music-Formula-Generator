@@ -76,24 +76,28 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
   // Platforms disabled for side-scroll MVP (ground only)
   const platforms = [];
 
-  // Helper to create a round colored sprite texture
-  function makeCircleTexture(color = '#4d96ff', size = 64) {
+  // Helper to create an emoji sprite texture
+  function makeEmojiTexture(emoji = '👾', size = 64) {
     const c = document.createElement('canvas');
     c.width = c.height = size;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, size, size);
-    ctx.beginPath();
-    ctx.arc(size/2, size/2, size*0.45, 0, Math.PI*2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.lineWidth = Math.max(2, size*0.05);
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.stroke();
-    return new THREE.CanvasTexture(c);
+    // Optional subtle glow for contrast
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = size * 0.08;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Use common color emoji fonts across platforms
+    const px = Math.floor(size * 0.8);
+    ctx.font = `${px}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", system-ui, sans-serif`;
+    ctx.fillText(emoji, size / 2, size / 2);
+    const tex = new THREE.CanvasTexture(c);
+    tex.needsUpdate = true;
+    return tex;
   }
 
   // Player — sprite
-  const playerTex = makeCircleTexture('#4d96ff', 96);
+  const playerTex = makeEmojiTexture('🧑‍🎤', 96);
   const playerMat = new THREE.SpriteMaterial({ map: playerTex, transparent: true });
   const playerMesh = new THREE.Sprite(playerMat);
   playerMesh.scale.set(3, 3, 1);
@@ -309,7 +313,15 @@ function spawnEnemy(gameState) {
   if (!scene) return;
 
   const enemyType = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
-  const tex = makeCircleTexture('#' + enemyType.color.toString(16).padStart(6, '0'), 64);
+  const GENRE_EMOJI = {
+    'Synthwave': '👾',
+    'Cyberpunk': '🤖',
+    'Industrial': '🦾',
+    'Vaporwave': '🌴',
+    'Trap': '🐍'
+  };
+  const eEmoji = GENRE_EMOJI[enemyType.genre] || '👾';
+  const tex = makeEmojiTexture(eEmoji, 64);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
   const mesh = new THREE.Sprite(mat);
   mesh.scale.set(2.5, 2.5, 1);
@@ -387,7 +399,7 @@ function shootProjectile(gameState, playSfx) {
   const { scene, player, projectiles } = gameState;
   if (!scene) return;
 
-  const tex = makeCircleTexture('#ffd93d', 32);
+  const tex = makeEmojiTexture('🔸', 48);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
   const mesh = new THREE.Sprite(mat);
   mesh.scale.set(1, 1, 1);
