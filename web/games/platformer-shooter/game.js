@@ -26,15 +26,15 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
   scene.background = new THREE.Color(0x0a0a14);
   scene.fog = new THREE.Fog(0x0a0a14, 50, 200);
 
-  // Camera - third person
+  // Camera — side-scrolling view (2.5D)
   const camera = new THREE.PerspectiveCamera(
-    75,
+    60,
     container.clientWidth / container.clientHeight,
     0.1,
     1000
   );
-  camera.position.set(0, 15, 25);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(0, 12, 40);
+  camera.lookAt(0, 8, 0);
 
   // Renderer
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -65,73 +65,41 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
   light3.position.set(0, 10, 0);
   scene.add(light3);
 
-  // Create retro grid floor
-  const gridSize = 100;
-  const gridDivisions = 20;
-  const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0xff00ff, 0x00ffff);
-  gridHelper.position.y = -0.5;
-  scene.add(gridHelper);
-
-  // Floor platform
-  const floorGeometry = new THREE.BoxGeometry(gridSize, 1, gridSize);
-  const floorMaterial = new THREE.MeshStandardMaterial({
-    color: 0x1a1a2e,
-    emissive: 0x0a0a14,
-    roughness: 0.7,
-    metalness: 0.3
-  });
+  // Floor strip (wide, thin)
+  const floorGeometry = new THREE.BoxGeometry(500, 1, 2);
+  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, emissive: 0x0a0a14, roughness: 0.7, metalness: 0.3 });
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.position.y = -1;
+  floor.position.set(0, 0, 0);
   floor.receiveShadow = true;
   scene.add(floor);
 
-  // Create platforms
+  // Platforms disabled for side-scroll MVP (ground only)
   const platforms = [];
-  const platformPositions = [
-    { x: -20, y: 3, z: -20, w: 10, h: 1, d: 10 },
-    { x: 20, y: 5, z: -15, w: 12, h: 1, d: 12 },
-    { x: -15, y: 8, z: 15, w: 8, h: 1, d: 8 },
-    { x: 15, y: 10, z: 20, w: 10, h: 1, d: 10 },
-    { x: 0, y: 6, z: 0, w: 15, h: 1, d: 15 },
-    { x: -25, y: 12, z: 0, w: 8, h: 1, d: 8 },
-    { x: 25, y: 14, z: 5, w: 10, h: 1, d: 10 }
-  ];
 
-  platformPositions.forEach(pos => {
-    const platformGeometry = new THREE.BoxGeometry(pos.w, pos.h, pos.d);
-    const platformMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2d2d44,
-      emissive: 0x1a1a2e,
-      emissiveIntensity: 0.3,
-      roughness: 0.5,
-      metalness: 0.5
-    });
-    const platform = new THREE.Mesh(platformGeometry, platformMaterial);
-    platform.position.set(pos.x, pos.y, pos.z);
-    platform.castShadow = true;
-    platform.receiveShadow = true;
-    scene.add(platform);
-    platforms.push({ mesh: platform, bounds: pos });
-  });
+  // Helper to create a round colored sprite texture
+  function makeCircleTexture(color = '#4d96ff', size = 64) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, size, size);
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size*0.45, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, size*0.05);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.stroke();
+    return new THREE.CanvasTexture(c);
+  }
 
-  // Player
-  const playerGeometry = new THREE.ConeGeometry(1, 2, 8);
-  const playerMaterial = new THREE.MeshStandardMaterial({
-    color: 0x4d96ff,
-    emissive: 0x4d96ff,
-    emissiveIntensity: 0.5,
-    roughness: 0.3,
-    metalness: 0.7
-  });
-  const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-  playerMesh.position.set(0, 2, 0);
-  playerMesh.castShadow = true;
+  // Player — sprite
+  const playerTex = makeCircleTexture('#4d96ff', 96);
+  const playerMat = new THREE.SpriteMaterial({ map: playerTex, transparent: true });
+  const playerMesh = new THREE.Sprite(playerMat);
+  playerMesh.scale.set(3, 3, 1);
+  playerMesh.position.set(0, 1.5, 0);
   scene.add(playerMesh);
-
-  // Player glow effect
-  const playerGlow = new THREE.PointLight(0x4d96ff, 2, 10);
-  playerGlow.position.copy(playerMesh.position);
-  scene.add(playerGlow);
+  const playerGlow = null;
 
   // Player state
   const player = {
@@ -140,6 +108,7 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
     position: playerMesh.position,
     velocity: new THREE.Vector3(0, 0, 0),
     rotation: 0,
+    facing: 1,
     speed: speedByDiff[difficulty] || 10,
     jumpForce: 12,
     hp: hpByDiff[difficulty] || 3,
@@ -159,29 +128,11 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
   const mouse = { x: 0, y: 0, buttons: 0 };
   let pointerLocked = false;
 
-  // Mouse movement for camera
-  window.addEventListener('mousemove', e => {
-    if (pointerLocked) {
-      mouse.x += e.movementX * 0.002;
-      mouse.y += e.movementY * 0.002;
-      mouse.y = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, mouse.y));
-    }
-  });
-
-  window.addEventListener('mousedown', e => {
-    mouse.buttons = e.buttons;
-    if (!pointerLocked && document.pointerLockElement !== renderer.domElement) {
-      renderer.domElement.requestPointerLock();
-    }
-  });
-
-  window.addEventListener('mouseup', e => {
-    mouse.buttons = e.buttons;
-  });
-
-  document.addEventListener('pointerlockchange', () => {
-    pointerLocked = document.pointerLockElement === renderer.domElement;
-  });
+  // Simple mouse input (no pointer lock needed in side-scroll)
+  window.addEventListener('mousemove', () => {});
+  window.addEventListener('mousedown', e => { mouse.buttons = e.buttons; });
+  window.addEventListener('mouseup', e => { mouse.buttons = e.buttons; });
+  document.addEventListener('pointerlockchange', () => {});
 
   window.addEventListener('keydown', e => {
     keys[e.key.toLowerCase()] = true;
@@ -259,10 +210,9 @@ export function updateGame(gameState, dt, playSfx) {
   const keys = window.__gameKeys || {};
   const mouse = window.__gameMouse || { x: 0, y: 0, buttons: 0 };
 
-  // Update player movement
+  // Update player movement (side-scroll)
   updatePlayer(player, keys, platforms, dt, playSfx);
-
-  // Update camera to follow player (third-person)
+  // Camera follow (side view)
   updateCamera(player, mouse);
 
   // Spawn enemies
@@ -299,30 +249,22 @@ export function updateGame(gameState, dt, playSfx) {
 
 function updatePlayer(player, keys, platforms, dt, playSfx) {
   const moveSpeed = player.speed * player.powerups.speed;
-  const moveVec = new THREE.Vector3();
-
-  // Movement
-  if (keys['w']) moveVec.z -= 1;
-  if (keys['s']) moveVec.z += 1;
-  if (keys['a']) moveVec.x -= 1;
-  if (keys['d']) moveVec.x += 1;
-
-  if (moveVec.length() > 0) {
-    moveVec.normalize();
-    player.velocity.x = moveVec.x * moveSpeed;
-    player.velocity.z = moveVec.z * moveSpeed;
-  } else {
-    player.velocity.x *= 0.9;
-    player.velocity.z *= 0.9;
-  }
+  // Horizontal movement (A/D or Left/Right)
+  const left = keys['a'] || keys['arrowleft'];
+  const right = keys['d'] || keys['arrowright'];
+  if (left && !right) { player.velocity.x = -moveSpeed; player.facing = -1; }
+  else if (right && !left) { player.velocity.x = moveSpeed; player.facing = 1; }
+  else { player.velocity.x *= 0.85; }
+  // No depth in side-scroll
+  player.velocity.z = 0;
 
   // Gravity
   player.velocity.y -= 30 * dt;
 
-  // Apply velocity
+  // Apply velocity (x/y only)
   player.position.x += player.velocity.x * dt;
   player.position.y += player.velocity.y * dt;
-  player.position.z += player.velocity.z * dt;
+  player.position.z = 0;
 
   // Ground collision
   player.onGround = false;
@@ -332,27 +274,7 @@ function updatePlayer(player, keys, platforms, dt, playSfx) {
     player.onGround = true;
   }
 
-  // Platform collision
-  platforms.forEach(platform => {
-    const bounds = platform.bounds;
-    const px = player.position.x;
-    const py = player.position.y;
-    const pz = player.position.z;
-
-    if (
-      px > bounds.x - bounds.w / 2 &&
-      px < bounds.x + bounds.w / 2 &&
-      pz > bounds.z - bounds.d / 2 &&
-      pz < bounds.z + bounds.d / 2
-    ) {
-      const platformTop = bounds.y + bounds.h / 2;
-      if (py > platformTop - 0.5 && py < platformTop + 2 && player.velocity.y <= 0) {
-        player.position.y = platformTop + 1;
-        player.velocity.y = 0;
-        player.onGround = true;
-      }
-    }
-  });
+  // Platforms disabled in MVP (keep ground-only jumping)
 
   // Jumping
   if (keys[' '] && player.onGround) {
@@ -366,30 +288,20 @@ function updatePlayer(player, keys, platforms, dt, playSfx) {
     player.glow.position.copy(player.position);
   }
 
-  // Bounds
-  const limit = 45;
+  // Bounds (horizontal)
+  const limit = 240;
   player.position.x = Math.max(-limit, Math.min(limit, player.position.x));
-  player.position.z = Math.max(-limit, Math.min(limit, player.position.z));
+  player.position.z = 0;
 }
 
-function updateCamera(player, mouse) {
+function updateCamera(player) {
   if (!player.mesh.parent) return;
-
-  const camera = player.mesh.parent.children.find(
-    child => child instanceof THREE.PerspectiveCamera
-  );
+  const camera = player.mesh.parent.children.find(child => child instanceof THREE.PerspectiveCamera);
   if (!camera) return;
-
-  // Third-person camera
-  const distance = 25;
-  const height = 15;
-  const angle = mouse.x || 0;
-
-  camera.position.x = player.position.x + Math.sin(angle) * distance;
-  camera.position.y = player.position.y + height;
-  camera.position.z = player.position.z + Math.cos(angle) * distance;
-
-  camera.lookAt(player.position);
+  camera.position.x = player.position.x;
+  camera.position.y = Math.max(8, player.position.y + 8);
+  camera.position.z = 40;
+  camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 4, 0));
 }
 
 function spawnEnemy(gameState) {
@@ -397,32 +309,14 @@ function spawnEnemy(gameState) {
   if (!scene) return;
 
   const enemyType = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
-
-  let geometry;
-  if (enemyType.shape === 'cube') {
-    geometry = new THREE.BoxGeometry(2, 2, 2);
-  } else if (enemyType.shape === 'pyramid') {
-    geometry = new THREE.ConeGeometry(1, 2, 4);
-  } else {
-    geometry = new THREE.OctahedronGeometry(1.2);
-  }
-
-  const material = new THREE.MeshStandardMaterial({
-    color: enemyType.color,
-    emissive: enemyType.color,
-    emissiveIntensity: 0.5,
-    roughness: 0.3,
-    metalness: 0.7
-  });
-
-  const mesh = new THREE.Mesh(geometry, material);
-
-  // Spawn at random edge
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 40;
-  mesh.position.set(Math.cos(angle) * radius, 5, Math.sin(angle) * radius);
-  mesh.castShadow = true;
-
+  const tex = makeCircleTexture('#' + enemyType.color.toString(16).padStart(6, '0'), 64);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+  const mesh = new THREE.Sprite(mat);
+  mesh.scale.set(2.5, 2.5, 1);
+  // Spawn to left or right
+  const side = Math.random() < 0.5 ? -1 : 1;
+  const startX = (player.position?.x || 0) + side * (30 + Math.random() * 20);
+  mesh.position.set(startX, 2.5 + Math.random() * 3, 0);
   scene.add(mesh);
 
   const enemy = {
@@ -442,22 +336,14 @@ function updateEnemies(gameState, dt, playSfx) {
   for (let i = enemies.length - 1; i >= 0; i--) {
     const enemy = enemies[i];
 
-    // Move toward player
-    const direction = new THREE.Vector3();
-    direction.subVectors(player.position, enemy.mesh.position);
-    direction.y = 0;
-    direction.normalize();
-
-    enemy.mesh.position.x += direction.x * enemy.speed * 8 * dt;
-    enemy.mesh.position.z += direction.z * enemy.speed * 8 * dt;
-
-    // Rotate
-    enemy.rotation += dt * 2;
-    enemy.mesh.rotation.y = enemy.rotation;
+    // Move toward player along X only
+    const dirX = Math.sign((player.position.x) - (enemy.mesh.position.x));
+    enemy.mesh.position.x += dirX * enemy.speed * 8 * dt;
 
     // Check collision with player
-    const dist = enemy.mesh.position.distanceTo(player.position);
-    if (dist < 3) {
+    const dx = Math.abs(enemy.mesh.position.x - player.position.x);
+    const dy = Math.abs(enemy.mesh.position.y - player.position.y);
+    if (dx < 2.5 && dy < 2.5) {
       // Damage player
       if (!player.powerups.shield) {
         player.hp -= 1;
@@ -498,26 +384,21 @@ function updateEnemies(gameState, dt, playSfx) {
 }
 
 function shootProjectile(gameState, playSfx) {
-  const { scene, player, projectiles, mouse } = gameState;
+  const { scene, player, projectiles } = gameState;
   if (!scene) return;
 
-  const geometry = new THREE.SphereGeometry(0.3, 8, 8);
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xffd93d,
-    emissive: 0xffd93d,
-    emissiveIntensity: 1
-  });
-  const mesh = new THREE.Mesh(geometry, material);
+  const tex = makeCircleTexture('#ffd93d', 32);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+  const mesh = new THREE.Sprite(mat);
+  mesh.scale.set(1, 1, 1);
 
   mesh.position.copy(player.position);
   mesh.position.y += 1;
 
   scene.add(mesh);
 
-  // Calculate direction from camera
-  const camera = scene.children.find(child => child instanceof THREE.PerspectiveCamera);
-  const direction = new THREE.Vector3(0, 0, -1);
-  direction.applyQuaternion(camera.quaternion);
+  // Direction from player facing (horizontal)
+  const direction = new THREE.Vector3(player.facing, 0, 0);
 
   const projectile = {
     mesh,
@@ -541,15 +422,17 @@ function updateProjectiles(gameState, dt, playSfx) {
     // Move
     proj.mesh.position.x += proj.velocity.x * dt;
     proj.mesh.position.y += proj.velocity.y * dt;
-    proj.mesh.position.z += proj.velocity.z * dt;
+    // No depth in side-scroll
+    proj.mesh.position.z = 0;
 
     proj.lifetime -= dt;
 
     // Check collision with enemies
     let hit = false;
     for (const enemy of enemies) {
-      const dist = proj.mesh.position.distanceTo(enemy.mesh.position);
-      if (dist < 2) {
+      const dx = Math.abs(proj.mesh.position.x - enemy.mesh.position.x);
+      const dy = Math.abs(proj.mesh.position.y - enemy.mesh.position.y);
+      if (dx < 2 && dy < 2) {
         enemy.hp -= proj.damage;
         hit = true;
         gameState.hits++;
