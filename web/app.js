@@ -139,7 +139,6 @@ import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
-import { buildPlatformerShooterDialog } from './games/platformer-shooter/index.js';
 import { ARTIST_PROFILES } from './data/artists.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
@@ -4017,10 +4016,12 @@ function buildGameHubDialog() {
     }
   }));
   grid.appendChild(mkCard('3D Platformer Shooter', 'Retro third-person platformer shooter with Three.js. Jump, shoot, collect powerups!', samplePlatformerOutput, 'platformer-shooter', {
-    start: () => {
+    start: async () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
+      // Lazy load the game module to avoid loading Three.js and event listeners on page load
+      const { buildPlatformerShooterDialog } = await import('./games/platformer-shooter/index.js');
       const content = buildPlatformerShooterDialog((output) => {
         openLibraryDialog('Platformer Shooter • Summary', buildGameSummary(output, 'platformer-shooter'));
       }, { durationSec: 120, difficulty: 'normal' });

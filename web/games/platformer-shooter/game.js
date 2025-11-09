@@ -198,6 +198,35 @@ export function initGame(container, difficulty, hpByDiff, speedByDiff) {
     renderer.setSize(container.clientWidth, container.clientHeight);
   });
 
+  // Initialize global input state (only when game starts)
+  if (!window.__gameKeys) {
+    window.__gameKeys = {};
+    window.__gameMouse = { x: 0, y: 0, buttons: 0 };
+
+    window.addEventListener('keydown', e => {
+      window.__gameKeys[e.key.toLowerCase()] = true;
+    });
+
+    window.addEventListener('keyup', e => {
+      window.__gameKeys[e.key.toLowerCase()] = false;
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (document.pointerLockElement) {
+        window.__gameMouse.x += e.movementX * 0.002;
+        window.__gameMouse.y += e.movementY * 0.002;
+      }
+    });
+
+    window.addEventListener('mousedown', e => {
+      window.__gameMouse.buttons = e.buttons;
+    });
+
+    window.addEventListener('mouseup', e => {
+      window.__gameMouse.buttons = e.buttons;
+    });
+  }
+
   return {
     scene,
     camera,
@@ -694,33 +723,4 @@ export function renderGame(scene, camera, renderer) {
   if (renderer && scene && camera) {
     renderer.render(scene, camera);
   }
-}
-
-// Store input globally for access
-if (typeof window !== 'undefined') {
-  window.__gameKeys = {};
-  window.__gameMouse = { x: 0, y: 0, buttons: 0 };
-
-  window.addEventListener('keydown', e => {
-    window.__gameKeys[e.key.toLowerCase()] = true;
-  });
-
-  window.addEventListener('keyup', e => {
-    window.__gameKeys[e.key.toLowerCase()] = false;
-  });
-
-  window.addEventListener('mousemove', e => {
-    if (document.pointerLockElement) {
-      window.__gameMouse.x += e.movementX * 0.002;
-      window.__gameMouse.y += e.movementY * 0.002;
-    }
-  });
-
-  window.addEventListener('mousedown', e => {
-    window.__gameMouse.buttons = e.buttons;
-  });
-
-  window.addEventListener('mouseup', e => {
-    window.__gameMouse.buttons = e.buttons;
-  });
 }
