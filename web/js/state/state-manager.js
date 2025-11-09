@@ -3,7 +3,7 @@
  * Centralized state management with validation
  */
 
-import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, GENRE_SLOTS, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from '../config.js';
+import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, GENRE_SLOTS, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from '../config.js?v=1';
 import { saveState, loadState as loadPersistedState } from './persistence.js';
 import { validateBaseInput, validateDerivedInput, validateGenreWeight } from '../utils/validation.js';
 
