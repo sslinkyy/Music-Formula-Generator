@@ -38,7 +38,7 @@
       "additionalProperties": false,
       "required": ["mode"],
       "properties": {
-        "mode": { "type": "string", "enum": ["rhythm", "grid", "shooter"] },
+        "mode": { "type": "string", "enum": ["rhythm", "grid", "shooter", "platformer-shooter"] },
         "difficulty": { "type": "string", "enum": ["easy", "normal", "hard"] },
         "duration": { "type": "number", "minimum": 0 },
         "score": { "type": "number", "minimum": 0 },

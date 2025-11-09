@@ -139,6 +139,7 @@ import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildShooterGameDialog } from './games/shooter/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
+import { buildPlatformerShooterDialog } from './games/platformer-shooter/index.js';
 import { ARTIST_PROFILES } from './data/artists.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
@@ -4024,6 +4025,17 @@ function buildGameHubDialog() {
       openLibraryDialog('Snake (Prototype)', content);
     }
   }));
+  grid.appendChild(mkCard('3D Platformer Shooter', 'Retro third-person platformer shooter with Three.js. Jump, shoot, collect powerups!', samplePlatformerOutput, 'platformer-shooter', {
+    start: () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
+      const content = buildPlatformerShooterDialog((output) => {
+        openLibraryDialog('Platformer Shooter • Summary', buildGameSummary(output, 'platformer-shooter'));
+      }, { durationSec: 120, difficulty: 'normal' });
+      openLibraryDialog('3D Platformer Shooter', content);
+    }
+  }));
 
   // Add 3D Brick Breaker as a standalone game
   const brickBreakerCard = document.createElement('div');
@@ -4242,6 +4254,18 @@ function sampleShooterOutput() {
     accent: 'British English (London)',
     forbidden: ['glitch'],
     meta: { mode: 'shooter', difficulty: 'normal', duration: 75, score: 9100, accuracy: 68 }
+  };
+}
+function samplePlatformerOutput() {
+  return {
+    genres: [ { name: 'Synthwave', influence: 60 }, { name: 'Cyberpunk', influence: 25 }, { name: 'Industrial', influence: 15 } ],
+    premise: 'rebellion & defiance',
+    styleTags: ['healing vibes','fast tempo','rapid fire beats','protected energy'],
+    keywords: ['neon','cyber','digital','grid','electric','retro'],
+    language: 'English',
+    accent: 'Neutral / Standard',
+    forbidden: ['enemy contact'],
+    meta: { mode: 'platformer-shooter', difficulty: 'normal', duration: 120, score: 8500, accuracy: 85, bestCombo: 25 }
   };
 }
 
