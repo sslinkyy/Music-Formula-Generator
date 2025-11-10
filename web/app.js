@@ -1416,6 +1416,29 @@ function setupButtons() {
   }
   updateBrickBreakerIndicator();
 
+  // Auto-detect Brick Breaker save events from another tab and prompt import
+  window.addEventListener('storage', (e) => {
+    try {
+      if (e.key === 'musicGenerator_brickBreakerCollected') {
+        updateBrickBreakerIndicator();
+        // Only prompt when new data appears
+        if (e.newValue) {
+          // Avoid interrupting if tab is hidden; show when focused again
+          if (document.visibilityState === 'visible') {
+            checkAndShowBrickBreakerImport();
+          } else {
+            // On next focus, prompt once
+            const onFocus = () => {
+              window.removeEventListener('focus', onFocus);
+              checkAndShowBrickBreakerImport();
+            };
+            window.addEventListener('focus', onFocus, { once: true });
+          }
+        }
+      }
+    } catch(_) {}
+  });
+
   // Wizard controls
   try {
     const wzToggle = document.getElementById('wizard-toggle');
