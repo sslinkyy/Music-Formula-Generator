@@ -125,21 +125,26 @@ export function applyBrickBreakerToState(state, mapped) {
     }
 
     // Merge keywords into creativeInputs
-    if (mapped.keywords.length > 0) {
-        updated.creativeInputs = updated.creativeInputs || {};
-        updated.creativeInputs.keywords = [
-            ...(updated.creativeInputs.keywords || []),
-            ...mapped.keywords
-        ];
-        // Remove duplicates
-        updated.creativeInputs.keywords = [...new Set(updated.creativeInputs.keywords)];
+    // UI expects a comma-separated string in creativeInputs.keywords
+    const tokens = [];
+    if (updated.creativeInputs && updated.creativeInputs.keywords) {
+        const existing = updated.creativeInputs.keywords;
+        if (Array.isArray(existing)) {
+            existing.forEach(x => { if (x && typeof x === 'string') tokens.push(x); });
+        } else if (typeof existing === 'string') {
+            existing.split(',').map(s => s.trim()).filter(Boolean).forEach(s => tokens.push(s));
+        }
     }
-
-    // Add tempo to keywords if available
+    if (mapped.keywords && mapped.keywords.length) {
+        mapped.keywords.forEach(s => { if (s && typeof s === 'string') tokens.push(s); });
+    }
     if (mapped.tempo) {
+        tokens.push(`${mapped.tempo} bpm`);
+    }
+    if (tokens.length) {
+        const deduped = [...new Set(tokens.map(s => s.trim()))];
         updated.creativeInputs = updated.creativeInputs || {};
-        updated.creativeInputs.keywords = updated.creativeInputs.keywords || [];
-        updated.creativeInputs.keywords.push(`${mapped.tempo} bpm`);
+        updated.creativeInputs.keywords = deduped.join(', ');
     }
 
     return updated;
