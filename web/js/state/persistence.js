@@ -229,7 +229,12 @@ export function loadState(defaultState = null) {
     const raw = localStorage.getItem(STORAGE_KEYS.STATE);
     if (!raw) return defaultState;
 
-    const loaded = JSON.parse(raw);
+    let loaded = JSON.parse(raw);
+
+    // Lightweight migration to normalize known fields
+    try {
+      loaded = migrateState(loaded);
+    } catch (_) {}
 
     // Merge with default state to ensure all keys exist
     if (defaultState) {
@@ -241,6 +246,37 @@ export function loadState(defaultState = null) {
     console.error('Failed to load state:', err);
     return defaultState;
   }
+}
+
+/**
+ * Migrates loaded state to current expected shapes
+ * (keeps this module decoupled from config constants)
+ */
+function migrateState(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  // Normalize creativeInputs token fields to comma-separated strings
+  if (!obj.creativeInputs) obj.creativeInputs = {};
+  const toCommaString = (val) => {
+    if (Array.isArray(val)) return val.filter(x => typeof x === 'string').join(', ');
+    if (typeof val === 'number') return String(val);
+    if (typeof val === 'string') return val;
+    return '';
+  };
+  obj.creativeInputs.keywords = toCommaString(obj.creativeInputs.keywords);
+  obj.creativeInputs.styleTags = toCommaString(obj.creativeInputs.styleTags);
+
+  // Ensure outputs object shape
+  if (!obj.outputs || typeof obj.outputs !== 'object') {
+    obj.outputs = { brief: '', suno: '', prompt: '', aiResponse: '' };
+  } else {
+    obj.outputs.brief = String(obj.outputs.brief || '');
+    obj.outputs.suno = String(obj.outputs.suno || '');
+    obj.outputs.prompt = String(obj.outputs.prompt || '');
+    obj.outputs.aiResponse = String(obj.outputs.aiResponse || '');
+  }
+
+  return obj;
 }
 
 /**
