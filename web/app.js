@@ -2700,6 +2700,18 @@ function init() {
   applyTheme(getTheme());
   initMode();
   try { loadState(); } catch (_) {}
+  // Normalize legacy/persisted creativeInputs types (ensure strings for tokenized fields)
+  try {
+    if (!state.creativeInputs) state.creativeInputs = {};
+    const fixTokens = (val) => {
+      if (Array.isArray(val)) return val.filter(x => typeof x === 'string').join(', ');
+      if (typeof val === 'number') return String(val);
+      if (typeof val === 'string') return val;
+      return '';
+    };
+    state.creativeInputs.keywords = fixTokens(state.creativeInputs.keywords);
+    state.creativeInputs.styleTags = fixTokens(state.creativeInputs.styleTags);
+  } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
   try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
