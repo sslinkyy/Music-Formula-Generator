@@ -1426,11 +1426,14 @@ function setupButtons() {
           // Avoid interrupting if tab is hidden; show when focused again
           if (document.visibilityState === 'visible') {
             checkAndShowBrickBreakerImport();
+            // Also surface banner in case dialog is dismissed
+            try { showBBImportBanner(); } catch(_) {}
           } else {
             // On next focus, prompt once
             const onFocus = () => {
               window.removeEventListener('focus', onFocus);
               checkAndShowBrickBreakerImport();
+              try { showBBImportBanner(); } catch(_) {}
             };
             window.addEventListener('focus', onFocus, { once: true });
           }
@@ -1438,6 +1441,39 @@ function setupButtons() {
       }
     } catch(_) {}
   });
+
+  // Brick Breaker banner helpers
+  function showBBImportBanner() {
+    try {
+      const data = checkForBrickBreakerData();
+      const banner = document.getElementById('bb-import-banner');
+      const dismissed = sessionStorage.getItem('bb_banner_dismissed') === '1';
+      if (banner) {
+        banner.style.display = data && !dismissed ? 'flex' : 'none';
+        const btn = document.getElementById('bb-import-now');
+        const close = document.getElementById('bb-dismiss-banner');
+        if (btn && !btn.__bbBound) {
+          btn.__bbBound = true;
+          btn.addEventListener('click', () => {
+            checkAndShowBrickBreakerImport();
+          });
+        }
+        if (close && !close.__bbBound) {
+          close.__bbBound = true;
+          close.addEventListener('click', () => {
+            banner.style.display = 'none';
+            sessionStorage.setItem('bb_banner_dismissed', '1');
+          });
+        }
+      }
+    } catch(_) {}
+  }
+  function hideBBImportBanner() {
+    const banner = document.getElementById('bb-import-banner');
+    if (banner) banner.style.display = 'none';
+  }
+  // Initial banner check
+  showBBImportBanner();
 
   // Wizard controls
   try {
@@ -3024,6 +3060,7 @@ function checkAndShowBrickBreakerImport() {
       clearBrickBreakerData();
       const badge = document.getElementById('brick-breaker-indicator');
       if (badge) badge.hidden = true;
+      try { hideBBImportBanner(); } catch(_) {}
 
       // Show success toast
       const totalElements = stats.total || 0;
