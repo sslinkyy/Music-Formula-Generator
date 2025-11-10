@@ -53,6 +53,37 @@
                 </div>
                 <button id="start-btn" class="btn-primary">START GAME</button>
                 <button id="settings-btn" class="btn-secondary">SETTINGS</button>
+
+                <!-- Secret Code (unlocks debug options) -->
+                <div id="secret-section" style="margin-top:14px; display:none;">
+                    <input id="secret-code-input" type="text" placeholder="Enter secret code" 
+                           style="padding:8px 10px; border-radius:8px; border:1px solid #333; background:#111; color:#fff; width:220px;">
+                    <button id="secret-code-btn" class="btn-secondary" style="padding:10px 14px;">Enter</button>
+                    <div id="secret-hint" style="font-size:12px; color:#888; margin-top:6px;">Debug options locked</div>
+                </div>
+
+                <!-- Developer / Debug Options (unlocked by secret code) -->
+                <div id="dev-options" style="display:none; margin-top:16px; text-align:left;">
+                    <div class="setting">
+                        <label for="level-select" style="display:block; margin-bottom:6px; color:#00ff88;">Start Level</label>
+                        <select id="level-select" style="width:100%; padding:8px; background:#0a0a0a; color:#fff; border:1px solid #333; border-radius:8px;"></select>
+                    </div>
+                    <div class="setting" style="margin-top:10px;">
+                        <label style="color:#00ff88;"><input type="checkbox" id="procedural-toggle" style="margin-right:8px;"> Procedural Mode</label>
+                    </div>
+                    <div class="setting" style="margin-top:10px;">
+                        <label style="display:block; margin-bottom:6px; color:#00ff88;">Cheats</label>
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <span style="font-size:14px; color:#ccc;">Lives:</span>
+                                <input type="number" id="cheat-lives" min="1" max="99" value="3" style="width:80px; padding:6px; background:#0a0a0a; color:#fff; border:1px solid #333; border-radius:6px;">
+                                <button id="cheat-lives-max" class="btn-secondary" style="padding:6px 10px;">Max</button>
+                            </div>
+                            <label><input type="checkbox" id="cheat-laser" style="margin-right:6px;">Start with Laser</label>
+                            <label><input type="checkbox" id="cheat-shield" style="margin-right:6px;">Start with Shield</label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="pause-menu" class="modal hidden">

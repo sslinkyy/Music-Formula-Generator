@@ -78,11 +78,24 @@ class Game {
             quality: 'medium'
         };
 
+        // Debug / cheat state
+        this.debugUnlocked = (localStorage.getItem('bb_debug_unlocked') === '1');
+        this.konamiUnlocked = (localStorage.getItem('bb_konami') === '1');
+        this.proceduralMode = (localStorage.getItem('bb_proc_mode') === '1');
+        this.cheats = {
+            lives: parseInt(localStorage.getItem('bb_cheat_lives') || '3', 10),
+            laser: (localStorage.getItem('bb_cheat_laser') === '1'),
+            shield: (localStorage.getItem('bb_cheat_shield') === '1'),
+            infiniteLives: (localStorage.getItem('bb_cheat_infinite') === '1')
+        };
+
         try {
             this.setupThreeJS();
             this.setupLighting();
-            this.setupEventListeners();
-            this.setupUI();
+        this.setupEventListeners();
+        this.setupKonamiCode();
+        this.setupMenuDebugUI();
+        this.setupUI();
 
             // Start animation loop
             this.animate();
@@ -304,13 +317,281 @@ class Game {
         this.updateMusicalCollectionUI();
     }
 
+    setupMenuDebugUI() {
+        const dev = document.getElementById('dev-options');
+        const hint = document.getElementById('secret-hint');
+        const secretInput = document.getElementById('secret-code-input');
+        const secretBtn = document.getElementById('secret-code-btn');
+        const secretSection = document.getElementById('secret-section');
+        const levelSel = document.getElementById('level-select');
+        const procToggle = document.getElementById('procedural-toggle');
+        const livesInput = document.getElementById('cheat-lives');
+        const livesMaxBtn = document.getElementById('cheat-lives-max');
+        const cheatLaser = document.getElementById('cheat-laser');
+        const cheatShield = document.getElementById('cheat-shield');
+
+        if (!dev || !hint || !secretInput || !secretBtn || !levelSel || !procToggle || !livesInput || !livesMaxBtn || !cheatLaser || !cheatShield || !secretSection) {
+            return;
+        }
+
+        // Show secret section only if Konami was entered
+        if (this.konamiUnlocked) {
+            secretSection.style.display = 'block';
+            hint.textContent = 'Enter a secret code';
+        } else {
+            secretSection.style.display = 'none';
+            hint.textContent = 'Enter Konami code to unlock secret input';
+        }
+
+        // Populate level select (1..50)
+        if (levelSel.options.length === 0) {
+            for (let i = 1; i <= 50; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `Level ${i}`;
+                levelSel.appendChild(opt);
+            }
+        }
+
+        // Initialize visibility and values
+        if (this.debugUnlocked) {
+            dev.style.display = 'block';
+            hint.textContent = 'Debug options unlocked';
+        }
+        procToggle.checked = !!this.proceduralMode;
+        livesInput.value = String(this.cheats.lives || 3);
+        cheatLaser.checked = !!this.cheats.laser;
+        cheatShield.checked = !!this.cheats.shield;
+
+        // Secret code handling
+        const handleSecret = () => {
+            if (!this.konamiUnlocked) {
+                hint.textContent = 'Enter Konami code first';
+                return;
+            }
+            const code = (secretInput.value || '').trim().toUpperCase();
+            if (!code) return;
+
+            const unlockCodes = ['LEVELUP', 'DEBUG', 'UNLOCK', 'DEVTOOLS'];
+            if (unlockCodes.includes(code)) {
+                this.debugUnlocked = true;
+                localStorage.setItem('bb_debug_unlocked', '1');
+                dev.style.display = 'block';
+                hint.textContent = 'Debug options unlocked';
+                secretInput.value = '';
+                return;
+            }
+
+            if (code === 'GODMODE') {
+                this.cheats.infiniteLives = true;
+                localStorage.setItem('bb_cheat_infinite', '1');
+                hint.textContent = 'God Mode enabled (infinite lives)';
+                secretInput.value = '';
+                return;
+            }
+
+            if (code === 'EXTRALIFE') {
+                const current = parseInt(livesInput.value || '3', 10);
+                const next = Math.min(99, current + 5);
+                livesInput.value = String(next);
+                livesInput.dispatchEvent(new Event('change'));
+                hint.textContent = '+5 lives added';
+                secretInput.value = '';
+                return;
+            }
+
+            if (code === 'LASERS') {
+                cheatLaser.checked = true;
+                cheatLaser.dispatchEvent(new Event('change'));
+                hint.textContent = 'Start with Laser enabled';
+                secretInput.value = '';
+                return;
+            }
+
+            hint.textContent = 'Unknown code';
+        };
+        secretBtn.addEventListener('click', handleSecret);
+        secretInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleSecret();
+        });
+
+        // Bind controls
+        procToggle.addEventListener('change', (e) => {
+            this.proceduralMode = !!e.target.checked;
+            localStorage.setItem('bb_proc_mode', this.proceduralMode ? '1' : '0');
+        });
+        livesInput.addEventListener('change', (e) => {
+            const v = Math.max(1, Math.min(99, parseInt(e.target.value || '3', 10)));
+            this.cheats.lives = v;
+            e.target.value = String(v);
+            localStorage.setItem('bb_cheat_lives', String(v));
+        });
+        livesMaxBtn.addEventListener('click', () => {
+            this.cheats.lives = 99;
+            livesInput.value = '99';
+            localStorage.setItem('bb_cheat_lives', '99');
+        });
+        cheatLaser.addEventListener('change', (e) => {
+            this.cheats.laser = !!e.target.checked;
+            localStorage.setItem('bb_cheat_laser', this.cheats.laser ? '1' : '0');
+        });
+        cheatShield.addEventListener('change', (e) => {
+            this.cheats.shield = !!e.target.checked;
+            localStorage.setItem('bb_cheat_shield', this.cheats.shield ? '1' : '0');
+        });
+    }
+
+    setupKonamiCode() {
+        // Konami sequence: Up Up Down Down Left Right Left Right B A
+        const sequence = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+        let buffer = [];
+
+        // Subtle on-screen progress indicator (10 dots)
+        let indicator, hideTimer;
+        const ensureIndicator = () => {
+            if (indicator) return indicator;
+            const overlay = document.getElementById('ui-overlay') || document.body;
+            indicator = document.createElement('div');
+            indicator.id = 'konami-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.bottom = '16px';
+            indicator.style.left = '50%';
+            indicator.style.transform = 'translateX(-50%)';
+            indicator.style.display = 'none';
+            indicator.style.gap = '6px';
+            indicator.style.zIndex = '1200';
+            indicator.style.pointerEvents = 'none';
+            indicator.style.opacity = '0.6';
+            indicator.style.filter = 'drop-shadow(0 0 2px rgba(0,0,0,0.6))';
+            indicator.style.backdropFilter = 'blur(2px)';
+
+            // Create dots
+            for (let i = 0; i < sequence.length; i++) {
+                const dot = document.createElement('span');
+                dot.style.display = 'inline-block';
+                dot.style.width = '6px';
+                dot.style.height = '6px';
+                dot.style.borderRadius = '50%';
+                dot.style.background = 'rgba(255,255,255,0.25)';
+                dot.style.transition = 'background 120ms ease, transform 120ms ease';
+                indicator.appendChild(dot);
+            }
+            overlay.appendChild(indicator);
+            return indicator;
+        };
+
+        const setIndicatorProgress = (count) => {
+            const el = ensureIndicator();
+            const dots = el.children;
+            for (let i = 0; i < dots.length; i++) {
+                const active = i < count;
+                dots[i].style.background = active ? '#00ff88' : 'rgba(255,255,255,0.25)';
+                dots[i].style.transform = active ? 'scale(1.1)' : 'scale(1.0)';
+            }
+            if (count > 0 && !this.konamiUnlocked) {
+                el.style.display = 'flex';
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                    el.style.display = 'none';
+                }, 2500);
+            } else if (this.konamiUnlocked) {
+                el.style.display = 'none';
+            }
+        };
+
+        const computeProgress = () => {
+            // Longest k such that last k of buffer equals first k of sequence
+            const maxK = Math.min(buffer.length, sequence.length);
+            for (let k = maxK; k >= 0; k--) {
+                let ok = true;
+                for (let i = 0; i < k; i++) {
+                    if (buffer[buffer.length - k + i] !== sequence[i]) { ok = false; break; }
+                }
+                if (ok) return k;
+            }
+            return 0;
+        };
+
+        const tryUnlock = () => {
+            if (buffer.length > sequence.length) buffer.shift();
+            const progress = computeProgress();
+            setIndicatorProgress(progress);
+            if (progress === sequence.length) {
+                this.konamiUnlocked = true;
+                localStorage.setItem('bb_konami', '1');
+                const secretSection = document.getElementById('secret-section');
+                const hint = document.getElementById('secret-hint');
+                if (secretSection) secretSection.style.display = 'block';
+                if (hint) hint.textContent = 'Secret input unlocked';
+                try { AudioManager.play('powerup'); } catch (e) {}
+            }
+        };
+
+        // Keyboard support
+        const onKey = (e) => {
+            const key = e.key;
+            const norm = (key === 'B') ? 'b' : (key === 'A') ? 'a' : key;
+            buffer.push(norm);
+            tryUnlock();
+        };
+        window.addEventListener('keydown', onKey, { passive: true });
+
+        // Touch gesture support
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        const SWIPE_THRESHOLD = 30; // pixels
+
+        const onTouchStart = (e) => {
+            if (!e.touches || e.touches.length !== 1) return;
+            const t = e.touches[0];
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+            touchStartTime = Date.now();
+        };
+
+        const onTouchEnd = (e) => {
+            const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+            if (!t) return;
+            const dx = t.clientX - touchStartX;
+            const dy = t.clientY - touchStartY;
+            const absX = Math.abs(dx);
+            const absY = Math.abs(dy);
+
+            let token = null;
+            if (absX < SWIPE_THRESHOLD && absY < SWIPE_THRESHOLD) {
+                // Consider as tap: left half = 'b', right half = 'a'
+                token = (t.clientX < window.innerWidth / 2) ? 'b' : 'a';
+            } else if (absX > absY) {
+                token = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
+            } else {
+                token = dy > 0 ? 'ArrowDown' : 'ArrowUp';
+            }
+
+            buffer.push(token);
+            tryUnlock();
+        };
+
+        window.addEventListener('touchstart', onTouchStart, { passive: true });
+        window.addEventListener('touchend', onTouchEnd, { passive: true });
+    }
+
     startGame() {
         console.log('[Game] Starting new game');
         this.hideModal('menu');
         this.state = GameState.PLAYING;
         this.score = 0;
-        this.lives = 3;
-        this.level = 1;
+        // Pull cheats / level select from UI if unlocked
+        const livesInput = document.getElementById('cheat-lives');
+        const levelSel = document.getElementById('level-select');
+        const dev = document.getElementById('dev-options');
+        this.lives = this.debugUnlocked && livesInput ? Math.max(1, parseInt(livesInput.value || '3', 10)) : 3;
+        if (this.debugUnlocked && levelSel && dev && dev.style.display !== 'none') {
+            const selected = parseInt(levelSel.value || '1', 10);
+            this.level = isNaN(selected) ? 1 : selected;
+        } else {
+            this.level = 1;
+        }
         this.combo = 0;
 
         this.updateScore();
@@ -355,6 +636,27 @@ class Game {
 
         this.bricks = bricks;
         console.log('[Game] Created', this.bricks.length, 'bricks');
+
+        // Apply starting cheats (laser/shield)
+        const cheatLaser = document.getElementById('cheat-laser');
+        const cheatShield = document.getElementById('cheat-shield');
+        if (this.debugUnlocked && cheatLaser && cheatLaser.checked && this.paddle) {
+            this.paddle.activateLaser(120); // 2 minutes for debugging
+        }
+        if (this.debugUnlocked && cheatShield && cheatShield.checked) {
+            // Simulate shield activation
+            try {
+                // Use PowerUp helper to create shield visuals and effect
+                const pu = new PowerUp(this.scene, 0, 0, -1, PowerUpManager.types.SHIELD);
+                pu.activateShield(this);
+                // Remove the visual powerup mesh as it isn't needed
+                if (pu.mesh) this.scene.remove(pu.mesh);
+            } catch (e) {
+                // Fallback: minimal shield state
+                this.hasShield = true;
+                this.shieldHits = 1;
+            }
+        }
 
         if (this.bricks.length === 0) {
             console.error('[Game] ERROR: No bricks were created!');
@@ -942,6 +1244,18 @@ class Game {
     }
 
     loseLife() {
+        // Infinite lives cheat
+        if (this.cheats && this.cheats.infiniteLives) {
+            // Reset ball without decrementing lives
+            setTimeout(() => {
+                const ball = new Ball(this.scene, 0, -8, 2);
+                DifficultyManager.applyToBall(ball, this.level);
+                ball.attachToPaddle(this.paddle);
+                this.balls.push(ball);
+            }, 500);
+            AudioManager.play('powerup');
+            return;
+        }
         // Check if shield can absorb the hit
         if (this.hasShield && this.shieldHits > 0) {
             this.shieldHits--;

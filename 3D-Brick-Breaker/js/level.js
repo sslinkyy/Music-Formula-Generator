@@ -20,9 +20,140 @@ const LevelManager = {
     },
 
     getLevelPattern(levelNumber) {
-        // Use specific pattern for level (no cycling - 20 unique levels)
-        const patternIndex = Math.min(levelNumber - 1, this.patterns.length - 1);
-        return this.patterns[patternIndex](levelNumber);
+        // If Procedural Mode is enabled in the running game, always use procedural
+        if (typeof window !== 'undefined' && window.game && window.game.proceduralMode) {
+            return this.generateProceduralLevel(levelNumber);
+        }
+        // Otherwise, use handcrafted patterns up to their count; beyond that, procedural
+        if (levelNumber <= this.patterns.length) {
+            return this.patterns[levelNumber - 1](levelNumber);
+        }
+        return this.generateProceduralLevel(levelNumber);
+    },
+
+    // Procedural level generator used after the last handcrafted level
+    generateProceduralLevel(level) {
+        const rows = [];
+        const bricks = [];
+
+        // Safe coordinate ranges before Brick scaling (brick.js scales y by 1.8 and +20)
+        const Y_MIN = 10;     // Keep above paddle zone
+        const Y_MAX = 27.5;   // (27.5 * 1.8) + 20 = 69.5 < 71.5 ceiling
+        const X_MIN = -15;    // Within wall bounds when scaled by 3.3
+        const X_MAX = 15;
+
+        const rnd = Math.random;
+        const randInt = (a, b) => Math.floor(rnd() * (b - a + 1)) + a;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+        // Choose a pattern family with weights that evolve with level
+        const patternPool = [
+            'rows', 'pyramid', 'rings', 'waves', 'spiral', 'clusters'
+        ];
+        const pattern = patternPool[randInt(0, patternPool.length - 1)];
+
+        const addBrick = (x, y, baseType) => {
+            const yy = clamp(y, Y_MIN, Y_MAX);
+            const xx = clamp(x, X_MIN, X_MAX);
+            let type = baseType;
+            // Small chance to force an explosive for variety
+            if (rnd() < 0.05) type = 'explosive';
+            else type = LevelManager.addSpecialBricks(baseType, level);
+            bricks.push({ x: xx, y: yy, z: -1, type });
+        };
+
+        // Base type progression by level bands
+        const baseForBand = () => {
+            if (level < 8) return 'normal';
+            if (level < 14) return 'strong';
+            return 'armored';
+        };
+
+        // Pattern implementations
+        if (pattern === 'rows') {
+            const rowCount = randInt(10, 16);
+            const perRow = randInt(7, 11);
+            const startY = clamp(Y_MAX - rowCount * 1.4, Y_MIN + 2, Y_MAX);
+            const spacingX = 2.5;
+            for (let r = 0; r < rowCount; r++) {
+                const y = startY + r * 1.4;
+                const startX = -((perRow - 1) * spacingX) / 2;
+                for (let c = 0; c < perRow; c++) {
+                    const x = startX + c * spacingX;
+                    const tier = r < rowCount / 3 ? 'weak' : (r < (2 * rowCount) / 3 ? baseForBand() : 'strong');
+                    addBrick(x, y, tier);
+                }
+            }
+        } else if (pattern === 'pyramid') {
+            const maxBricks = randInt(8, 12);
+            const spacingX = 3.0;
+            const startY = clamp(Y_MAX - maxBricks * 1.5, Y_MIN + 2, Y_MAX);
+            for (let r = 0; r < maxBricks; r++) {
+                const inRow = maxBricks - r;
+                const startX = -((inRow - 1) * spacingX) / 2;
+                const y = startY + r * 1.5;
+                for (let c = 0; c < inRow; c++) {
+                    const x = startX + c * spacingX;
+                    const tier = r < 3 ? 'weak' : (r < 7 ? baseForBand() : 'strong');
+                    addBrick(x, y, tier);
+                }
+            }
+        } else if (pattern === 'rings') {
+            const centerX = 0;
+            const centerY = clamp(20 + (rnd() - 0.5) * 4, Y_MIN + 3, Y_MAX - 3);
+            const rings = randInt(3, 6);
+            for (let ring = 0; ring < rings; ring++) {
+                const radius = 3 + ring * 2.2;
+                const count = 10 + ring * 2;
+                for (let i = 0; i < count; i++) {
+                    const a = (i / count) * Math.PI * 2;
+                    const x = centerX + Math.cos(a) * radius;
+                    const y = centerY + Math.sin(a) * radius * 0.7;
+                    const tier = ring < 2 ? baseForBand() : 'strong';
+                    addBrick(x, y, tier);
+                }
+            }
+        } else if (pattern === 'waves') {
+            const bricksPerWave = randInt(40, 70);
+            const amplitude = 4 + rnd() * 3;
+            const centerY = clamp(20 + (rnd() - 0.5) * 2, Y_MIN + amplitude, Y_MAX - amplitude);
+            for (let i = 0; i < bricksPerWave; i++) {
+                const t = i / bricksPerWave;
+                const x = X_MIN + t * (X_MAX - X_MIN);
+                const y = centerY + Math.sin(i * 0.45) * amplitude;
+                const tier = i < bricksPerWave * 0.33 ? baseForBand() : (i < bricksPerWave * 0.66 ? 'strong' : 'armored');
+                addBrick(x, y, tier);
+            }
+        } else if (pattern === 'spiral') {
+            const centerX = 0;
+            const centerY = clamp(20 + (rnd() - 0.5) * 2, Y_MIN + 4, Y_MAX - 2);
+            const turns = randInt(4, 7);
+            const perTurn = 10;
+            for (let i = 0; i < turns * perTurn; i++) {
+                const angle = (i / perTurn) * Math.PI * 2;
+                const radius = 2 + (i / perTurn) * 1.7;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius * 0.6;
+                const tier = i < 15 ? 'weak' : (i < 35 ? baseForBand() : 'strong');
+                addBrick(x, y, tier);
+            }
+        } else if (pattern === 'clusters') {
+            const clusters = randInt(3, 6);
+            for (let k = 0; k < clusters; k++) {
+                const cx = randInt(-12, 12);
+                const cy = randInt(12, 26);
+                const count = randInt(8, 16);
+                for (let i = 0; i < count; i++) {
+                    const x = cx + (rnd() - 0.5) * 4.5;
+                    const y = cy + (rnd() - 0.5) * 3.5;
+                    const tier = rnd() < 0.4 ? baseForBand() : (rnd() < 0.7 ? 'strong' : 'normal');
+                    addBrick(x, y, tier);
+                }
+            }
+        }
+
+        rows.push({ bricks });
+        return rows;
     },
 
     // Helper: Get obstacle chance based on level
@@ -44,7 +175,7 @@ const LevelManager = {
         if (forceObstacle || roll < obstacleChance) {
             // Progressive obstacle introduction
             const obstacles = [];
-            if (level >= 4) obstacles.push('unbreakable');  // Level 4+
+            if (level >= 11) obstacles.push('unbreakable');  // Level 11+ (moved from 4 to make early levels beatable)
             if (level >= 5) obstacles.push('warp');          // Level 5+
             if (level >= 7) obstacles.push('reverse');       // Level 7+
             if (level >= 9) obstacles.push('crazy');         // Level 9+
@@ -223,7 +354,7 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 25;  // Higher center Y to fill top space
+            const centerY = 20;  // Lowered center Y to keep spiral within bounds
             const turns = 6;  // Doubled from 3 to 6 turns (~60 bricks)
             const bricksPerTurn = 10;
 
@@ -382,7 +513,7 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 25;  // Higher center Y to fill top space
+            const centerY = 20;  // Lowered center Y to keep spiral within bounds
             const rings = 6;  // Reduced from 8 to 6 to fit within bounds (~90 bricks)
 
             for (let ring = 0; ring < rings; ring++) {
@@ -537,7 +668,7 @@ const LevelManager = {
             const rows = [];
             const bricks = [];
             const centerX = 0;
-            const centerY = 25;  // Higher center Y to fill top space
+            const centerY = 20;  // Lowered center Y to keep spiral within bounds
             const petals = 12;  // Doubled from 6 to 12 petals (~50 bricks)
 
             // Center
