@@ -6,6 +6,7 @@ import { ACCENT_LIBRARY } from '../../data/accents.js';
 import { LANGUAGE_OPTIONS } from '../../js/config.js';
 import { listTracks, loadTrack, getCachedAnalysis, analyzeTrack } from '../music/manager.js';
 import { loadStepManiaPackage, convertNotesToGameFormat, calculateHoldDurations } from './stepmania-parser.js';
+import { listPacks, loadPackFromLibrary, savePackToLibrary, deletePackFromLibrary, getStorageInfo } from './stepmania-library.js';
 
 // Three.js will be loaded from CDN
 let THREE;
@@ -147,6 +148,12 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   fileInput.style.display = 'none';
   controls.appendChild(fileInput);
 
+  // StepMania library selector
+  const smLibSel = document.createElement('select');
+  smLibSel.style.display = 'none';
+  smLibSel.title = 'StepMania Library';
+  controls.appendChild(smLibSel);
+
   // StepMania file input
   const smFileInput = document.createElement('input');
   smFileInput.type = 'file';
@@ -155,9 +162,17 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   smFileInput.title = 'StepMania file (.sm, .ssc, or .zip)';
   controls.appendChild(smFileInput);
 
+  // Save to library button (shown after upload)
+  const smSaveBtn = document.createElement('button');
+  smSaveBtn.textContent = 'Save to Library';
+  smSaveBtn.style.display = 'none';
+  smSaveBtn.title = 'Save current pack to library';
+  controls.appendChild(smSaveBtn);
+
   // StepMania state
   let stepmaniaData = null;
   let stepmaniaAudioUrl = null;
+  let currentUploadedFile = null; // Store the uploaded file for saving to library
 
   // Tap tempo
   let tappedBPM = null;
@@ -1151,7 +1166,14 @@ Next Note: ${nextNote}ms
     musicSource = musicSel.value;
     libSel.style.display = musicSource === 'library' ? '' : 'none';
     fileInput.style.display = musicSource === 'local' ? '' : 'none';
+    smLibSel.style.display = musicSource === 'stepmania' ? '' : 'none';
     smFileInput.style.display = musicSource === 'stepmania' ? '' : 'none';
+    smSaveBtn.style.display = 'none'; // Hide save button when switching sources
+
+    // Load StepMania library when selected
+    if (musicSource === 'stepmania') {
+      await populateStepManiaLibrary();
+    }
 
     // Restore default difficulties when switching away from StepMania
     if (musicSource !== 'stepmania') {
@@ -1163,6 +1185,7 @@ Next Note: ${nextNote}ms
     selectedFile = null;
     stepmaniaData = null;
     stepmaniaAudioUrl = null;
+    currentUploadedFile = null;
     analysis = null;
     trackInfo.textContent = '';
   });
@@ -1200,6 +1223,154 @@ Next Note: ${nextNote}ms
       analysis = null;
       renderTrackInfo();
     } catch(_) {}
+  });
+
+  // Function to populate StepMania library selector
+  async function populateStepManiaLibrary() {
+    try {
+      const packs = await listPacks();
+      smLibSel.innerHTML = '<option value="">-- Select from Library --</option>';
+
+      if (packs.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '(No packs saved yet)';
+        opt.disabled = true;
+        smLibSel.appendChild(opt);
+      } else {
+        packs.forEach(pack => {
+          const opt = document.createElement('option');
+          opt.value = pack.id;
+          opt.textContent = `${pack.title} - ${pack.artist} (${pack.charts.length} charts)`;
+          opt.dataset.packId = pack.id;
+          smLibSel.appendChild(opt);
+        });
+      }
+
+      console.log(`Loaded ${packs.length} packs from library`);
+    } catch (err) {
+      console.error('Failed to load StepMania library:', err);
+      showToastFallback('Failed to load library: ' + err.message);
+    }
+  }
+
+  // StepMania library selector handler
+  smLibSel.addEventListener('change', async () => {
+    try {
+      const packId = parseInt(smLibSel.value);
+      if (isNaN(packId) || packId <= 0) return;
+
+      showToastFallback('Loading pack from library...');
+      console.log('Loading pack from library, ID:', packId);
+
+      // Load pack from IndexedDB
+      const blob = await loadPackFromLibrary(packId);
+
+      // Convert blob to file-like object
+      const file = new File([blob], blob.packMetadata.fileName, { type: 'application/zip' });
+
+      // Parse the pack
+      stepmaniaData = await loadStepManiaPackage(file);
+      console.log('StepMania data loaded from library:', stepmaniaData);
+
+      // Populate difficulty selector
+      diffSel.innerHTML = '';
+      if (!stepmaniaData.charts || stepmaniaData.charts.length === 0) {
+        console.error('No charts found in pack!');
+        showToastFallback('No dance-single charts found in pack');
+        populateDefaultDifficulties();
+        return;
+      }
+
+      stepmaniaData.charts.forEach((chart, idx) => {
+        const opt = document.createElement('option');
+        opt.value = `sm:${idx}`;
+        opt.textContent = chart.displayName || `Chart ${idx + 1}`;
+        diffSel.appendChild(opt);
+      });
+
+      // Auto-select first chart
+      if (stepmaniaData.charts.length > 0) {
+        diffSel.value = 'sm:0';
+      }
+
+      // Setup track metadata
+      if (stepmaniaData.audioUrl) {
+        stepmaniaAudioUrl = stepmaniaData.audioUrl;
+        trackMeta = {
+          id: 'stepmania:' + stepmaniaData.metadata.title,
+          title: stepmaniaData.metadata.title,
+          artist: stepmaniaData.metadata.artist,
+          bpm: stepmaniaData.timing.bpms[0]?.bpm || null,
+          offset: stepmaniaData.timing.offset || 0
+        };
+        selectedTrack = { url: stepmaniaAudioUrl, title: trackMeta.title };
+
+        if (stepmaniaData.charts.length > 0) {
+          trackMeta.chart = stepmaniaData.charts[0].displayName;
+          trackMeta.meter = stepmaniaData.charts[0].meter;
+        }
+
+        renderTrackInfo();
+        showToastFallback(`Loaded from library: ${trackMeta.title}`);
+      } else {
+        trackMeta = {
+          id: 'stepmania:' + stepmaniaData.metadata.title,
+          title: stepmaniaData.metadata.title,
+          artist: stepmaniaData.metadata.artist
+        };
+
+        if (stepmaniaData.charts.length > 0) {
+          trackMeta.chart = stepmaniaData.charts[0].displayName;
+          trackMeta.meter = stepmaniaData.charts[0].meter;
+        }
+
+        renderTrackInfo();
+        showToastFallback('Loaded from library (no audio)');
+      }
+
+      // Hide save button since it's already in library
+      smSaveBtn.style.display = 'none';
+      currentUploadedFile = null;
+    } catch (err) {
+      console.error('Failed to load pack from library:', err);
+      showToastFallback('Failed to load pack: ' + err.message);
+    }
+  });
+
+  // Save to library button handler
+  smSaveBtn.addEventListener('click', async () => {
+    if (!currentUploadedFile || !stepmaniaData) {
+      showToastFallback('No pack to save');
+      return;
+    }
+
+    try {
+      smSaveBtn.disabled = true;
+      smSaveBtn.textContent = 'Saving...';
+
+      // Save pack to library
+      const packId = await savePackToLibrary(stepmaniaData, currentUploadedFile, currentUploadedFile.name);
+
+      console.log('Pack saved to library with ID:', packId);
+      showToastFallback(`Saved "${stepmaniaData.metadata.title}" to library!`);
+
+      // Hide save button and clear uploaded file
+      smSaveBtn.style.display = 'none';
+      smSaveBtn.disabled = false;
+      smSaveBtn.textContent = 'Save to Library';
+
+      // Refresh library selector
+      await populateStepManiaLibrary();
+
+      // Select the newly saved pack
+      smLibSel.value = packId;
+    } catch (err) {
+      console.error('Failed to save pack to library:', err);
+      showToastFallback('Failed to save: ' + err.message);
+      smSaveBtn.disabled = false;
+      smSaveBtn.textContent = 'Save to Library';
+    }
   });
 
   // StepMania file upload handler
@@ -1280,11 +1451,18 @@ Next Note: ${nextNote}ms
 
         renderTrackInfo();
       }
+
+      // Store uploaded file and show save button
+      currentUploadedFile = f;
+      smSaveBtn.style.display = '';
+      console.log('File stored for saving to library:', f.name);
     } catch (err) {
       console.error('StepMania load error:', err);
       showToastFallback('Error loading StepMania file: ' + err.message);
       stepmaniaData = null;
       stepmaniaAudioUrl = null;
+      currentUploadedFile = null;
+      smSaveBtn.style.display = 'none';
     }
   });
 
