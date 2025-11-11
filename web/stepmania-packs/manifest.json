@@ -1,15 +1,17 @@
 {
   "version": "1.0",
+  "generated": "2025-11-11T16:13:25.143Z",
   "packs": [
     {
-      "id": "example-pack",
-      "title": "Example Pack",
-      "artist": "Various Artists",
-      "path": "example-pack.zip",
-      "description": "Example StepMania pack (replace with real packs)",
-      "chartCount": 1,
-      "size": "~1MB",
-      "enabled": false
+      "id": "we-are-connected-overdrive-mix",
+      "title": "We Are Connected (Overdrive Mix)",
+      "artist": "Jondi & Spesh",
+      "path": "We Are Connected (Overdrive Mix).zip",
+      "description": "StepMania pack with 4 charts",
+      "chartCount": 4,
+      "size": "~4.6MB",
+      "bpm": 140,
+      "enabled": true
     }
   ]
 }

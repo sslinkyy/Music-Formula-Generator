@@ -4,13 +4,40 @@ This folder contains StepMania packs that are automatically available to all use
 
 ## How to Add Server Packs
 
-### 1. Add Your ZIP File
+### Option 1: Auto-Generate Manifest (Recommended)
+
+Simply drop your ZIP files in this folder and run the auto-generator:
+
+```bash
+cd web/stepmania-packs
+npm install
+npm run generate
+```
+
+The script will:
+- Scan all ZIP files in the folder
+- Extract metadata (title, artist, BPM, chart count) from the .sm files inside
+- Auto-generate `manifest.json` with all discovered packs
+- Display a summary of what was added
+
+**Then commit:**
+```bash
+git add web/stepmania-packs/
+git commit -m "Add [Pack Name] to server library"
+git push
+```
+
+### Option 2: Manual Entry
+
+If you prefer manual control, add your ZIP file and edit `manifest.json`:
+
+#### 1. Add Your ZIP File
 Place your StepMania pack ZIP file in this directory:
 ```
 web/stepmania-packs/your-pack-name.zip
 ```
 
-### 2. Update manifest.json
+#### 2. Update manifest.json
 Add an entry to the `packs` array in `manifest.json`:
 
 ```json
@@ -36,7 +63,7 @@ Add an entry to the `packs` array in `manifest.json`:
 - `size`: Approximate file size (optional)
 - `enabled`: Set to `true` to make available, `false` to hide
 
-### 3. Commit and Push
+#### 3. Commit and Push
 ```bash
 git add web/stepmania-packs/
 git commit -m "Add [Pack Name] to server library"

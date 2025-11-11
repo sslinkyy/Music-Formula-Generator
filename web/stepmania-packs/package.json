@@ -1,0 +1,12 @@
+{
+  "name": "stepmania-packs",
+  "version": "1.0.0",
+  "description": "StepMania pack manifest generator",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-manifest.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10"
+  }
+}

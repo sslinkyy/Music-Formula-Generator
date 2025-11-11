@@ -58,6 +58,10 @@ async function initDB() {
 export async function savePackToLibrary(packData, zipBlob, fileName) {
   const db = await initDB();
 
+  // Convert blob to ArrayBuffer BEFORE creating transaction
+  // (transactions auto-close after current task, so async ops must happen first)
+  const arrayBuffer = await zipBlob.arrayBuffer();
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
@@ -74,27 +78,21 @@ export async function savePackToLibrary(packData, zipBlob, fileName) {
       })),
       bpm: packData.timing.bpms[0]?.bpm || null,
       hasAudio: !!packData.audioUrl,
-      // Store the ZIP file as ArrayBuffer
-      zipData: null // Will be set below
+      zipData: arrayBuffer
     };
 
-    // Convert blob to ArrayBuffer for storage
-    zipBlob.arrayBuffer().then(arrayBuffer => {
-      pack.zipData = arrayBuffer;
+    const request = store.add(pack);
 
-      const request = store.add(pack);
+    request.onsuccess = () => {
+      const id = request.result;
+      console.log('Saved pack to library:', pack.title, 'ID:', id);
+      resolve(id);
+    };
 
-      request.onsuccess = () => {
-        const id = request.result;
-        console.log('Saved pack to library:', pack.title, 'ID:', id);
-        resolve(id);
-      };
-
-      request.onerror = () => {
-        console.error('Failed to save pack:', request.error);
-        reject(request.error);
-      };
-    });
+    request.onerror = () => {
+      console.error('Failed to save pack:', request.error);
+      reject(request.error);
+    };
   });
 }
 
