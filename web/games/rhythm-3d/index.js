@@ -6,7 +6,7 @@ import { ACCENT_LIBRARY } from '../../data/accents.js';
 import { LANGUAGE_OPTIONS } from '../../js/config.js';
 import { listTracks, loadTrack, getCachedAnalysis, analyzeTrack } from '../music/manager.js';
 import { loadStepManiaPackage, convertNotesToGameFormat, calculateHoldDurations } from './stepmania-parser.js';
-import { listPacks, loadPackFromLibrary, savePackToLibrary, deletePackFromLibrary, getStorageInfo } from './stepmania-library.js';
+import { listPacks, loadPackFromLibrary, savePackToLibrary, deletePackFromLibrary, getStorageInfo, getAllPacks, loadServerPack } from './stepmania-library.js';
 
 // Three.js will be loaded from CDN
 let THREE;
@@ -1228,26 +1228,46 @@ Next Note: ${nextNote}ms
   // Function to populate StepMania library selector
   async function populateStepManiaLibrary() {
     try {
-      const packs = await listPacks();
-      smLibSel.innerHTML = '<option value="">-- Select from Library --</option>';
+      const { server, local, all } = await getAllPacks();
+      smLibSel.innerHTML = '<option value="">-- Select Pack --</option>';
 
-      if (packs.length === 0) {
+      if (all.length === 0) {
         const opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = '(No packs saved yet)';
+        opt.textContent = '(No packs available - upload one below)';
         opt.disabled = true;
         smLibSel.appendChild(opt);
       } else {
-        packs.forEach(pack => {
-          const opt = document.createElement('option');
-          opt.value = pack.id;
-          opt.textContent = `${pack.title} - ${pack.artist} (${pack.charts.length} charts)`;
-          opt.dataset.packId = pack.id;
-          smLibSel.appendChild(opt);
-        });
+        // Add server packs first
+        if (server.length > 0) {
+          const serverGroup = document.createElement('optgroup');
+          serverGroup.label = '📦 Server Packs';
+          server.forEach(pack => {
+            const opt = document.createElement('option');
+            opt.value = `server:${pack.id}`;
+            opt.textContent = pack.displayTitle;
+            opt.dataset.isServer = 'true';
+            serverGroup.appendChild(opt);
+          });
+          smLibSel.appendChild(serverGroup);
+        }
+
+        // Add local packs
+        if (local.length > 0) {
+          const localGroup = document.createElement('optgroup');
+          localGroup.label = '💾 My Library';
+          local.forEach(pack => {
+            const opt = document.createElement('option');
+            opt.value = `local:${pack.id}`;
+            opt.textContent = pack.displayTitle;
+            opt.dataset.isServer = 'false';
+            localGroup.appendChild(opt);
+          });
+          smLibSel.appendChild(localGroup);
+        }
       }
 
-      console.log(`Loaded ${packs.length} packs from library`);
+      console.log(`Loaded ${server.length} server packs, ${local.length} local packs`);
     } catch (err) {
       console.error('Failed to load StepMania library:', err);
       showToastFallback('Failed to load library: ' + err.message);
@@ -1257,14 +1277,21 @@ Next Note: ${nextNote}ms
   // StepMania library selector handler
   smLibSel.addEventListener('change', async () => {
     try {
-      const packId = parseInt(smLibSel.value);
-      if (isNaN(packId) || packId <= 0) return;
+      const value = smLibSel.value;
+      if (!value) return;
 
-      showToastFallback('Loading pack from library...');
-      console.log('Loading pack from library, ID:', packId);
+      // Parse value to determine source (server: or local:)
+      const [source, packId] = value.split(':');
+      if (!source || !packId) return;
 
-      // Load pack from IndexedDB
-      const blob = await loadPackFromLibrary(packId);
+      const isServer = source === 'server';
+      showToastFallback(`Loading pack from ${isServer ? 'server' : 'library'}...`);
+      console.log(`Loading pack from ${source}:`, packId);
+
+      // Load pack from server or IndexedDB
+      const blob = isServer
+        ? await loadServerPack(packId)
+        : await loadPackFromLibrary(parseInt(packId));
 
       // Convert blob to file-like object
       const file = new File([blob], blob.packMetadata.fileName, { type: 'application/zip' });

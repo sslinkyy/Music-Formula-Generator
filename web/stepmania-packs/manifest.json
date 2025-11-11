@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "packs": [
+    {
+      "id": "example-pack",
+      "title": "Example Pack",
+      "artist": "Various Artists",
+      "path": "example-pack.zip",
+      "description": "Example StepMania pack (replace with real packs)",
+      "chartCount": 1,
+      "size": "~1MB",
+      "enabled": false
+    }
+  ]
+}

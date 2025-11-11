@@ -1,11 +1,14 @@
-// StepMania Library Manager - Stores packs in IndexedDB
+// StepMania Library Manager - Stores packs in IndexedDB + loads server packs
 // Uses IndexedDB to persistently store StepMania ZIP files locally
+// Also fetches server-hosted packs from manifest.json
 
 const DB_NAME = 'StepManiaLibrary';
 const DB_VERSION = 1;
 const STORE_NAME = 'packs';
+const SERVER_MANIFEST_PATH = './stepmania-packs/manifest.json';
 
 let dbInstance = null;
+let serverPacksCache = null;
 
 /**
  * Initialize IndexedDB for StepMania library
@@ -222,4 +225,98 @@ export async function getStorageInfo() {
     console.error('Failed to get storage info:', err);
     return { supported: false, error: err.message };
   }
+}
+
+/**
+ * Load server packs manifest
+ * @returns {Promise<Array>} List of server packs
+ */
+export async function loadServerPacks() {
+  if (serverPacksCache) {
+    return serverPacksCache;
+  }
+
+  try {
+    const response = await fetch(SERVER_MANIFEST_PATH);
+    if (!response.ok) {
+      console.warn('Server packs manifest not found or not accessible');
+      return [];
+    }
+
+    const manifest = await response.json();
+    const enabledPacks = manifest.packs.filter(pack => pack.enabled !== false);
+
+    serverPacksCache = enabledPacks.map(pack => ({
+      ...pack,
+      isServer: true,
+      displayTitle: `[Server] ${pack.title}${pack.artist ? ' - ' + pack.artist : ''}`
+    }));
+
+    console.log(`Loaded ${serverPacksCache.length} server packs from manifest`);
+    return serverPacksCache;
+  } catch (err) {
+    console.error('Failed to load server packs:', err);
+    return [];
+  }
+}
+
+/**
+ * Load a server pack by ID
+ * @param {string} packId - Server pack ID
+ * @returns {Promise<Blob>} ZIP file as Blob
+ */
+export async function loadServerPack(packId) {
+  const serverPacks = await loadServerPacks();
+  const pack = serverPacks.find(p => p.id === packId);
+
+  if (!pack) {
+    throw new Error(`Server pack not found: ${packId}`);
+  }
+
+  console.log('Loading server pack:', pack.title, 'from', pack.path);
+
+  const response = await fetch(`./stepmania-packs/${pack.path}`);
+  if (!response.ok) {
+    throw new Error(`Failed to load server pack: ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+
+  // Attach metadata to blob for easy access
+  blob.packMetadata = {
+    id: pack.id,
+    title: pack.title,
+    artist: pack.artist || 'Various Artists',
+    fileName: pack.path,
+    isServer: true
+  };
+
+  return blob;
+}
+
+/**
+ * Get all packs (server + local)
+ * @returns {Promise<Object>} { server: Array, local: Array, all: Array }
+ */
+export async function getAllPacks() {
+  const [serverPacks, localPacks] = await Promise.all([
+    loadServerPacks(),
+    listPacks()
+  ]);
+
+  // Add isServer flag to local packs
+  const localWithFlag = localPacks.map(pack => ({
+    ...pack,
+    isServer: false,
+    displayTitle: pack.title + (pack.artist ? ' - ' + pack.artist : '') + ` (${pack.charts.length} charts)`
+  }));
+
+  // Combine: server packs first, then local
+  const all = [...serverPacks, ...localWithFlag];
+
+  return {
+    server: serverPacks,
+    local: localWithFlag,
+    all
+  };
 }
