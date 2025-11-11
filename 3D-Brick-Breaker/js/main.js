@@ -688,7 +688,8 @@ class Game {
         };
 
         // Convert mouse position to world position (10% larger: 36 * 1.1 = 39.6)
-        const targetX = mouse.x * 39.6; // Scaled for enlarged playfield
+        const invert = this.controlsReversed ? -1 : 1;
+        const targetX = mouse.x * 39.6 * invert; // Scaled for enlarged playfield, reversed when effect active
         this.paddle.setTargetX(targetX);
     }
 
@@ -1324,17 +1325,18 @@ class Game {
             }
         }
 
-        // Handle keyboard paddle movement
+        // Handle keyboard paddle movement (invert when controls are reversed)
         if (this.paddle) {
             const keyboardSpeed = 49.5; // Units per second (10% faster: 45 * 1.1)
+            const dir = this.controlsReversed ? -1 : 1;
 
             if (this.keys.left) {
-                const newX = this.paddle.position.x - keyboardSpeed * deltaTime;
+                const newX = this.paddle.position.x - keyboardSpeed * deltaTime * dir;
                 this.paddle.setTargetX(newX);
             }
 
             if (this.keys.right) {
-                const newX = this.paddle.position.x + keyboardSpeed * deltaTime;
+                const newX = this.paddle.position.x + keyboardSpeed * deltaTime * dir;
                 this.paddle.setTargetX(newX);
             }
         }
