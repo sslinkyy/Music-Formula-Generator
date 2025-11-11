@@ -81,6 +81,20 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
     dirLight.position.set(10, 20, 10);
     scene.add(dirLight);
 
+    // Environment map (Poly Haven CC0 HDRI)
+    try {
+      const { RGBELoader } = await import('https://unpkg.com/three@0.150.0/examples/jsm/loaders/RGBELoader.js');
+      const rgbe = new RGBELoader();
+      // Small HDRI for speed; CC0 from Poly Haven
+      const url = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr';
+      rgbe.load(url, (tex) => {
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = tex;
+        // Keep background as flat color for clarity
+      });
+      try { addCredit({ name: 'Studio Small 03 HDRI', url: 'https://polyhaven.com/a/studio_small_03', license: 'CC0', author: 'Poly Haven' }); } catch(_) {}
+    } catch(_) {}
+
     // Ground + grid
     gridGroup = new THREE.Group();
     scene.add(gridGroup);

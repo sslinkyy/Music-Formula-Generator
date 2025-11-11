@@ -8,8 +8,9 @@ let _DRACOLoaderPromise = null;
 let _KTX2LoaderPromise = null;
 
 const defaults = {
-  dracoPath: 'https://unpkg.com/three@0.150.0/examples/jsm/libs/draco/',
-  ktx2Path: 'https://unpkg.com/three@0.150.0/examples/jsm/libs/basis/'
+  // Local decoders (placed under web/libs)
+  dracoPath: 'libs/draco/',
+  ktx2Path: 'libs/basis/'
 };
 
 const _credits = [];
@@ -75,4 +76,3 @@ export const assetManager = {
     } catch (_) { return null; }
   }
 };
-
