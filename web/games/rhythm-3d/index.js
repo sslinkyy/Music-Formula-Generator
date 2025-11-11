@@ -1209,10 +1209,6 @@ Next Note: ${nextNote}ms
 
       // Populate difficulty selector
       smDiffSel.innerHTML = '';
-      const defOpt = document.createElement('option');
-      defOpt.value = '';
-      defOpt.textContent = 'Select chart';
-      smDiffSel.appendChild(defOpt);
 
       stepmaniaData.charts.forEach((chart, idx) => {
         const opt = document.createElement('option');
@@ -1220,6 +1216,11 @@ Next Note: ${nextNote}ms
         opt.textContent = chart.displayName;
         smDiffSel.appendChild(opt);
       });
+
+      // Auto-select first chart
+      if (stepmaniaData.charts.length > 0) {
+        smDiffSel.value = '0';
+      }
 
       smDiffSel.style.display = '';
 
@@ -1234,6 +1235,14 @@ Next Note: ${nextNote}ms
           offset: stepmaniaData.timing.offset || 0
         };
         selectedTrack = { url: stepmaniaAudioUrl, title: trackMeta.title };
+
+        // Add selected chart info if auto-selected
+        if (stepmaniaData.charts.length > 0) {
+          const firstChart = stepmaniaData.charts[0];
+          trackMeta.chart = firstChart.displayName;
+          trackMeta.meter = firstChart.meter;
+        }
+
         renderTrackInfo();
         showToastFallback(`Loaded: ${trackMeta.title} - ${stepmaniaData.charts.length} charts available`);
       } else {
@@ -1243,6 +1252,14 @@ Next Note: ${nextNote}ms
           title: stepmaniaData.metadata.title,
           artist: stepmaniaData.metadata.artist
         };
+
+        // Add selected chart info if auto-selected
+        if (stepmaniaData.charts.length > 0) {
+          const firstChart = stepmaniaData.charts[0];
+          trackMeta.chart = firstChart.displayName;
+          trackMeta.meter = firstChart.meter;
+        }
+
         renderTrackInfo();
       }
     } catch (err) {
