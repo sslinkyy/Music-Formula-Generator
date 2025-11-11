@@ -82,15 +82,23 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const controls = document.createElement('div');
   controls.className = 'inline-buttons';
 
-  // Difficulty select
+  // Difficulty select (unified for both game difficulties and StepMania charts)
   const diffSel = document.createElement('select');
-  ['easy','normal','hard'].forEach(d => {
-    const o = document.createElement('option');
-    o.value = d;
-    o.textContent = d;
-    if (d === difficulty) o.selected = true;
-    diffSel.appendChild(o);
-  });
+  const defaultDifficulties = ['easy','normal','hard'];
+
+  // Populate with default difficulties
+  function populateDefaultDifficulties() {
+    diffSel.innerHTML = '';
+    defaultDifficulties.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d;
+      o.textContent = d;
+      if (d === difficulty) o.selected = true;
+      diffSel.appendChild(o);
+    });
+  }
+
+  populateDefaultDifficulties();
   diffSel.title = 'Difficulty';
   controls.appendChild(diffSel);
 
@@ -146,16 +154,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   smFileInput.style.display = 'none';
   smFileInput.title = 'StepMania file (.sm, .ssc, or .zip)';
   controls.appendChild(smFileInput);
-
-  // StepMania difficulty selector
-  const smDiffSel = document.createElement('select');
-  smDiffSel.style.display = 'none';
-  smDiffSel.title = 'Chart Difficulty';
-  const smDefOpt = document.createElement('option');
-  smDefOpt.value = '';
-  smDefOpt.textContent = 'Select chart';
-  smDiffSel.appendChild(smDefOpt);
-  controls.appendChild(smDiffSel);
 
   // StepMania state
   let stepmaniaData = null;
@@ -953,8 +951,13 @@ Next Note: ${nextNote}ms
         if (musicSource === 'stepmania' && stepmaniaData) {
           console.log('Starting with StepMania chart');
 
-          const chartIdx = parseInt(smDiffSel.value);
-          if (isNaN(chartIdx) || !stepmaniaData.charts[chartIdx]) {
+          // Extract chart index from unified difficulty selector (format: 'sm:0', 'sm:1', etc.)
+          let chartIdx = -1;
+          if (diffSel.value.startsWith('sm:')) {
+            chartIdx = parseInt(diffSel.value.substring(3));
+          }
+
+          if (isNaN(chartIdx) || chartIdx < 0 || !stepmaniaData.charts[chartIdx]) {
             showToastFallback('Please select a chart difficulty');
             startBtn.disabled = false;
             startBtn.textContent = 'Start';
@@ -1149,7 +1152,12 @@ Next Note: ${nextNote}ms
     libSel.style.display = musicSource === 'library' ? '' : 'none';
     fileInput.style.display = musicSource === 'local' ? '' : 'none';
     smFileInput.style.display = musicSource === 'stepmania' ? '' : 'none';
-    smDiffSel.style.display = musicSource === 'stepmania' && stepmaniaData ? '' : 'none';
+
+    // Restore default difficulties when switching away from StepMania
+    if (musicSource !== 'stepmania') {
+      populateDefaultDifficulties();
+    }
+
     trackMeta = null;
     selectedTrack = null;
     selectedFile = null;
@@ -1207,22 +1215,20 @@ Next Note: ${nextNote}ms
       stepmaniaData = await loadStepManiaPackage(f);
       console.log('StepMania data loaded:', stepmaniaData);
 
-      // Populate difficulty selector
-      smDiffSel.innerHTML = '';
+      // Populate unified difficulty selector with StepMania charts
+      diffSel.innerHTML = '';
 
       stepmaniaData.charts.forEach((chart, idx) => {
         const opt = document.createElement('option');
-        opt.value = idx;
+        opt.value = `sm:${idx}`; // Prefix with 'sm:' to distinguish from game difficulties
         opt.textContent = chart.displayName;
-        smDiffSel.appendChild(opt);
+        diffSel.appendChild(opt);
       });
 
       // Auto-select first chart
       if (stepmaniaData.charts.length > 0) {
-        smDiffSel.value = '0';
+        diffSel.value = 'sm:0';
       }
-
-      smDiffSel.style.display = '';
 
       // Check if audio is available
       if (stepmaniaData.audioUrl) {
@@ -1270,18 +1276,21 @@ Next Note: ${nextNote}ms
     }
   });
 
-  // StepMania difficulty selector
-  smDiffSel.addEventListener('change', () => {
-    if (!stepmaniaData || !smDiffSel.value) return;
+  // Unified difficulty selector change handler
+  diffSel.addEventListener('change', () => {
+    // Check if this is a StepMania chart selection
+    if (stepmaniaData && diffSel.value.startsWith('sm:')) {
+      const chartIdx = parseInt(diffSel.value.substring(3)); // Remove 'sm:' prefix
+      const chart = stepmaniaData.charts[chartIdx];
 
-    const chartIdx = parseInt(smDiffSel.value);
-    const chart = stepmaniaData.charts[chartIdx];
-
-    if (trackMeta && chart) {
-      trackMeta.chart = chart.displayName;
-      trackMeta.meter = chart.meter;
-      renderTrackInfo();
+      if (trackMeta && chart) {
+        trackMeta.chart = chart.displayName;
+        trackMeta.meter = chart.meter;
+        renderTrackInfo();
+      }
     }
+    // Otherwise it's a regular game difficulty change (easy/normal/hard)
+    // No action needed here as it's handled in the game start logic
   });
 
   // Handle window resize
