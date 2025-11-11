@@ -73,7 +73,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const prefsReduce = document.documentElement.getAttribute('data-reduce-motion') === 'true';
   let chosenBias = options.preset || 'none';
   let lanes = buildLaneMap(chosenBias);
-  const duration = options.durationSec || 60;
+  let duration = options.durationSec || 60; // Default, will be updated with actual duration
   const difficulty = options.difficulty || 'normal';
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
   const judgement = { perfect: 120, good: 220 };
@@ -290,7 +290,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // HUD
   const hud = document.createElement('div');
   hud.className = 'hint';
-  hud.textContent = 'Keys: D F J K / Click lanes. Hit notes on the line! (3D Mode)';
+  hud.textContent = 'Keys: D F J K / Click lanes / Controller: D-pad or A B X Y. Hit notes on the line! (3D Mode)';
   hud.style.margin = '6px 0';
   wrap.appendChild(hud);
 
@@ -465,6 +465,41 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let audioStartOffset = 0; // Offset to sync audio context time with game time
   let useAudioSync = false;
 
+  // Arrow geometry creation helper
+  function createArrowGeometry(direction) {
+    // Create arrow shape using triangles
+    // Direction: 'left', 'down', 'up', 'right'
+    const shape = new THREE.Shape();
+
+    // Arrow pointing up (we'll rotate for other directions)
+    // Triangle pointing up
+    shape.moveTo(0, 0.3);      // Top point
+    shape.lineTo(-0.2, 0);     // Bottom left
+    shape.lineTo(-0.08, 0);    // Neck left
+    shape.lineTo(-0.08, -0.3); // Bottom left of stem
+    shape.lineTo(0.08, -0.3);  // Bottom right of stem
+    shape.lineTo(0.08, 0);     // Neck right
+    shape.lineTo(0.2, 0);      // Bottom right
+    shape.lineTo(0, 0.3);      // Back to top
+
+    const geometry = new THREE.ShapeGeometry(shape);
+
+    // Rotate based on direction
+    if (direction === 'down') {
+      geometry.rotateZ(Math.PI); // 180 degrees
+    } else if (direction === 'left') {
+      geometry.rotateZ(Math.PI / 2); // 90 degrees
+    } else if (direction === 'right') {
+      geometry.rotateZ(-Math.PI / 2); // -90 degrees
+    }
+    // 'up' needs no rotation
+
+    return geometry;
+  }
+
+  // Map lanes to arrow directions
+  const laneDirections = ['left', 'down', 'up', 'right'];
+
   // Note creation
   function createNote(lane, timeMs, type, lenMs) {
     const laneObj = laneObjects[lane];
@@ -488,6 +523,23 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(laneObj.x, 0.5, -30);
     scene.add(mesh);
+
+    // Add directional arrow on top of note
+    const direction = laneDirections[lane] || 'up';
+    const arrowGeometry = createArrowGeometry(direction);
+    const arrowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9
+    });
+    const arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
+
+    // Position arrow on top of the note box
+    arrowMesh.position.set(0, 0.3, 0); // Relative to parent mesh
+    arrowMesh.rotation.x = -Math.PI / 2; // Rotate to face up (horizontal)
+
+    mesh.add(arrowMesh); // Add as child so it moves with the note
 
     return {
       mesh,
@@ -633,6 +685,63 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     onPress(Math.max(0, Math.min(lanes.length - 1, lane)));
   }
 
+  // Gamepad support
+  let gamepadConnected = false;
+  let gamepadIndex = -1;
+  const gamepadButtonStates = [false, false, false, false]; // Track previous frame button states
+
+  // Gamepad button mapping
+  // D-pad: buttons[12]=up, [13]=down, [14]=left, [15]=right
+  // Face buttons: [0]=A(bottom), [1]=B(right), [2]=X(left), [3]=Y(top)
+  // Mapping: Lane 0=Left, Lane 1=Down, Lane 2=Up, Lane 3=Right
+  const gamepadButtonMap = {
+    14: 0, // D-pad Left → Lane 0
+    2: 0,  // X button → Lane 0
+    13: 1, // D-pad Down → Lane 1
+    0: 1,  // A button → Lane 1
+    12: 2, // D-pad Up → Lane 2
+    3: 2,  // Y button → Lane 2
+    15: 3, // D-pad Right → Lane 3
+    1: 3   // B button → Lane 3
+  };
+
+  window.addEventListener('gamepadconnected', (e) => {
+    console.log('Gamepad connected:', e.gamepad.id);
+    gamepadConnected = true;
+    gamepadIndex = e.gamepad.index;
+    showToastFallback(`Controller connected: ${e.gamepad.id}`);
+  });
+
+  window.addEventListener('gamepaddisconnected', (e) => {
+    console.log('Gamepad disconnected');
+    gamepadConnected = false;
+    gamepadIndex = -1;
+    showToastFallback('Controller disconnected');
+  });
+
+  function pollGamepad() {
+    if (!gamepadConnected || gamepadIndex < 0) return;
+
+    const gamepads = navigator.getGamepads();
+    const gamepad = gamepads[gamepadIndex];
+    if (!gamepad) return;
+
+    // Check each mapped button
+    for (const [buttonIdx, lane] of Object.entries(gamepadButtonMap)) {
+      const buttonIndex = parseInt(buttonIdx);
+      const button = gamepad.buttons[buttonIndex];
+
+      if (button && button.pressed && !gamepadButtonStates[buttonIndex]) {
+        // Button just pressed (wasn't pressed last frame)
+        onPress(lane);
+        gamepadButtonStates[buttonIndex] = true;
+      } else if (button && !button.pressed && gamepadButtonStates[buttonIndex]) {
+        // Button released
+        gamepadButtonStates[buttonIndex] = false;
+      }
+    }
+  }
+
   // Animation loop
   let raf = 0;
   let audioCtx = null;
@@ -659,6 +768,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       // Use performance timer
       elapsed = now - gameStartTime;
     }
+
+    // Poll gamepad input
+    pollGamepad();
 
     // Log every 60 frames
     if (frameCount++ % 60 === 0) {
@@ -711,7 +823,10 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     // Update stats
     const sum = hits.reduce((a, b) => a + b, 0) || 1;
     const genreText = hits.map((h, i) => `${lanes[i].label}:${Math.round((h/sum)*100)}%`).join('  ');
-    statsDiv.innerHTML = `${genreText}<br>Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}`;
+    const currentTimeSec = Math.floor(elapsed / 1000);
+    const totalTimeSec = Math.floor(duration);
+    const timeDisplay = `${Math.floor(currentTimeSec / 60)}:${(currentTimeSec % 60).toString().padStart(2, '0')} / ${Math.floor(totalTimeSec / 60)}:${(totalTimeSec % 60).toString().padStart(2, '0')}`;
+    statsDiv.innerHTML = `${genreText}<br>Time: ${timeDisplay}  Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}`;
 
     // Update debug info
     if (debugMode) {
@@ -748,7 +863,11 @@ Next Note: ${nextNote}ms
 
     renderer.render(scene, camera);
 
-    if (elapsed < duration * 1000 && running) {
+    // Continue until time is up OR all notes have been played/missed
+    const allNotesComplete = notes.length === 0 && noteObjects.length === 0;
+    const timeUp = elapsed >= duration * 1000;
+
+    if (!allNotesComplete && !timeUp && running) {
       raf = requestAnimationFrame(animate);
     } else if (running) {
       running = false;
@@ -852,6 +971,10 @@ Next Note: ${nextNote}ms
 
           console.log(`Loaded ${notes.length} notes from StepMania chart "${chart.displayName}"`);
 
+          // Calculate chart duration from last note time (add buffer for holds)
+          const maxNoteTime = notes.length > 0 ? Math.max(...notes.map(n => n.timeMs + (n.lenMs || 0))) : 60000;
+          const chartDuration = (maxNoteTime / 1000) + 3; // Add 3 seconds buffer after last note
+
           // Setup audio playback if available
           if (stepmaniaAudioUrl) {
             audioCtx = window.__rgfAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -880,9 +1003,13 @@ Next Note: ${nextNote}ms
             sourceNode.start(audioStartTime, 0);
             vuStatus.textContent = 'Playing';
 
-            console.log('StepMania audio started at:', audioStartTime);
+            // Use full audio duration (use longer of audio or chart)
+            duration = Math.max(audioBuffer.duration, chartDuration);
+            console.log('StepMania audio started at:', audioStartTime, 'Duration:', duration + 's');
           } else {
-            console.log('No audio - playing chart without music');
+            // No audio - use chart duration
+            duration = chartDuration;
+            console.log('No audio - playing chart without music. Duration:', duration + 's');
           }
         }
         // Check if music is selected
@@ -952,7 +1079,9 @@ Next Note: ${nextNote}ms
             sourceNode.start(audioStartTime, 0);
             vuStatus.textContent = 'Playing';
 
-            console.log('Audio will start at context time:', audioStartTime);
+            // Use full audio duration
+            duration = audioBuffer.duration;
+            console.log('Audio will start at context time:', audioStartTime, 'Duration:', duration + 's');
           } else {
             buildNotes();
           }
