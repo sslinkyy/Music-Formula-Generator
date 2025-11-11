@@ -619,7 +619,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     let elapsed;
     if (useAudioSync && audioCtx) {
       // Use audio context time for perfect sync
-      elapsed = (audioCtx.currentTime - audioStartOffset) * 1000;
+      // Clamp to 0 to handle startup delay period
+      elapsed = Math.max(0, (audioCtx.currentTime - audioStartOffset) * 1000);
     } else {
       // Use performance timer
       elapsed = now - gameStartTime;
@@ -851,7 +852,8 @@ Next Note: ${nextNote}ms
 
             // CRITICAL: Start audio and record the exact timing
             // We'll start audio slightly in the future to give time to start animation loop
-            const startDelay = 0.1; // 100ms delay
+            // and account for any decoding/scheduling latency
+            const startDelay = 0.2; // 200ms delay for better sync
             const audioStartTime = audioCtx.currentTime + startDelay;
 
             // Record when audio will start in AudioContext time
@@ -996,35 +998,63 @@ function buildNotesFromBeats(beatTimes, lanes, chosenBias, duration, rand) {
   const tempNotes = [];
   const end = duration; // seconds
   const w = biasLaneWeights(lanes, chosenBias);
+  const minSpacing = 300; // Minimum 300ms between notes in same lane
+
+  // Helper to find available lane (not occupied within minSpacing)
+  function findAvailableLane(targetTime, weights) {
+    const attempts = [];
+
+    // Try up to 10 times to find a non-overlapping lane
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const lane = weightedLaneIndex(weights, rand);
+
+      // Check if this lane is clear around targetTime
+      const hasConflict = tempNotes.some(n =>
+        n.lane === lane && Math.abs(n.timeMs - targetTime) < minSpacing
+      );
+
+      if (!hasConflict) return lane;
+      attempts.push(lane);
+    }
+
+    // If all lanes are busy, pick the one used least recently
+    const laneCounts = attempts.reduce((acc, l) => {
+      acc[l] = (acc[l] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.keys(laneCounts).sort((a, b) => laneCounts[a] - laneCounts[b])[0] || 0;
+  }
 
   // Place notes on beats
   for (let i = 0; i < beatTimes.length; i++) {
     const bt = beatTimes[i];
     if (bt > end) break;
 
-    const lane = weightedLaneIndex(w, rand);
+    const lane = findAvailableLane(bt * 1000, w);
     const jitter = ((typeof rand === 'function' ? rand() : Math.random()) - 0.5) * 0.02; // ±10ms
     tempNotes.push({ lane, timeMs: (bt + jitter) * 1000, type: 'short' });
 
     // Add special notes at intervals
     if (i % 8 === 0) {
-      const l2 = weightedLaneIndex(w, rand);
+      const l2 = findAvailableLane((bt + 0.05) * 1000, w);
       const j = ((typeof rand === 'function' ? rand() : Math.random()) - 0.5) * 0.02;
       tempNotes.push({ lane: l2, timeMs: (bt + j) * 1000, type: 'long', lenMs: 500 });
     }
     if (i % 10 === 5) {
-      const l3 = weightedLaneIndex(w, rand);
+      const l3 = findAvailableLane((bt + 0.1) * 1000, w);
       const j = ((typeof rand === 'function' ? rand() : Math.random()) - 0.5) * 0.02;
       tempNotes.push({ lane: l3, timeMs: (bt + j) * 1000, type: 'chip' });
     }
     if (i % 12 === 9) {
-      const l4 = weightedLaneIndex(w, rand);
+      const l4 = findAvailableLane((bt + 0.15) * 1000, w);
       const j = ((typeof rand === 'function' ? rand() : Math.random()) - 0.5) * 0.02;
       tempNotes.push({ lane: l4, timeMs: (bt + j) * 1000, type: 'hazard' });
     }
   }
 
   tempNotes.sort((a, b) => a.timeMs - b.timeMs);
+  console.log(`Built ${tempNotes.length} notes with spacing enforcement`);
   return tempNotes;
 }
 
