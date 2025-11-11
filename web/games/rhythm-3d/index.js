@@ -627,7 +627,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     // Log every 60 frames
     if (frameCount++ % 60 === 0) {
-      console.log('Frame', frameCount, '- Elapsed:', elapsed.toFixed(0), 'ms, Notes pending:', notes.length, ', Active notes:', noteObjects.length);
+      const sampleNote = noteObjects.length > 0 ? noteObjects[0] : null;
+      const noteZ = sampleNote ? sampleNote.mesh.position.z.toFixed(1) : 'N/A';
+      console.log('Frame', frameCount, '- Elapsed:', elapsed.toFixed(0), 'ms, Notes pending:', notes.length, ', Active notes:', noteObjects.length, ', Sample note Z:', noteZ);
     }
 
     // Spawn notes from the pre-generated notes array
@@ -652,10 +654,13 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     for (let i = noteObjects.length - 1; i >= 0; i--) {
       const note = noteObjects[i];
       const timeUntilHit = (note.timeMs - elapsed) / 1000;
-      const targetZ = 5;
-      const startZ = -30;
-      const travelTime = 3;
-      const z = startZ + (startZ - targetZ) * (timeUntilHit / travelTime) * -1;
+      const targetZ = 5;      // Where note should be hit (in front of camera)
+      const startZ = -30;     // Where note spawns (far away)
+      const travelTime = 3;   // Seconds to travel from start to target
+
+      // Calculate progress: 0 at spawn (3s away), 1 at target (0s away)
+      const progress = 1 - (timeUntilHit / travelTime);
+      const z = startZ + (targetZ - startZ) * progress;
 
       note.mesh.position.z = z;
 
