@@ -57,11 +57,24 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
   let scene, camera, renderer, gridGroup, snakeGroup;
   let ambient, dirLight;
   // Optional asset handles
-  const modelUrls = {
-    tag: 'assets/models/food_apple.glb',
-    kw: 'assets/models/food_grape.glb',
-    genre: 'assets/models/food_banana.glb',
-    hazard: 'assets/models/spike.glb'
+  // Candidate model URLs (local first, then CDN fallbacks)
+  const modelCandidates = {
+    tag: [
+      'assets/models/food_apple.glb',
+      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb'
+    ],
+    kw: [
+      'assets/models/food_grape.glb',
+      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF-Binary/BoomBox.glb'
+    ],
+    genre: [
+      'assets/models/food_banana.glb',
+      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Lantern/glTF-Binary/Lantern.glb'
+    ],
+    hazard: [
+      'assets/models/spike.glb',
+      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'
+    ]
   };
   const models = { tag: null, kw: null, genre: null, hazard: null };
 
@@ -148,8 +161,7 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
   }
   function makeFoodMesh(type){
     // Try model if available
-    const url = modelUrls[type];
-    if (url && models[type]) {
+    if (models[type]) {
       const m = models[type].clone(true);
       m.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
       m.position.y = 0.45; m.scale.setScalar(0.8);
@@ -334,23 +346,32 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
   }
 
   async function preloadModels(){
-    const loadOne = async (type, url, credit) => {
-      if (!url) return;
-      try {
-        const gltf = await assetManager.loadGLTF(url);
-        const node = cloneGLTF(gltf);
-        models[type] = node;
-        if (credit) try { addCredit(credit); } catch(_) {}
-      } catch (e) {
-        // silently ignore; fallback primitives will be used
+    const tryLoad = async (type, urls) => {
+      for (const url of urls) {
+        try {
+          const gltf = await assetManager.loadGLTF(url);
+          const node = cloneGLTF(gltf);
+          models[type] = node;
+          // Add credit per source
+          if (url.startsWith('assets/')) {
+            try { addCredit({ name: `${type} model (local)`, url: '', license: 'Provided locally', notes: url }); } catch(_) {}
+          } else if (url.includes('KhronosGroup/glTF-Sample-Models')) {
+            // Per-model license; link to folder
+            const folderUrl = url.replace('/glTF-Binary/Avocado.glb','').replace('/glTF-Binary/BoomBox.glb','').replace('/glTF-Binary/Lantern.glb','').replace('/glTF-Binary/DamagedHelmet.glb','');
+            const nameMap = { tag: 'Avocado (glTF Sample Models)', kw: 'BoomBox (glTF Sample Models)', genre: 'Lantern (glTF Sample Models)', hazard: 'DamagedHelmet (glTF Sample Models)' };
+            try { addCredit({ name: nameMap[type] || 'glTF Sample Model', url: folderUrl, license: 'See model page (often CC BY 4.0/CC0)', author: 'KhronosGroup / model authors' }); } catch(_) {}
+          }
+          return; // success
+        } catch(e) {
+          // try next
+        }
       }
     };
-    // Add credits suited to your chosen packs (only if loaded succeeds)
     await Promise.all([
-      loadOne('tag', modelUrls.tag, { name: 'Food Model (Apple)', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' }),
-      loadOne('kw', modelUrls.kw, { name: 'Food Model (Grape)', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' }),
-      loadOne('genre', modelUrls.genre, { name: 'Food Model (Banana)', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' }),
-      loadOne('hazard', modelUrls.hazard, { name: 'Spike Model', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' })
+      tryLoad('tag', modelCandidates.tag),
+      tryLoad('kw', modelCandidates.kw),
+      tryLoad('genre', modelCandidates.genre),
+      tryLoad('hazard', modelCandidates.hazard)
     ]);
   }
 
