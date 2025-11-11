@@ -2,8 +2,10 @@
 // Exports: buildSnake3DGameDialog(onFinish, options)
 import { GENRE_LIBRARY } from '../../data/genres.js';
 import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
+import { addCredit } from '../../js/utils/assets.js';
 
 export function buildSnake3DGameDialog(onFinish, options = {}) {
+  try { addCredit({ name: 'Snake 3D (code)', url: 'https://github.com/sslinkyy/Music-Formula-Generator', license: 'Custom / Project Code' }); } catch(_) {}
   const wrap = document.createElement('div');
   const difficulty = options.difficulty || 'normal';
   const gridCols = 24, gridRows = 16; // logical grid

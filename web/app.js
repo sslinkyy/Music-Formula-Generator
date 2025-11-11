@@ -49,6 +49,7 @@ import {
   toggleMode,
   initMode
 } from './js/utils/mode.js';
+import { assetManager, addCredit, getCredits } from './js/utils/assets.js';
 
 import {
   checkForBrickBreakerData,
@@ -1350,6 +1351,7 @@ function setupButtons() {
   const themeBtn = document.getElementById('theme-toggle');
   const modeBtn = document.getElementById('mode-toggle');
   const shortcutsBtn = document.getElementById('show-shortcuts');
+  const creditsBtn = document.getElementById('show-credits');
   const exportBtn = document.getElementById('export-json');
   const importBtn = document.getElementById('import-json');
   if (saveBtn) saveBtn.addEventListener('click', () => { persistState(); showToast('Saved settings'); });
@@ -1358,6 +1360,28 @@ function setupButtons() {
   if (themeBtn) themeBtn.addEventListener('click', () => { toggleTheme(); showToast(`Theme: ${getTheme().toUpperCase()}`); });
   if (modeBtn) modeBtn.addEventListener('click', () => { const newMode = toggleMode(); showToast(`Mode: ${newMode.toUpperCase()}`); });
   if (shortcutsBtn) shortcutsBtn.addEventListener('click', () => showKeyboardShortcutsDialog());
+  if (creditsBtn) creditsBtn.addEventListener('click', () => {
+    const wrap = document.createElement('div');
+    wrap.style.maxWidth = '720px';
+    const list = getCredits();
+    if (!list.length) {
+      wrap.textContent = 'No external assets are currently in use.';
+    } else {
+      const ul = document.createElement('ul');
+      ul.style.lineHeight = '1.6';
+      list.forEach(c => {
+        const li = document.createElement('li');
+        const name = c.url ? `<a href="${c.url}" target="_blank" rel="noreferrer">${c.name||'Asset'}</a>` : (c.name||'Asset');
+        const lic = c.license ? ` — ${c.license}` : '';
+        const author = c.author ? ` by ${c.author}` : '';
+        const notes = c.notes ? ` — ${c.notes}` : '';
+        li.innerHTML = `${name}${author}${lic}${notes}`;
+        ul.appendChild(li);
+      });
+      wrap.appendChild(ul);
+    }
+    openLibraryDialog('Credits', wrap);
+  });
   if (exportBtn) exportBtn.addEventListener('click', () => exportConfiguration());
   if (importBtn) importBtn.addEventListener('click', () => importConfiguration());
   const motionBtn = document.getElementById('motion-toggle');
