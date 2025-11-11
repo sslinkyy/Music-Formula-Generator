@@ -136,6 +136,7 @@ function getGenreCategory(name, fallback) {
   return 'Other';
 }
 import { buildRhythmGameDialog } from './games/rhythm/index.js';
+import { buildRhythm3DGameDialog } from './games/rhythm-3d/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
 import { ARTIST_PROFILES } from './data/artists.js';
@@ -4052,6 +4053,17 @@ function buildGameHubDialog() {
         openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('Rhythm Tapper', content);
+    }
+  }));
+  grid.appendChild(mkCard('3D Rhythm Tapper', 'Tap notes across 3D lanes with Three.js graphics. Shape genres, tags, and premise in stunning 3D!', sampleRhythmOutput, 'rhythm-3d', {
+    start: async () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
+      const content = await buildRhythm3DGameDialog((output) => {
+        openLibraryDialog('3D Rhythm • Summary', buildGameSummary(output, 'rhythm-3d'));
+      }, { preset: 'streaming', difficulty: 'normal' });
+      openLibraryDialog('3D Rhythm Tapper', content);
     }
   }));
   grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
