@@ -1214,20 +1214,32 @@ Next Note: ${nextNote}ms
       // Load and parse StepMania package
       stepmaniaData = await loadStepManiaPackage(f);
       console.log('StepMania data loaded:', stepmaniaData);
+      console.log('Number of charts:', stepmaniaData.charts?.length || 0);
 
       // Populate unified difficulty selector with StepMania charts
       diffSel.innerHTML = '';
 
+      if (!stepmaniaData.charts || stepmaniaData.charts.length === 0) {
+        console.error('No charts found in StepMania file!');
+        showToastFallback('No dance-single charts found in file');
+        populateDefaultDifficulties();
+        return;
+      }
+
       stepmaniaData.charts.forEach((chart, idx) => {
+        console.log(`Adding chart ${idx}:`, chart.displayName);
         const opt = document.createElement('option');
         opt.value = `sm:${idx}`; // Prefix with 'sm:' to distinguish from game difficulties
-        opt.textContent = chart.displayName;
+        opt.textContent = chart.displayName || `Chart ${idx + 1}`;
         diffSel.appendChild(opt);
       });
+
+      console.log('Difficulty selector now has', diffSel.options.length, 'options');
 
       // Auto-select first chart
       if (stepmaniaData.charts.length > 0) {
         diffSel.value = 'sm:0';
+        console.log('Auto-selected first chart:', diffSel.value);
       }
 
       // Check if audio is available
