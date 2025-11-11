@@ -412,6 +412,17 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   hitLine.rotation.x = -Math.PI / 2;
   scene.add(hitLine);
 
+  // Initial render to make scene visible immediately
+  // Use requestAnimationFrame to ensure container has proper dimensions
+  requestAnimationFrame(() => {
+    // Update renderer size in case container dimensions weren't ready
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+    console.log('Initial scene rendered at', container.clientWidth, 'x', container.clientHeight);
+  });
+
   // Game state
   let running = false;
   let t0 = 0;
@@ -977,6 +988,10 @@ Next Note: ${nextNote}ms
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
+    // Re-render if game isn't running
+    if (!running) {
+      renderer.render(scene, camera);
+    }
   }
   window.addEventListener('resize', onWindowResize);
 
