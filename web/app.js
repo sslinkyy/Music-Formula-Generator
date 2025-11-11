@@ -4101,6 +4101,19 @@ function buildGameHubDialog() {
       openLibraryDialog('Snake (Prototype)', content);
     }
   }));
+  // 3D Snake using Three.js
+  grid.appendChild(mkCard('Snake 3D', 'Three.js remake of Snake on a 3D grid. Same pickups → tags/keywords/genres.', sampleGridOutput, 'snake-3d', {
+    start: async () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
+      const { buildSnake3DGameDialog } = await import('./games/snake-3d/index.js');
+      const content = buildSnake3DGameDialog((output) => {
+        openLibraryDialog('Snake 3D \u0007 Summary', buildGameSummary(output, 'snake-3d'));
+      }, { difficulty: 'normal' });
+      openLibraryDialog('Snake 3D', content);
+    }
+  }));
   grid.appendChild(mkCard('3D Platformer Shooter', 'Retro third-person platformer shooter with Three.js. Jump, shoot, collect powerups!', samplePlatformerOutput, 'platformer-shooter', {
     start: async () => {
       resetInputsForGame();
