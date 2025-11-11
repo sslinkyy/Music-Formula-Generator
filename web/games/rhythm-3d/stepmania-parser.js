@@ -87,15 +87,40 @@ export function parseSimfileContent(content) {
     data.timing.bpms.push({ beat: 0, bpm: 120 });
   }
 
+  // DEBUG: Log raw content sample
+  console.log('=== RAW CONTENT SAMPLE ===');
+  console.log('First 500 chars:', content.substring(0, 500));
+  console.log('Looking for #NOTES sections...');
+
+  // Check if #NOTES exists at all
+  const notesIndex = content.indexOf('#NOTES');
+  console.log('#NOTES found at index:', notesIndex);
+  if (notesIndex >= 0) {
+    console.log('Content around #NOTES:', content.substring(notesIndex, notesIndex + 200));
+  }
+
   // Parse NOTES sections (can have multiple charts)
   const notesRegex = /#NOTES:([^;]+);/g;
+  console.log('Testing regex:', notesRegex);
+
+  let matchCount = 0;
   while ((match = notesRegex.exec(content)) !== null) {
+    matchCount++;
+    console.log(`NOTES match ${matchCount} found at index ${match.index}`);
+    console.log('Matched content length:', match[1].length);
+    console.log('First 100 chars:', match[1].substring(0, 100));
+
     const notesContent = match[1];
     const chart = parseChart(notesContent);
+    console.log('parseChart returned:', chart);
+
     if (chart) {
       data.charts.push(chart);
     }
   }
+
+  console.log('Total NOTES matches found:', matchCount);
+  console.log('Total charts parsed:', data.charts.length);
 
   return data;
 }
