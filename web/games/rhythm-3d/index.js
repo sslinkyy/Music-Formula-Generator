@@ -5,6 +5,7 @@ import { GENRE_LIBRARY } from '../../data/genres.js';
 import { ACCENT_LIBRARY } from '../../data/accents.js';
 import { LANGUAGE_OPTIONS } from '../../js/config.js';
 import { listTracks, loadTrack, getCachedAnalysis, analyzeTrack } from '../music/manager.js';
+import { loadStepManiaPackage, convertNotesToGameFormat, calculateHoldDurations } from './stepmania-parser.js';
 
 // Three.js will be loaded from CDN
 let THREE;
@@ -117,7 +118,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let analysis = null;
 
   const musicSel = document.createElement('select');
-  ['none','library','local'].forEach(m => {
+  ['none','library','local','stepmania'].forEach(m => {
     const o = document.createElement('option');
     o.value = m;
     o.textContent = 'Music: ' + m;
@@ -137,6 +138,28 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   fileInput.accept = 'audio/*';
   fileInput.style.display = 'none';
   controls.appendChild(fileInput);
+
+  // StepMania file input
+  const smFileInput = document.createElement('input');
+  smFileInput.type = 'file';
+  smFileInput.accept = '.sm,.ssc,.zip';
+  smFileInput.style.display = 'none';
+  smFileInput.title = 'StepMania file (.sm, .ssc, or .zip)';
+  controls.appendChild(smFileInput);
+
+  // StepMania difficulty selector
+  const smDiffSel = document.createElement('select');
+  smDiffSel.style.display = 'none';
+  smDiffSel.title = 'Chart Difficulty';
+  const smDefOpt = document.createElement('option');
+  smDefOpt.value = '';
+  smDefOpt.textContent = 'Select chart';
+  smDiffSel.appendChild(smDefOpt);
+  controls.appendChild(smDiffSel);
+
+  // StepMania state
+  let stepmaniaData = null;
+  let stepmaniaAudioUrl = null;
 
   // Tap tempo
   let tappedBPM = null;
@@ -807,8 +830,63 @@ Next Note: ${nextNote}ms
         useAudioSync = false;
         console.log('Music source:', musicSource);
 
+        // Handle StepMania charts
+        if (musicSource === 'stepmania' && stepmaniaData) {
+          console.log('Starting with StepMania chart');
+
+          const chartIdx = parseInt(smDiffSel.value);
+          if (isNaN(chartIdx) || !stepmaniaData.charts[chartIdx]) {
+            showToastFallback('Please select a chart difficulty');
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start';
+            return;
+          }
+
+          const chart = stepmaniaData.charts[chartIdx];
+          const timing = stepmaniaData.timing;
+
+          // Convert StepMania notes to game format
+          console.log('Converting StepMania chart to notes...');
+          const rawNotes = convertNotesToGameFormat(chart.noteData, timing, lanes.length);
+          notes = calculateHoldDurations(rawNotes);
+
+          console.log(`Loaded ${notes.length} notes from StepMania chart "${chart.displayName}"`);
+
+          // Setup audio playback if available
+          if (stepmaniaAudioUrl) {
+            audioCtx = window.__rgfAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            window.__rgfAudioCtx = audioCtx;
+            try { await audioCtx.resume(); } catch(_) {}
+
+            const res = await fetch(stepmaniaAudioUrl);
+            const arr = await res.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arr.slice(0));
+
+            sourceNode = audioCtx.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 512;
+            vuData = new Uint8Array(analyser.fftSize);
+
+            sourceNode.connect(analyser);
+            analyser.connect(audioCtx.destination);
+
+            const startDelay = 0.2;
+            const audioStartTime = audioCtx.currentTime + startDelay;
+            audioStartOffset = audioStartTime;
+            useAudioSync = true;
+
+            sourceNode.start(audioStartTime, 0);
+            vuStatus.textContent = 'Playing';
+
+            console.log('StepMania audio started at:', audioStartTime);
+          } else {
+            console.log('No audio - playing chart without music');
+          }
+        }
         // Check if music is selected
-        if (musicSource !== 'none' && (selectedTrack || selectedFile)) {
+        else if (musicSource !== 'none' && (selectedTrack || selectedFile)) {
           // Prefer manifest bpm/offset when present; else analyze now
           let bpm = trackMeta?.bpm || null;
           let offset = trackMeta?.offset || 0;
@@ -941,9 +1019,13 @@ Next Note: ${nextNote}ms
     musicSource = musicSel.value;
     libSel.style.display = musicSource === 'library' ? '' : 'none';
     fileInput.style.display = musicSource === 'local' ? '' : 'none';
+    smFileInput.style.display = musicSource === 'stepmania' ? '' : 'none';
+    smDiffSel.style.display = musicSource === 'stepmania' && stepmaniaData ? '' : 'none';
     trackMeta = null;
     selectedTrack = null;
     selectedFile = null;
+    stepmaniaData = null;
+    stepmaniaAudioUrl = null;
     analysis = null;
     trackInfo.textContent = '';
   });
@@ -981,6 +1063,79 @@ Next Note: ${nextNote}ms
       analysis = null;
       renderTrackInfo();
     } catch(_) {}
+  });
+
+  // StepMania file upload handler
+  smFileInput.addEventListener('change', async (e) => {
+    try {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+
+      showToastFallback('Loading StepMania file...');
+      console.log('Loading StepMania file:', f.name);
+
+      // Load and parse StepMania package
+      stepmaniaData = await loadStepManiaPackage(f);
+      console.log('StepMania data loaded:', stepmaniaData);
+
+      // Populate difficulty selector
+      smDiffSel.innerHTML = '';
+      const defOpt = document.createElement('option');
+      defOpt.value = '';
+      defOpt.textContent = 'Select chart';
+      smDiffSel.appendChild(defOpt);
+
+      stepmaniaData.charts.forEach((chart, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = chart.displayName;
+        smDiffSel.appendChild(opt);
+      });
+
+      smDiffSel.style.display = '';
+
+      // Check if audio is available
+      if (stepmaniaData.audioUrl) {
+        stepmaniaAudioUrl = stepmaniaData.audioUrl;
+        trackMeta = {
+          id: 'stepmania:' + stepmaniaData.metadata.title,
+          title: stepmaniaData.metadata.title,
+          artist: stepmaniaData.metadata.artist,
+          bpm: stepmaniaData.timing.bpms[0]?.bpm || null,
+          offset: stepmaniaData.timing.offset || 0
+        };
+        selectedTrack = { url: stepmaniaAudioUrl, title: trackMeta.title };
+        renderTrackInfo();
+        showToastFallback(`Loaded: ${trackMeta.title} - ${stepmaniaData.charts.length} charts available`);
+      } else {
+        showToastFallback('StepMania file loaded. Audio not found in package - will use synthetic notes.');
+        trackMeta = {
+          id: 'stepmania:' + stepmaniaData.metadata.title,
+          title: stepmaniaData.metadata.title,
+          artist: stepmaniaData.metadata.artist
+        };
+        renderTrackInfo();
+      }
+    } catch (err) {
+      console.error('StepMania load error:', err);
+      showToastFallback('Error loading StepMania file: ' + err.message);
+      stepmaniaData = null;
+      stepmaniaAudioUrl = null;
+    }
+  });
+
+  // StepMania difficulty selector
+  smDiffSel.addEventListener('change', () => {
+    if (!stepmaniaData || !smDiffSel.value) return;
+
+    const chartIdx = parseInt(smDiffSel.value);
+    const chart = stepmaniaData.charts[chartIdx];
+
+    if (trackMeta && chart) {
+      trackMeta.chart = chart.displayName;
+      trackMeta.meter = chart.meter;
+      renderTrackInfo();
+    }
   });
 
   // Handle window resize
