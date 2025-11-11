@@ -167,18 +167,24 @@ function parseChart(notesContent) {
   const lines = notesContent.split(/\r?\n/).map(l => l.trim()).filter(l => l);
   if (lines.length < 6) return null;
 
-  const chartType = lines[0];
-  const description = lines[1];
-  const difficulty = lines[2];
-  const meter = parseInt(lines[3]) || 0;
-  const radarValues = lines[4];
+  // Strip trailing colons from each line (StepMania format ends lines with :)
+  const chartType = lines[0].replace(/:\s*$/, '');
+  const description = lines[1].replace(/:\s*$/, '');
+  const difficulty = lines[2].replace(/:\s*$/, '');
+  const meter = parseInt(lines[3].replace(/:\s*$/, '')) || 0;
+  const radarValues = lines[4].replace(/:\s*$/, '');
   const noteData = lines.slice(5).join('\n');
+
+  console.log('parseChart - chartType after trim:', chartType);
+  console.log('parseChart - difficulty:', difficulty, 'meter:', meter);
 
   // Only support dance-single (4-panel)
   if (chartType !== 'dance-single') {
+    console.log('parseChart - rejected:', chartType, '!== dance-single');
     return null;
   }
 
+  console.log('parseChart - SUCCESS! Returning chart:', difficulty, meter);
   return {
     type: chartType,
     description,
