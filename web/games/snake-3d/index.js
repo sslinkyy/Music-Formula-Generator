@@ -104,16 +104,17 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
 
     // Environment map (Poly Haven CC0 HDRI)
     try {
-      const { RGBELoader } = await import('https://unpkg.com/three@0.150.0/examples/jsm/loaders/RGBELoader.js');
-      const rgbe = new RGBELoader();
-      // Small HDRI for speed; CC0 from Poly Haven
-      const url = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr';
-      rgbe.load(url, (tex) => {
-        tex.mapping = THREE.EquirectangularReflectionMapping;
-        scene.environment = tex;
-        // Keep background as flat color for clarity
-      });
-      try { addCredit({ name: 'Studio Small 03 HDRI', url: 'https://polyhaven.com/a/studio_small_03', license: 'CC0', author: 'Poly Haven' }); } catch(_) {}
+      import('https://unpkg.com/three@0.150.0/examples/jsm/loaders/RGBELoader.js')
+        .then(({ RGBELoader }) => {
+          const rgbe = new RGBELoader();
+          const url = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr';
+          rgbe.load(url, (tex) => {
+            tex.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = tex;
+          });
+          try { addCredit({ name: 'Studio Small 03 HDRI', url: 'https://polyhaven.com/a/studio_small_03', license: 'CC0', author: 'Poly Haven' }); } catch(_) {}
+        })
+        .catch(()=>{});
     } catch(_) {}
 
     // Ground + grid
