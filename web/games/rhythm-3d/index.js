@@ -12,41 +12,63 @@ let THREE;
 async function ensureThreeJS() {
   if (window.THREE) {
     THREE = window.THREE;
+    console.log('Three.js already loaded');
     return;
   }
 
+  console.log('Loading Three.js from CDN...');
   return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/three@0.160.0/build/three.module.js';
-    script.type = 'module';
-    script.onload = () => {
-      THREE = window.THREE;
-      resolve();
-    };
-    script.onerror = reject;
-
-    // For module imports
     const importScript = document.createElement('script');
     importScript.type = 'module';
     importScript.textContent = `
       import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       window.THREE = THREE;
+      window.dispatchEvent(new Event('three-loaded'));
     `;
-    importScript.onload = () => {
-      setTimeout(() => {
-        THREE = window.THREE;
-        resolve();
-      }, 100);
+    importScript.onerror = (err) => {
+      console.error('Failed to load Three.js:', err);
+      reject(new Error('Failed to load Three.js'));
     };
-    importScript.onerror = reject;
+
+    window.addEventListener('three-loaded', () => {
+      THREE = window.THREE;
+      console.log('Three.js loaded successfully');
+      resolve();
+    }, { once: true });
+
     document.head.appendChild(importScript);
   });
 }
 
-export async function buildRhythm3DGameDialog(onFinish, options = {}) {
-  // Ensure Three.js is loaded
-  await ensureThreeJS();
+// Helper function for toast notifications (fallback if not available)
+function showToastFallback(message) {
+  try {
+    if (window.showToast) {
+      window.showToast(message);
+    } else {
+      console.log('TOAST:', message);
+    }
+  } catch(e) {
+    console.log('TOAST:', message);
+  }
+}
 
+export async function buildRhythm3DGameDialog(onFinish, options = {}) {
+  console.log('Building 3D Rhythm Game Dialog...');
+
+  // Ensure Three.js is loaded
+  try {
+    await ensureThreeJS();
+  } catch(err) {
+    console.error('Failed to load Three.js:', err);
+    const errorDiv = document.createElement('div');
+    errorDiv.style.padding = '20px';
+    errorDiv.style.color = 'red';
+    errorDiv.innerHTML = `<h3>Error Loading Game</h3><p>Failed to load Three.js library. Please check your internet connection and try again.</p><p>Error: ${err.message}</p>`;
+    return errorDiv;
+  }
+
+  console.log('Three.js loaded, setting up game...');
   const prefsReduce = document.documentElement.getAttribute('data-reduce-motion') === 'true';
   let chosenBias = options.preset || 'none';
   let lanes = buildLaneMap(chosenBias);
@@ -457,10 +479,12 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   };
 
   function buildNotes() {
+    console.log('Building synthetic notes...');
     const bpm = 96 * (diffSel.value === 'hard' ? 1.35 : diffSel.value === 'easy' ? 0.85 : 1.0);
     const beatMs = 60000 / bpm;
     const end = duration * 1000;
     const tempNotes = [];
+    console.log('Synthetic BPM:', bpm, 'Duration:', duration);
 
     for (let lane = 0; lane < lanes.length; lane++) {
       for (let t = (lane * beatMs) % (beatMs * 2); t < end; t += beatMs * 2) {
@@ -489,6 +513,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     tempNotes.sort((a, b) => a.timeMs - b.timeMs);
     notes = tempNotes;
+    console.log(`Generated ${notes.length} synthetic notes`);
   }
 
   // Input handling
@@ -582,8 +607,12 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let vuData = null;
   let gameStartTime = 0; // When the game actually started (performance.now)
 
+  let frameCount = 0;
   function animate(timestamp) {
-    if (!gameStartTime) gameStartTime = timestamp;
+    if (!gameStartTime) {
+      gameStartTime = timestamp;
+      console.log('First frame - game start time:', gameStartTime);
+    }
     now = timestamp;
 
     // Calculate current game time
@@ -594,6 +623,11 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     } else {
       // Use performance timer
       elapsed = now - gameStartTime;
+    }
+
+    // Log every 60 frames
+    if (frameCount++ % 60 === 0) {
+      console.log('Frame', frameCount, '- Elapsed:', elapsed.toFixed(0), 'ms, Notes pending:', notes.length, ', Active notes:', noteObjects.length);
     }
 
     // Spawn notes from the pre-generated notes array
@@ -740,8 +774,12 @@ Next Note: ${nextNote}ms
   }
 
   function start() {
-    if (running) return;
+    if (running) {
+      console.log('Game already running');
+      return;
+    }
 
+    console.log('Starting 3D Rhythm Game...');
     startBtn.disabled = true;
     startBtn.textContent = 'Playing…';
 
@@ -750,6 +788,7 @@ Next Note: ${nextNote}ms
       try {
         rand = makeRng(Date.now());
         useAudioSync = false;
+        console.log('Music source:', musicSource);
 
         // Check if music is selected
         if (musicSource !== 'none' && (selectedTrack || selectedFile)) {
@@ -759,7 +798,7 @@ Next Note: ${nextNote}ms
           let beatTimes = [];
 
           if (!bpm) {
-            showToast('Analyzing audio... please wait');
+            showToastFallback('Analyzing audio... please wait');
             const target = selectedFile || (selectedTrack && selectedTrack.url);
             const res = await analyzeTrack(target, { maxDurationSec: duration });
             analysis = res;
@@ -840,11 +879,16 @@ Next Note: ${nextNote}ms
       combo = 0;
       noteObjects = []; // Clear any existing note objects
 
+      console.log('Game state reset. Notes array length:', notes.length);
+      console.log('Starting animation loop...');
+
       window.addEventListener('keydown', keydown);
       renderer.domElement.addEventListener('click', click);
 
       raf = requestAnimationFrame(animate);
       restartBtn.disabled = false;
+
+      console.log('Game started successfully!');
     })();
   }
 
