@@ -2,7 +2,7 @@
 // Exports: buildSnake3DGameDialog(onFinish, options)
 import { GENRE_LIBRARY } from '../../data/genres.js';
 import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
-import { addCredit } from '../../js/utils/assets.js';
+import { addCredit, assetManager, cloneGLTF } from '../../js/utils/assets.js';
 
 export function buildSnake3DGameDialog(onFinish, options = {}) {
   try { addCredit({ name: 'Snake 3D (code)', url: 'https://github.com/sslinkyy/Music-Formula-Generator', license: 'Custom / Project Code' }); } catch(_) {}
@@ -56,6 +56,14 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
   // Three.js scene
   let scene, camera, renderer, gridGroup, snakeGroup;
   let ambient, dirLight;
+  // Optional asset handles
+  const modelUrls = {
+    tag: 'assets/models/food_apple.glb',
+    kw: 'assets/models/food_grape.glb',
+    genre: 'assets/models/food_banana.glb',
+    hazard: 'assets/models/spike.glb'
+  };
+  const models = { tag: null, kw: null, genre: null, hazard: null };
 
   function init3D() {
     if (renderer) return;
@@ -139,6 +147,15 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
     const m = new THREE.Mesh(geo, mat); m.castShadow=true; m.receiveShadow=true; return m;
   }
   function makeFoodMesh(type){
+    // Try model if available
+    const url = modelUrls[type];
+    if (url && models[type]) {
+      const m = models[type].clone(true);
+      m.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+      m.position.y = 0.45; m.scale.setScalar(0.8);
+      return m;
+    }
+    // Fallback primitive
     const geo = new THREE.SphereGeometry(cell*0.38, 20, 16);
     let color = 0x6BCB77;
     if (type==='kw') color = 0xB084CC; else if (type==='genre') color = 0xFFD93D;
@@ -146,6 +163,12 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
     const m = new THREE.Mesh(geo, mat); m.position.y = 0.5; return m;
   }
   function makeHazardMesh(){
+    if (models.hazard) {
+      const m = models.hazard.clone(true);
+      m.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+      m.position.y = 0.4; m.scale.setScalar(0.9);
+      return m;
+    }
     const geo = new THREE.ConeGeometry(cell*0.36, cell*0.8, 20);
     const mat = new THREE.MeshStandardMaterial({ color: 0xFF6B6B });
     const m = new THREE.Mesh(geo, mat); m.position.y = 0.4; return m;
@@ -187,6 +210,8 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
   // Game control
   function start() {
     init3D();
+    // Attempt to load optional models once per session
+    preloadModels().finally(() => { /* no-op */ });
     reset(); running=true; paused=false; restartBtn.disabled=false; schedule();
   }
   function reset() {
@@ -306,6 +331,27 @@ export function buildSnake3DGameDialog(onFinish, options = {}) {
       renderer.render(scene, camera);
     }
     requestAnimationFrame(loop);
+  }
+
+  async function preloadModels(){
+    const loadOne = async (type, url, credit) => {
+      if (!url) return;
+      try {
+        const gltf = await assetManager.loadGLTF(url);
+        const node = cloneGLTF(gltf);
+        models[type] = node;
+        if (credit) try { addCredit(credit); } catch(_) {}
+      } catch (e) {
+        // silently ignore; fallback primitives will be used
+      }
+    };
+    // Add credits suited to your chosen packs (only if loaded succeeds)
+    await Promise.all([
+      loadOne('tag', modelUrls.tag, { name: 'Food Model (Apple)', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' }),
+      loadOne('kw', modelUrls.kw, { name: 'Food Model (Grape)', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' }),
+      loadOne('genre', modelUrls.genre, { name: 'Food Model (Banana)', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' }),
+      loadOne('hazard', modelUrls.hazard, { name: 'Spike Model', author: 'CC0 pack', license: 'CC0', notes: 'Local asset under assets/models' })
+    ]);
   }
 
   function updateHud(){

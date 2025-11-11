@@ -50,11 +50,13 @@ async function getKTX2Loader() {
 export const assetManager = {
   _dracoPath: defaults.dracoPath,
   _ktx2Path: defaults.ktx2Path,
+  _gltfCache: new Map(),
   setDecoderPaths({ dracoPath, ktx2Path } = {}) {
     if (dracoPath) this._dracoPath = dracoPath;
     if (ktx2Path) this._ktx2Path = ktx2Path;
   },
   async loadGLTF(url, { useDraco = true } = {}) {
+    if (this._gltfCache.has(url)) return this._gltfCache.get(url);
     const GLTFLoader = await getGLTFLoader();
     const loader = new GLTFLoader();
     if (useDraco) {
@@ -65,7 +67,9 @@ export const assetManager = {
         loader.setDRACOLoader(draco);
       } catch (_) {}
     }
-    return new Promise((resolve, reject) => loader.load(url, resolve, undefined, reject));
+    const p = new Promise((resolve, reject) => loader.load(url, (gltf) => resolve(gltf), undefined, reject));
+    this._gltfCache.set(url, p);
+    return p;
   },
   async prepareKTX2(renderer) {
     try {
@@ -76,3 +80,9 @@ export const assetManager = {
     } catch (_) { return null; }
   }
 };
+
+export function cloneGLTF(gltf) {
+  // Shallow clone of scene graph suitable for many static assets
+  const cloned = gltf.scene.clone(true);
+  return cloned;
+}
