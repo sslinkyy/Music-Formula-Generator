@@ -82,6 +82,23 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const wrap = document.createElement('div');
   const controls = document.createElement('div');
   controls.className = 'inline-buttons';
+  // Center controls and make them mobile-friendly
+  controls.style.display = 'flex';
+  controls.style.flexWrap = 'wrap';
+  controls.style.justifyContent = 'center';
+  controls.style.alignItems = 'center';
+  controls.style.gap = '8px';
+  controls.style.padding = '10px';
+  controls.style.maxWidth = '100%';
+  controls.style.margin = '0 auto';
+
+  // Helper function to style select elements for mobile-friendliness
+  function styleSelectElement(selectElement) {
+    selectElement.style.minHeight = '36px';
+    selectElement.style.fontSize = '14px';
+    selectElement.style.padding = '4px 8px';
+    selectElement.style.minWidth = '120px';
+  }
 
   // Difficulty select (unified for both game difficulties and StepMania charts)
   const diffSel = document.createElement('select');
@@ -101,6 +118,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   populateDefaultDifficulties();
   diffSel.title = 'Difficulty';
+  styleSelectElement(diffSel);
   controls.appendChild(diffSel);
 
   // Preset bias
@@ -113,6 +131,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     biasSel.appendChild(o);
   });
   biasSel.title = 'Preset Bias';
+  styleSelectElement(biasSel);
   biasSel.addEventListener('change', () => {
     chosenBias = biasSel.value;
     lanes = buildLaneMap(chosenBias);
@@ -135,11 +154,13 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     musicSel.appendChild(o);
   });
   musicSel.title = 'Music Source';
+  styleSelectElement(musicSel);
   controls.appendChild(musicSel);
 
   const libSel = document.createElement('select');
   libSel.style.display = 'none';
   libSel.title = 'Library Track';
+  styleSelectElement(libSel);
   controls.appendChild(libSel);
 
   const fileInput = document.createElement('input');
@@ -152,6 +173,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const smLibSel = document.createElement('select');
   smLibSel.style.display = 'none';
   smLibSel.title = 'StepMania Library';
+  styleSelectElement(smLibSel);
   controls.appendChild(smLibSel);
 
   // StepMania file input
@@ -253,6 +275,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     langSel.appendChild(o);
   });
   langSel.title = 'Language';
+  styleSelectElement(langSel);
   langSel.addEventListener('change', () => {
     chosenLanguage = langSel.value;
   });
@@ -267,6 +290,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     accSel.appendChild(o);
   });
   accSel.title = 'Accent';
+  styleSelectElement(accSel);
   accSel.addEventListener('change', () => {
     chosenAccent = accSel.value;
   });
@@ -478,22 +502,23 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let audioStartOffset = 0; // Offset to sync audio context time with game time
   let useAudioSync = false;
 
-  // Arrow geometry creation helper
+  // Arrow geometry creation helper - creates bold, easy-to-see arrows
   function createArrowGeometry(direction) {
     // Create arrow shape using triangles
     // Direction: 'left', 'down', 'up', 'right'
     const shape = new THREE.Shape();
 
     // Arrow pointing up (we'll rotate for other directions)
-    // Triangle pointing up
-    shape.moveTo(0, 0.3);      // Top point
-    shape.lineTo(-0.2, 0);     // Bottom left
-    shape.lineTo(-0.08, 0);    // Neck left
-    shape.lineTo(-0.08, -0.3); // Bottom left of stem
-    shape.lineTo(0.08, -0.3);  // Bottom right of stem
-    shape.lineTo(0.08, 0);     // Neck right
-    shape.lineTo(0.2, 0);      // Bottom right
-    shape.lineTo(0, 0.3);      // Back to top
+    // Made bigger and bolder for visibility
+    const scale = 1.5; // Make arrow 1.5x bigger
+    shape.moveTo(0, 0.45 * scale);      // Top point
+    shape.lineTo(-0.3 * scale, 0);      // Bottom left (wider)
+    shape.lineTo(-0.12 * scale, 0);     // Neck left (thicker)
+    shape.lineTo(-0.12 * scale, -0.3 * scale); // Bottom left of stem
+    shape.lineTo(0.12 * scale, -0.3 * scale);  // Bottom right of stem
+    shape.lineTo(0.12 * scale, 0);      // Neck right (thicker)
+    shape.lineTo(0.3 * scale, 0);       // Bottom right (wider)
+    shape.lineTo(0, 0.45 * scale);      // Back to top
 
     const geometry = new THREE.ShapeGeometry(shape);
 
@@ -539,12 +564,30 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     // Add directional arrow on top of note
     const direction = laneDirections[lane] || 'up';
+
+    // Create arrow outline (dark background for contrast)
+    const outlineGeometry = createArrowGeometry(direction);
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: 0x000000, // Black outline
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8
+    });
+    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    outlineMesh.scale.set(1.15, 1.15, 1); // Slightly larger for outline effect
+    outlineMesh.position.set(0, 0.29, 0); // Slightly below main arrow
+    outlineMesh.rotation.x = -Math.PI / 2;
+    mesh.add(outlineMesh);
+
+    // Create main arrow (bright white)
     const arrowGeometry = createArrowGeometry(direction);
     const arrowMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.9
+      opacity: 1.0,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.3 // Add glow
     });
     const arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
 
