@@ -37,6 +37,12 @@ directionalLight.shadow.camera.near = 0.1;
 directionalLight.shadow.camera.far = 60;
 scene.add(ambientLight, directionalLight);
 
+const rimLight = new THREE.PointLight(0x88ccff, 0.5, 40);
+rimLight.position.set(-6, 6, 7);
+const fillLight = new THREE.PointLight(0xff7ccf, 0.45, 40);
+fillLight.position.set(22, 4, 10);
+scene.add(rimLight, fillLight);
+
 const loader = new GLTFLoader();
 
 const assetMap = {
@@ -55,6 +61,22 @@ const assetMap = {
   brickParticle: "assets/models/environment/brick-particle.glb",
   blockCoin: "assets/models/environment/block-coin.glb",
 };
+
+const cameraConfig = {
+  offsetX: 6,
+  offsetY: 4.3,
+  offsetZ: 17,
+  minX: 5,
+  maxX: 58,
+};
+const worldLimits = { minX: -6.5, maxX: 58 };
+const enemies = [];
+const enemyLayout = [
+  { model: "brick", center: 18, range: 3.2, speed: 1.1 },
+  { model: "blockCoin", center: 32, range: 2.5, speed: 1.6 },
+  { model: "brick", center: 44, range: 4, speed: 1.2 },
+];
+const parallaxStars = [];
 
 const loadedModels = {};
 const platformBoxes = [];
@@ -130,6 +152,49 @@ function addFloor() {
   scene.add(floor);
 }
 
+function addSkyDome() {
+  const geometry = new THREE.SphereGeometry(110, 32, 16);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x040d21,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const dome = new THREE.Mesh(geometry, material);
+  dome.position.set(25, 18, -20);
+  scene.add(dome);
+}
+
+function addStarField() {
+  const starGeometry = new THREE.BufferGeometry();
+  const starCount = 420;
+  const positions = new Float32Array(starCount * 3);
+  for (let i = 0; i < starCount; i += 1) {
+    positions[i * 3] = Math.random() * 80 - 10;
+    positions[i * 3 + 1] = Math.random() * 10 + 3;
+    positions[i * 3 + 2] = -15 - Math.random() * 20;
+  }
+  starGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const starMaterial = new THREE.PointsMaterial({
+    size: 0.12,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.75,
+  });
+  const stars = new THREE.Points(starGeometry, starMaterial);
+  scene.add(stars);
+  parallaxStars.push(stars);
+}
+
+function updateStarField(delta) {
+  parallaxStars.forEach((points) => {
+    points.position.x -= delta * 1.5;
+    if (points.position.x < -34) {
+      points.position.x = 60;
+    }
+  });
+}
+
 function addPlatforms() {
   platformLayout.forEach((layout) => {
     const mesh = cloneModel(layout.model);
@@ -181,6 +246,61 @@ function addCoins() {
   });
 }
 
+function addEnemies() {
+  enemyLayout.forEach((layout) => {
+    const enemy = cloneModel(layout.model);
+    if (!enemy) return;
+    enemy.scale.setScalar(0.4);
+    enemy.position.set(layout.center, -2.1, 0);
+    enemy.userData = { direction: 1, baseY: enemy.position.y };
+    enemy.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(enemy);
+    enemies.push({
+      mesh: enemy,
+      box: new THREE.Box3().setFromObject(enemy),
+      config: layout,
+      cooldown: 0,
+    });
+  });
+}
+
+function updateEnemies(delta) {
+  enemies.forEach((enemy, index) => {
+    const cfg = enemy.config;
+    const moveDelta = cfg.speed * delta * enemy.mesh.userData.direction;
+    enemy.mesh.position.x += moveDelta;
+    if (enemy.mesh.position.x > cfg.center + cfg.range) {
+      enemy.mesh.userData.direction = -1;
+    } else if (enemy.mesh.position.x < cfg.center - cfg.range) {
+      enemy.mesh.userData.direction = 1;
+    }
+    enemy.mesh.position.y =
+      enemy.mesh.userData.baseY + Math.sin(clock.getElapsedTime() * 2 + index) * 0.13;
+    enemy.box.setFromObject(enemy.mesh);
+    enemy.cooldown = Math.max(0, enemy.cooldown - delta);
+  });
+}
+
+function checkEnemyCollisions() {
+  if (!playerState.mesh) return;
+  enemies.forEach((enemy) => {
+    if (enemy.cooldown > 0) return;
+    if (playerBounds.intersectsBox(enemy.box)) {
+      enemy.cooldown = 0.7;
+      playerState.velocity.y = 8;
+      playerState.onGround = false;
+      score = Math.max(0, score - 120);
+      scoreValue.textContent = score.toString().padStart(3, "0");
+      statusText.textContent = "Ouch! Bounce off the threat!";
+    }
+  });
+}
+
 function addClouds() {
   cloudPositions.forEach(([x, y, z]) => {
     const cloud = cloneModel("cloud");
@@ -212,6 +332,13 @@ function addDecorations() {
     brickCluster.scale.setScalar(0.4);
     brickCluster.position.set(8, -2.1, -2);
     scene.add(brickCluster);
+  }
+  const brickParticle = cloneModel("brickParticle");
+  if (brickParticle) {
+    brickParticle.scale.setScalar(0.35);
+    brickParticle.position.set(26, -1.7, -1);
+    brickParticle.rotation.y = Math.PI / 2;
+    scene.add(brickParticle);
   }
 }
 
@@ -276,8 +403,8 @@ function handleMovement(delta) {
   playerState.mesh.position.x += moveInput * playerState.moveSpeed * delta;
   playerState.mesh.position.x = THREE.MathUtils.clamp(
     playerState.mesh.position.x,
-    -8,
-    62
+    worldLimits.minX,
+    worldLimits.maxX
   );
 
   if (input.jump && playerState.onGround) {
@@ -340,22 +467,37 @@ function checkGoal() {
 
 function updateCamera() {
   if (!playerState.mesh) return;
-  const targetX = playerState.mesh.position.x + 6;
-  const targetY = playerState.mesh.position.y + 4;
+  const targetX = THREE.MathUtils.clamp(
+    playerState.mesh.position.x + cameraConfig.offsetX,
+    cameraConfig.minX,
+    cameraConfig.maxX
+  );
+  const targetY = playerState.mesh.position.y + cameraConfig.offsetY;
 
-  camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.06);
-  camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.04);
-  camera.position.z = THREE.MathUtils.lerp(camera.position.z, 17, 0.02);
-  camera.lookAt(playerState.mesh.position.x, playerState.mesh.position.y + 0.8, 0);
+  camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.1);
+  camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.08);
+  camera.position.z = THREE.MathUtils.lerp(
+    camera.position.z,
+    cameraConfig.offsetZ,
+    0.05
+  );
+  camera.lookAt(
+    playerState.mesh.position.x,
+    playerState.mesh.position.y + 1,
+    0
+  );
 }
 
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
 
+  updateStarField(delta);
   handleMovement(delta);
   detectPlatformCollisions();
   checkCoins();
+  updateEnemies(delta);
+  checkEnemyCollisions();
   checkGoal();
 
   if (!goalReached) {
@@ -396,12 +538,15 @@ async function init() {
     return;
   }
 
+  addSkyDome();
+  addStarField();
   addFloor();
   addPlatforms();
   addPlayer();
   addDecorations();
   addClouds();
   addCoins();
+  addEnemies();
   placeFlag();
   registerControls();
 
