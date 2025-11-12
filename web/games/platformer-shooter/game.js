@@ -2,22 +2,22 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.m
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/utils/SkeletonUtils.js";
 
-const assetBase = "./assets/models";
+const assetBase = new URL("./assets/models/", import.meta.url).href;
 const assetMap = {
-  player: `${assetBase}/characters/character.glb`,
-  platform: `${assetBase}/environment/platform.glb`,
-  platformMedium: `${assetBase}/environment/platform-medium.glb`,
-  platformLarge: `${assetBase}/environment/platform-large.glb`,
-  platformGrass: `${assetBase}/environment/platform-grass-large-round.glb`,
-  platformFalling: `${assetBase}/environment/platform-falling.glb`,
-  coin: `${assetBase}/environment/coin.glb`,
-  flag: `${assetBase}/environment/flag.glb`,
-  cloud: `${assetBase}/environment/cloud.glb`,
-  grass: `${assetBase}/environment/grass.glb`,
-  dust: `${assetBase}/environment/dust.glb`,
-  brick: `${assetBase}/environment/brick.glb`,
-  brickParticle: `${assetBase}/environment/brick-particle.glb`,
-  blockCoin: `${assetBase}/environment/block-coin.glb`,
+  player: `${assetBase}characters/character.glb`,
+  platform: `${assetBase}environment/platform.glb`,
+  platformMedium: `${assetBase}environment/platform-medium.glb`,
+  platformLarge: `${assetBase}environment/platform-large.glb`,
+  platformGrass: `${assetBase}environment/platform-grass-large-round.glb`,
+  platformFalling: `${assetBase}environment/platform-falling.glb`,
+  coin: `${assetBase}environment/coin.glb`,
+  flag: `${assetBase}environment/flag.glb`,
+  cloud: `${assetBase}environment/cloud.glb`,
+  grass: `${assetBase}environment/grass.glb`,
+  dust: `${assetBase}environment/dust.glb`,
+  brick: `${assetBase}environment/brick.glb`,
+  brickParticle: `${assetBase}environment/brick-particle.glb`,
+  blockCoin: `${assetBase}environment/block-coin.glb`,
 };
 
 const platformLayout = [
