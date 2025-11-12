@@ -3163,7 +3163,15 @@ function setupDropdowns() {
 
     // Toggle dropdown handler
     const toggleDropdown = (e) => {
-      e.stopPropagation();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Blur any focused input to prevent mobile keyboard/focus issues
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
 
       // Close other dropdowns
       dropdowns.forEach(other => {
@@ -3196,6 +3204,12 @@ function setupDropdowns() {
     toggle.addEventListener('touchend', (e) => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Ensure any active element loses focus before toggling
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+
       toggleDropdown(e);
     });
 
@@ -3248,6 +3262,13 @@ function setupDropdowns() {
   });
 
   document.addEventListener('touchend', (e) => {
+    // Don't let touch events on dropdowns focus other elements
+    if (e.target.closest('.dropdown')) {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+        activeEl.blur();
+      }
+    }
     setTimeout(() => {
       closeAllDropdowns(e);
     }, 0);
