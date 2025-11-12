@@ -1,6 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js";
-import { SkeletonUtils } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/utils/SkeletonUtils.js";
+import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/utils/SkeletonUtils.js";
 
 const assetBase = "./assets/models";
 const assetMap = {
@@ -97,7 +97,7 @@ async function ensureModels() {
 function cloneModel(key) {
   const source = loadedModels[key];
   if (!source) return null;
-  return SkeletonUtils.clone(source);
+  return cloneSkeleton(source);
 }
 
 function registerControls(state) {
