@@ -2,7 +2,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.m
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/utils/SkeletonUtils.js";
 
-const assetBase = new URL("./assets/models/", import.meta.url).href;
+const assetBase = new URL("../../assets/models/", import.meta.url).href;
 const assetMap = {
   player: `${assetBase}characters/character.glb`,
   platform: `${assetBase}environment/platform.glb`,
