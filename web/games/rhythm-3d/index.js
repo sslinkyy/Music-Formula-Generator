@@ -79,18 +79,40 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
   const judgement = { perfect: 120, good: 220 };
 
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const wrap = document.createElement('div');
+  wrap.className = 'rhythm-game-shell';
+  wrap.dataset.game = 'rhythm-3d';
+  wrap.style.position = 'relative';
+
+  const headerRow = document.createElement('div');
+  headerRow.className = 'rhythm-game-header';
+
+  const hud = document.createElement('div');
+  hud.className = 'rhythm-hud-text';
+  hud.textContent = isTouchDevice
+    ? 'Touch the glowing buttons below to land the beat.'
+    : 'Use DFJK, arrow keys, or the buttons at the bottom to tap notes in sync.';
+
+  const headerActions = document.createElement('div');
+  headerActions.className = 'rhythm-header-actions';
+
+  const fullscreenBtn = document.createElement('button');
+  fullscreenBtn.type = 'button';
+  fullscreenBtn.className = 'rhythm-header-btn';
+  fullscreenBtn.textContent = 'Fullscreen';
+
+  const settingsBtn = document.createElement('button');
+  settingsBtn.type = 'button';
+  settingsBtn.className = 'rhythm-header-btn';
+  settingsBtn.textContent = 'Settings';
+
+  headerActions.append(fullscreenBtn, settingsBtn);
+  headerRow.append(hud, headerActions);
+  wrap.appendChild(headerRow);
+
   const controls = document.createElement('div');
-  controls.className = 'inline-buttons';
-  // Center controls and make them mobile-friendly
-  controls.style.display = 'flex';
-  controls.style.flexWrap = 'wrap';
-  controls.style.justifyContent = 'center';
-  controls.style.alignItems = 'center';
-  controls.style.gap = '8px';
-  controls.style.padding = '10px';
-  controls.style.maxWidth = '100%';
-  controls.style.margin = '0 auto';
+  controls.className = 'rhythm-settings-grid';
 
   // Helper function to style select elements for mobile-friendliness
   function styleSelectElement(selectElement) {
@@ -385,6 +407,21 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   controls.appendChild(accSel);
 
+  const layoutSel = document.createElement('select');
+  Object.entries(KEYBOARD_LAYOUTS).forEach(([key, value]) => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = value.label;
+    layoutSel.appendChild(option);
+  });
+  layoutSel.value = 'dual';
+  layoutSel.title = 'Keyboard Layout';
+  styleSelectElement(layoutSel);
+  layoutSel.addEventListener('change', () => {
+    setKeyboardLayout(layoutSel.value);
+  });
+  controls.appendChild(layoutSel);
+
   // Helper function to get actual accent (random if Auto/Random selected)
   function getActualAccent() {
     if (chosenAccent === 'Auto/Random') {
@@ -416,32 +453,54 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     debugDiv.style.display = debugMode ? 'block' : 'none';
   });
 
-  controls.appendChild(startBtn);
-  controls.appendChild(restartBtn);
-  controls.appendChild(quitBtn);
-  controls.appendChild(debugBtn);
-  wrap.appendChild(controls);
-
-  // HUD
-  const hud = document.createElement('div');
-  hud.className = 'hint';
-  // Detect if touch device
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  hud.textContent = isTouchDevice
-    ? 'Touch the buttons below to hit notes! (Mobile Mode)'
-    : 'Keys: D F J K or Arrow Keys / Click lanes / Controller: D-pad or A B X Y. Hit notes on the line! (3D Mode)';
-  hud.style.margin = '6px 0';
-  wrap.appendChild(hud);
+  const playControlsRow = document.createElement('div');
+  playControlsRow.className = 'rhythm-play-controls';
+  playControlsRow.append(startBtn, restartBtn, quitBtn, debugBtn);
 
   // Three.js container
   const container = document.createElement('div');
-  container.style.width = '100%';
-  container.style.height = '420px';
-  container.style.background = '#0f1115';
-  container.style.borderRadius = '12px';
-  container.style.position = 'relative';
-  container.style.overflow = 'hidden';
+  container.className = 'rhythm-game-stage';
+  const defaultStageHeight = Math.min(600, Math.max(360, window.innerHeight * 0.55));
+  container.style.height = `${defaultStageHeight}px`;
   wrap.appendChild(container);
+
+  const stageSizeSlider = document.createElement('input');
+  stageSizeSlider.type = 'range';
+  stageSizeSlider.min = '320';
+  stageSizeSlider.max = '720';
+  stageSizeSlider.step = '10';
+  stageSizeSlider.className = 'rhythm-stage-slider';
+  stageSizeSlider.value = `${Math.round(defaultStageHeight)}`;
+  stageSizeSlider.title = 'Adjust stage height';
+
+  const stageSizeValue = document.createElement('span');
+  stageSizeValue.className = 'rhythm-stage-value';
+  stageSizeValue.textContent = `${Math.round(defaultStageHeight)}px`;
+  stageSizeSlider.addEventListener('input', () => {
+    const height = parseInt(stageSizeSlider.value, 10);
+    stageSizeValue.textContent = `${height}px`;
+    updateStageHeight(height);
+  });
+
+  function handleFullscreenChange() {
+    const active = document.fullscreenElement === container;
+    fullscreenBtn.textContent = active ? 'Exit Fullscreen' : 'Fullscreen';
+  }
+
+  fullscreenBtn.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement && container.requestFullscreen) {
+        await container.requestFullscreen({ navigationUI: 'hide' });
+      } else if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.warn('Fullscreen request failed', err);
+    }
+  });
+
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  handleFullscreenChange();
 
   // Stats display
   const statsDiv = document.createElement('div');
@@ -511,6 +570,79 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   vuWrap.appendChild(vuBar);
   vuWrap.appendChild(vuStatus);
   wrap.appendChild(vuWrap);
+  wrap.appendChild(playControlsRow);
+
+  const settingsOverlay = document.createElement('div');
+  settingsOverlay.className = 'rhythm-settings-overlay';
+  settingsOverlay.hidden = true;
+  settingsOverlay.tabIndex = -1;
+
+  const settingsCard = document.createElement('div');
+  settingsCard.className = 'rhythm-settings-card';
+
+  const settingsHeader = document.createElement('div');
+  settingsHeader.className = 'rhythm-settings-card-header';
+
+  const settingsTitle = document.createElement('h3');
+  settingsTitle.textContent = 'Settings';
+
+  const closeSettingsBtn = document.createElement('button');
+  closeSettingsBtn.type = 'button';
+  closeSettingsBtn.className = 'rhythm-settings-close';
+  closeSettingsBtn.textContent = 'Done';
+
+  settingsHeader.append(settingsTitle, closeSettingsBtn);
+  settingsCard.append(settingsHeader);
+
+  const settingsScroll = document.createElement('div');
+  settingsScroll.className = 'rhythm-settings-scroll';
+
+  const stageSection = document.createElement('div');
+  stageSection.className = 'rhythm-settings-section';
+
+  const stageLabelRow = document.createElement('div');
+  stageLabelRow.className = 'rhythm-settings-row';
+
+  const stageLabelText = document.createElement('span');
+  stageLabelText.className = 'rhythm-settings-label';
+  stageLabelText.textContent = 'Stage height';
+  stageLabelRow.append(stageLabelText, stageSizeValue);
+
+  stageSection.append(stageLabelRow, stageSizeSlider);
+
+  const settingsNote = document.createElement('p');
+  settingsNote.className = 'rhythm-settings-note';
+  settingsNote.textContent = 'Touch buttons auto-appear on mobiles and match the lane art below.';
+  settingsScroll.append(stageSection, settingsNote, controls);
+
+  settingsCard.append(settingsScroll);
+  settingsOverlay.append(settingsCard);
+  wrap.append(settingsOverlay);
+
+  let settingsOpen = false;
+  function toggleSettingsMenu(show) {
+    settingsOpen = show;
+    settingsOverlay.hidden = !show;
+    settingsBtn.textContent = show ? 'Close' : 'Settings';
+    settingsBtn.setAttribute('aria-expanded', String(show));
+    wrap.classList.toggle('rhythm-settings-open', show);
+    if (show) {
+      settingsOverlay.focus({ preventScroll: true });
+    }
+  }
+
+  settingsBtn.addEventListener('click', () => toggleSettingsMenu(!settingsOpen));
+  closeSettingsBtn.addEventListener('click', () => toggleSettingsMenu(false));
+  settingsOverlay.addEventListener('click', (event) => {
+    if (event.target === settingsOverlay) toggleSettingsMenu(false);
+  });
+
+  const handleSettingsKey = (event) => {
+    if (event.key === 'Escape' && settingsOpen) {
+      toggleSettingsMenu(false);
+    }
+  };
+  document.addEventListener('keydown', handleSettingsKey);
 
   // Setup Three.js scene
   const scene = new THREE.Scene();
@@ -527,19 +659,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   // Touch controls overlay for mobile devices
   const touchControlsContainer = document.createElement('div');
-  touchControlsContainer.style.position = 'absolute';
-  touchControlsContainer.style.bottom = '0';
-  touchControlsContainer.style.left = '0';
-  touchControlsContainer.style.right = '0';
-  touchControlsContainer.style.height = '100px';
+  touchControlsContainer.className = 'rhythm-touch-controls';
   touchControlsContainer.style.display = isTouchDevice ? 'flex' : 'none';
-  touchControlsContainer.style.gap = '4px';
-  touchControlsContainer.style.padding = '4px';
-  touchControlsContainer.style.background = 'rgba(0, 0, 0, 0.3)';
-  touchControlsContainer.style.backdropFilter = 'blur(5px)';
-  touchControlsContainer.style.zIndex = '100';
-  touchControlsContainer.style.touchAction = 'none'; // Prevent scrolling
-  touchControlsContainer.style.userSelect = 'none';
 
   const laneLabels = ['D', 'F', 'J', 'K'];
   const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
@@ -891,10 +1012,40 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   }
 
   // Input handling
-  const laneForKey = {
-    'd': 0, 'f': 1, 'j': 2, 'k': 3,
-    'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
+  const KEYBOARD_LAYOUTS = {
+    dual: {
+      label: 'Classic (DFJK + Arrows)',
+      map: {
+        'd': 0, 'f': 1, 'j': 2, 'k': 3,
+        'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
+      }
+    },
+    arrows: {
+      label: 'Arrow Keys Only',
+      map: {
+        'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
+      }
+    },
+    left: {
+      label: 'Left Hand (ASDF)',
+      map: { 'a': 0, 's': 1, 'd': 2, 'f': 3 }
+    },
+    right: {
+      label: 'Right Hand (JKL;)',
+      map: { 'j': 0, 'k': 1, 'l': 2, ';': 3 }
+    }
   };
+
+  let laneForKey = { ...KEYBOARD_LAYOUTS.dual.map };
+
+  function setKeyboardLayout(layoutKey) {
+    const layout = KEYBOARD_LAYOUTS[layoutKey];
+    if (layout) {
+      laneForKey = { ...layout.map };
+    }
+  }
+
+  setKeyboardLayout('dual');
 
   function onPress(laneIndex) {
     if (!running) return;
@@ -1243,6 +1394,9 @@ Next Note: ${nextNote}ms
     console.log('Starting 3D Rhythm Game...');
     startBtn.disabled = true;
     startBtn.textContent = 'Playing…';
+    if (isTouchDevice && document.fullscreenEnabled && container.requestFullscreen) {
+      container.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+    }
 
     // Start the game with proper async handling for music
     (async () => {
@@ -1819,6 +1973,11 @@ Next Note: ${nextNote}ms
   });
 
   // Handle window resize
+  function updateStageHeight(height) {
+    container.style.height = `${height}px`;
+    onWindowResize();
+  }
+
   function onWindowResize() {
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
@@ -1835,6 +1994,12 @@ Next Note: ${nextNote}ms
     console.log('[3D Rhythm] Cleanup called - stopping audio and removing listeners');
     stopPlayback();
     window.removeEventListener('resize', onWindowResize);
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.removeEventListener('keydown', handleSettingsKey);
+    toggleSettingsMenu(false);
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
   };
 
   return wrap;
