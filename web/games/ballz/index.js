@@ -18,7 +18,7 @@ export function buildBallzGameDialog(onFinish, options = {}) {
   const BRICK_SIZE = CANVAS_WIDTH / GRID_COLS;
   const BALL_RADIUS = 5;
   const PLATFORM_Y = CANVAS_HEIGHT - 40;
-  const BALL_SPEED = 6;
+  const BASE_BALL_SPEED = 6;
   const LAUNCH_DELAY = 50; // ms between each ball launch
   const MAX_TRAJECTORY_BOUNCES = 3;
 
@@ -63,6 +63,7 @@ export function buildBallzGameDialog(onFinish, options = {}) {
   canvas.style.display = 'block';
   canvas.style.cursor = 'crosshair';
   canvas.style.margin = '0 auto';
+  canvas.style.touchAction = 'none'; // Prevent scrolling on touch
 
   wrap.appendChild(canvas);
   const ctx = canvas.getContext('2d');
@@ -72,7 +73,7 @@ export function buildBallzGameDialog(onFinish, options = {}) {
   const hint = document.createElement('div');
   hint.className = 'hint';
   hint.style.margin = '10px 0';
-  hint.textContent = 'Move mouse to aim. Click to launch. Collect golden ball powerups!';
+  hint.textContent = 'Desktop: Move mouse to aim, click to launch. Mobile: Touch and drag to aim, release to launch!';
   wrap.appendChild(hint);
 
   // Game state
@@ -84,7 +85,7 @@ export function buildBallzGameDialog(onFinish, options = {}) {
   let platformX = CANVAS_WIDTH / 2;
   let aimAngle = -Math.PI / 2; // Up
   let balls = []; // Active balls in flight
-  let bricks = []; // {row, col, hits, isBall} - isBall means it's a ball collectible
+  let bricks = []; // {row, col, hits, isBall, isLife, isMetal}
   let launchInProgress = false;
   let ballsToLaunch = 0;
   let launchTimer = 0;
@@ -93,15 +94,63 @@ export function buildBallzGameDialog(onFinish, options = {}) {
   let tags = new Set();
   let keywords = new Set();
   let isAiming = false; // Track if user is aiming
+  let isTouching = false; // Track touch state
+  let touchStartX = 0;
+  let touchStartY = 0;
 
   // Mouse/touch position
   let mouseX = CANVAS_WIDTH / 2;
   let mouseY = CANVAS_HEIGHT / 2;
 
+  // Difficulty scaling functions
+  function getBallSpeed() {
+    // Slightly increase speed every 10 turns (max +50%)
+    return BASE_BALL_SPEED * (1 + Math.min(0.5, turn / 50));
+  }
+
+  function getMinHits() {
+    // Minimum hits increases: 1, 1, 2, 3, 5, 8, 12...
+    return Math.max(1, Math.floor(turn / 3));
+  }
+
+  function getMaxHits() {
+    // Maximum hits scales faster
+    return Math.min(Math.ceil(turn * 2), 50);
+  }
+
+  function getNumBricks() {
+    // Start with 2-3, increase to fill most columns
+    return Math.min(2 + Math.floor(turn / 2), GRID_COLS - 1);
+  }
+
+  function getBallPowerupChance() {
+    // Start at 25%, decrease to 10% by turn 30
+    return Math.max(0.10, 0.25 - (turn * 0.005));
+  }
+
+  function getExtraLifeChance() {
+    // Very rare: 6% chance, only after turn 5
+    return turn > 5 ? 0.06 : 0;
+  }
+
+  function shouldSpawnSecondRow() {
+    // After turn 15, 30% chance to spawn bricks in row 1 too
+    return turn > 15 && Math.random() < 0.3;
+  }
+
+  function getMetalBrickChance() {
+    // After turn 10, 15% chance for a brick to be "metal" (extra tough)
+    return turn > 10 ? 0.15 : 0;
+  }
+
   // Add new row of bricks at the top
   function addBrickRow() {
-    const numBricks = Math.min(2 + Math.floor(turn / 2), GRID_COLS - 1);
-    const maxHits = Math.min(Math.ceil(turn * 1.5), 30);
+    const numBricks = getNumBricks();
+    const minHits = getMinHits();
+    const maxHits = getMaxHits();
+    const ballChance = getBallPowerupChance();
+    const lifeChance = getExtraLifeChance();
+    const metalChance = getMetalBrickChance();
 
     const positions = [];
     for (let col = 0; col < GRID_COLS; col++) {
@@ -114,25 +163,70 @@ export function buildBallzGameDialog(onFinish, options = {}) {
       [positions[i], positions[j]] = [positions[j], positions[i]];
     }
 
+    // Determine what special items to add
+    let hasLife = false;
+    let hasBall = false;
+    const specialSlots = [];
+
+    // Very rare extra life (only one per row, very infrequent)
+    if (Math.random() < lifeChance && ballCount > 1) {
+      hasLife = true;
+      specialSlots.push({ type: 'life', index: Math.floor(Math.random() * numBricks) });
+    }
+
+    // Ball powerups (can have multiple)
     for (let i = 0; i < numBricks; i++) {
-      const col = positions[i];
-      // 25% chance to be a ball collectible
-      if (Math.random() < 0.25) {
-        bricks.push({
-          row: 0,
-          col: col,
-          hits: 0,
-          isBall: true
-        });
-      } else {
-        bricks.push({
-          row: 0,
-          col: col,
-          hits: Math.ceil(Math.random() * maxHits),
-          isBall: false
-        });
+      if (Math.random() < ballChance && !specialSlots.find(s => s.index === i)) {
+        specialSlots.push({ type: 'ball', index: i });
       }
     }
+
+    // Add bricks to row 0 (and maybe row 1)
+    const rows = shouldSpawnSecondRow() ? [0, 1] : [0];
+
+    rows.forEach(rowNum => {
+      for (let i = 0; i < numBricks; i++) {
+        const col = positions[i];
+        const special = specialSlots.find(s => s.index === i);
+
+        if (special && rowNum === 0) { // Only add powerups to top row
+          if (special.type === 'life') {
+            bricks.push({
+              row: rowNum,
+              col: col,
+              hits: 0,
+              isBall: false,
+              isLife: true,
+              isMetal: false
+            });
+          } else if (special.type === 'ball') {
+            bricks.push({
+              row: rowNum,
+              col: col,
+              hits: 0,
+              isBall: true,
+              isLife: false,
+              isMetal: false
+            });
+          }
+        } else {
+          // Normal brick
+          const isMetal = Math.random() < metalChance;
+          const hits = isMetal
+            ? Math.ceil(minHits + Math.random() * (maxHits - minHits)) * 2 // Metal = 2x hits
+            : Math.ceil(minHits + Math.random() * (maxHits - minHits));
+
+          bricks.push({
+            row: rowNum,
+            col: col,
+            hits: hits,
+            isBall: false,
+            isLife: false,
+            isMetal: isMetal
+          });
+        }
+      }
+    });
   }
 
   // Drop all bricks down one row
@@ -142,7 +236,7 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     });
 
     // Check game over - if any brick reaches the bottom
-    const bottomBrick = bricks.find(b => !b.isBall && b.row >= GRID_ROWS);
+    const bottomBrick = bricks.find(b => !b.isBall && !b.isLife && b.row >= GRID_ROWS);
     if (bottomBrick) {
       endGame();
       return false;
@@ -180,12 +274,13 @@ export function buildBallzGameDialog(onFinish, options = {}) {
         const dy = PLATFORM_Y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < BALL_SPEED) {
+        const speed = getBallSpeed();
+        if (dist < speed) {
           return true; // Reached destination
         }
 
-        this.x += (dx / dist) * BALL_SPEED;
-        this.y += (dy / dist) * BALL_SPEED;
+        this.x += (dx / dist) * speed;
+        this.y += (dy / dist) * speed;
         return false;
       }
 
@@ -244,14 +339,20 @@ export function buildBallzGameDialog(onFinish, options = {}) {
             bricks.splice(i, 1);
             score += 10;
             collectGenreTag();
+          } else if (brick.isLife) {
+            // Collect extra life (adds 1 ball)
+            ballCount++;
+            bricks.splice(i, 1);
+            score += 25;
+            collectGenreTag();
           } else {
             // Hit brick
             brick.hits--;
-            score += 1;
+            score += brick.isMetal ? 2 : 1; // Metal bricks worth more points
 
             if (brick.hits <= 0) {
               bricks.splice(i, 1);
-              score += 5;
+              score += brick.isMetal ? 10 : 5;
               collectGenreTag();
             }
 
@@ -305,8 +406,9 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     const points = [{x: startX, y: startY}];
     let x = startX;
     let y = startY;
-    let vx = Math.cos(angle) * BALL_SPEED;
-    let vy = Math.sin(angle) * BALL_SPEED;
+    const speed = getBallSpeed();
+    let vx = Math.cos(angle) * speed;
+    let vy = Math.sin(angle) * speed;
     let bounces = 0;
     const maxSteps = 200;
 
@@ -375,20 +477,49 @@ export function buildBallzGameDialog(onFinish, options = {}) {
         ctx.moveTo(x + BRICK_SIZE / 2 - plusSize, y + BRICK_SIZE / 2);
         ctx.lineTo(x + BRICK_SIZE / 2 + plusSize, y + BRICK_SIZE / 2);
         ctx.stroke();
+      } else if (brick.isLife) {
+        // Draw extra life (heart)
+        ctx.fillStyle = '#FF1493';
+        ctx.beginPath();
+        const cx = x + BRICK_SIZE / 2;
+        const cy = y + BRICK_SIZE / 2;
+        const size = BRICK_SIZE / 4;
+        // Simple heart shape
+        ctx.moveTo(cx, cy + size / 2);
+        ctx.bezierCurveTo(cx, cy, cx - size, cy - size / 2, cx - size, cy);
+        ctx.bezierCurveTo(cx - size, cy + size / 2, cx, cy + size, cx, cy + size);
+        ctx.bezierCurveTo(cx, cy + size, cx + size, cy + size / 2, cx + size, cy);
+        ctx.bezierCurveTo(cx + size, cy - size / 2, cx, cy, cx, cy + size / 2);
+        ctx.fill();
+        ctx.strokeStyle = '#FF69B4';
+        ctx.lineWidth = 2;
+        ctx.stroke();
       } else {
         // Draw numbered brick with color based on hits
-        const maxHits = Math.ceil(turn * 1.5);
+        const maxHits = getMaxHits();
         const hitRatio = Math.max(0, Math.min(1, brick.hits / maxHits));
-        const hue = hitRatio * 120; // 0 (red) to 120 (green)
-        ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+
+        let fillColor;
+        if (brick.isMetal) {
+          // Metal bricks are gray/silver
+          fillColor = `hsl(0, 0%, ${30 + hitRatio * 30}%)`;
+        } else {
+          // Normal bricks: red (low) to green (high)
+          const hue = hitRatio * 120;
+          fillColor = `hsl(${hue}, 70%, 50%)`;
+        }
+
+        ctx.fillStyle = fillColor;
         ctx.fillRect(x + 2, y + 2, BRICK_SIZE - 4, BRICK_SIZE - 4);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
+
+        // Metal bricks have special border
+        ctx.strokeStyle = brick.isMetal ? '#C0C0C0' : '#ffffff';
+        ctx.lineWidth = brick.isMetal ? 2 : 1;
         ctx.strokeRect(x + 2, y + 2, BRICK_SIZE - 4, BRICK_SIZE - 4);
 
         // Draw number
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = brick.isMetal ? 'bold 16px Arial' : 'bold 14px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(brick.hits, x + BRICK_SIZE / 2, y + BRICK_SIZE / 2);
@@ -508,8 +639,9 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     if (launchInProgress && ballsToLaunch > 0) {
       launchTimer -= 16;
       if (launchTimer <= 0) {
-        const vx = Math.cos(aimAngle) * BALL_SPEED;
-        const vy = Math.sin(aimAngle) * BALL_SPEED;
+        const speed = getBallSpeed();
+        const vx = Math.cos(aimAngle) * speed;
+        const vy = Math.sin(aimAngle) * speed;
         balls.push(new Ball(platformX, PLATFORM_Y, vx, vy));
         ballsToLaunch--;
         launchTimer = LAUNCH_DELAY;
@@ -524,20 +656,14 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     requestAnimationFrame(gameLoop);
   }
 
-  // Mouse/touch input
-  function updateAim(clientX, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = ((clientX - rect.left) / rect.width) * CANVAS_WIDTH;
-    mouseY = ((clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
-
-    isAiming = true;
-
+  // Update aim angle from position
+  function updateAimFromPosition(posX, posY) {
     // Only allow aiming when not launching
     if (launchInProgress || balls.length > 0) return;
 
-    // Calculate angle from platform to mouse
-    const dx = mouseX - platformX;
-    const dy = mouseY - PLATFORM_Y;
+    // Calculate angle from platform to position
+    const dx = posX - platformX;
+    const dy = posY - PLATFORM_Y;
     aimAngle = Math.atan2(dy, dx);
 
     // Clamp angle to upward hemisphere only (-180 to 0 degrees)
@@ -551,16 +677,15 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     }
   }
 
+  // Mouse input
   canvas.addEventListener('mousemove', (e) => {
-    updateAim(e.clientX, e.clientY);
-  });
+    const rect = canvas.getBoundingClientRect();
+    mouseX = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
+    mouseY = ((e.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
 
-  canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    if (e.touches.length > 0) {
-      updateAim(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  }, { passive: false });
+    isAiming = true;
+    updateAimFromPosition(mouseX, mouseY);
+  });
 
   canvas.addEventListener('click', (e) => {
     if (!running || launchInProgress || balls.length > 0) return;
@@ -572,13 +697,55 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     isAiming = false;
   });
 
+  // Touch input (tap and hold to aim, release to launch)
   canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (!running || launchInProgress || balls.length > 0) return;
 
-    ballsToLaunch = ballCount;
-    launchInProgress = true;
-    launchTimer = 0;
+    isTouching = true;
+    isAiming = true;
+
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    touchStartX = ((touch.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
+    touchStartY = ((touch.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
+
+    mouseX = touchStartX;
+    mouseY = touchStartY;
+    updateAimFromPosition(mouseX, mouseY);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!isTouching || !running || launchInProgress || balls.length > 0) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    mouseX = ((touch.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
+    mouseY = ((touch.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
+
+    isAiming = true;
+    updateAimFromPosition(mouseX, mouseY);
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (!running || !isTouching) return;
+
+    isTouching = false;
+
+    // Launch balls if we were aiming
+    if (isAiming && !launchInProgress && balls.length === 0) {
+      ballsToLaunch = ballCount;
+      launchInProgress = true;
+      launchTimer = 0;
+      isAiming = false;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    isTouching = false;
     isAiming = false;
   }, { passive: false });
 
