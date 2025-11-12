@@ -243,8 +243,10 @@ footer { color: #86868b; font-size: 0.85rem; }
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
   min-width: 180px;
+  max-width: 90vw; /* Prevent overflow on mobile */
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
@@ -252,9 +254,10 @@ footer { color: #86868b; font-size: 0.85rem; }
   padding: 0.5rem;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-8px);
   transition: all 0.2s ease;
   z-index: 9999;
+  /* Ensure dropdown doesn't overflow viewport */
+  white-space: nowrap;
 }
 
 :root[data-theme="dark"] .dropdown-menu {
@@ -264,7 +267,7 @@ footer { color: #86868b; font-size: 0.85rem; }
 .dropdown.open .dropdown-menu {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 .dropdown-menu button {
@@ -299,6 +302,33 @@ footer { color: #86868b; font-size: 0.85rem; }
   height: 1px;
   background: var(--panel-border);
   margin: 0.35rem 0;
+}
+
+/* Mobile dropdown improvements */
+@media (max-width: 768px) {
+  .dropdown-menu {
+    /* Larger touch targets on mobile */
+    min-width: 200px;
+  }
+
+  .dropdown-menu button {
+    /* Increase button height for easier tapping */
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dropdown-menu {
+    /* Even larger on very small screens */
+    min-width: min(220px, 90vw);
+  }
+
+  .dropdown-toggle {
+    /* Ensure toggle buttons are tappable */
+    padding: 0.6rem 1.1rem;
+    min-height: 44px; /* iOS minimum tap target */
+  }
 }
 
 /* Readiness meter */
