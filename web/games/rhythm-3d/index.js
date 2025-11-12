@@ -8,6 +8,30 @@ import { listTracks, loadTrack, getCachedAnalysis, analyzeTrack } from '../music
 import { loadStepManiaPackage, convertNotesToGameFormat, calculateHoldDurations } from './stepmania-parser.js';
 import { listPacks, loadPackFromLibrary, savePackToLibrary, deletePackFromLibrary, getStorageInfo, getAllPacks, loadServerPack } from './stepmania-library.js';
 
+const KEYBOARD_LAYOUTS = {
+  dual: {
+    label: 'Classic (DFJK + Arrows)',
+    map: {
+      'd': 0, 'f': 1, 'j': 2, 'k': 3,
+      'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
+    }
+  },
+  arrows: {
+    label: 'Arrow Keys Only',
+    map: {
+      'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
+    }
+  },
+  left: {
+    label: 'Left Hand (ASDF)',
+    map: { 'a': 0, 's': 1, 'd': 2, 'f': 3 }
+  },
+  right: {
+    label: 'Right Hand (JKL;)',
+    map: { 'j': 0, 'k': 1, 'l': 2, ';': 3 }
+  }
+};
+
 // Three.js will be loaded from CDN
 let THREE;
 
@@ -1012,30 +1036,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   }
 
   // Input handling
-  const KEYBOARD_LAYOUTS = {
-    dual: {
-      label: 'Classic (DFJK + Arrows)',
-      map: {
-        'd': 0, 'f': 1, 'j': 2, 'k': 3,
-        'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
-      }
-    },
-    arrows: {
-      label: 'Arrow Keys Only',
-      map: {
-        'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
-      }
-    },
-    left: {
-      label: 'Left Hand (ASDF)',
-      map: { 'a': 0, 's': 1, 'd': 2, 'f': 3 }
-    },
-    right: {
-      label: 'Right Hand (JKL;)',
-      map: { 'j': 0, 'k': 1, 'l': 2, ';': 3 }
-    }
-  };
-
   let laneForKey = { ...KEYBOARD_LAYOUTS.dual.map };
 
   function setKeyboardLayout(layoutKey) {
