@@ -180,10 +180,14 @@ footer { color: #86868b; font-size: 0.85rem; }
   display: flex;
   gap: 0.4rem;
   justify-content: center;
+  align-items: center;
   padding: 0.35rem 0.75rem;
   background: rgba(251, 251, 253, 0.75);
   backdrop-filter: saturate(180%) blur(10px);
   border-bottom: 1px solid var(--panel-border);
+  /* Prevent horizontal overflow */
+  max-width: 100%;
+  overflow-x: visible;
 }
 .header-actions.toolbar { position: sticky; top: 0; }
 :root[data-theme="dark"] .toolbar { background: rgba(11,11,15,0.7); }
@@ -193,6 +197,8 @@ footer { color: #86868b; font-size: 0.85rem; }
   position: relative;
   display: inline-block;
   z-index: 1000;
+  /* Ensure dropdown doesn't cause overflow */
+  flex-shrink: 0;
 }
 
 .dropdown-toggle {
@@ -246,7 +252,7 @@ footer { color: #86868b; font-size: 0.85rem; }
   left: 50%;
   transform: translateX(-50%) translateY(-8px);
   min-width: 180px;
-  max-width: 90vw; /* Prevent overflow on mobile */
+  max-width: min(280px, 90vw); /* Prevent overflow on mobile */
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
@@ -258,6 +264,9 @@ footer { color: #86868b; font-size: 0.85rem; }
   z-index: 9999;
   /* Ensure dropdown doesn't overflow viewport */
   white-space: nowrap;
+  /* Prevent menu from extending beyond viewport edges */
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 :root[data-theme="dark"] .dropdown-menu {
@@ -306,28 +315,49 @@ footer { color: #86868b; font-size: 0.85rem; }
 
 /* Mobile dropdown improvements */
 @media (max-width: 768px) {
+  .toolbar {
+    /* Keep toolbar centered on tablets */
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
   .dropdown-menu {
     /* Larger touch targets on mobile */
     min-width: 200px;
+    max-width: min(260px, 85vw);
   }
 
   .dropdown-menu button {
     /* Increase button height for easier tapping */
     padding: 0.75rem 1rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 }
 
 @media (max-width: 480px) {
+  .toolbar {
+    /* On very small screens, allow better wrapping */
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.5rem;
+  }
+
   .dropdown-menu {
     /* Even larger on very small screens */
-    min-width: min(220px, 90vw);
+    min-width: min(240px, 88vw);
+    max-width: min(280px, 90vw);
+    /* Better positioning on small screens */
+    left: 50%;
+    right: auto;
   }
 
   .dropdown-toggle {
     /* Ensure toggle buttons are tappable */
-    padding: 0.6rem 1.1rem;
+    padding: 0.55rem 0.95rem;
     min-height: 44px; /* iOS minimum tap target */
+    font-size: 0.9rem;
   }
 }
 
@@ -865,17 +895,16 @@ button:disabled { opacity: 0.6; cursor: default; }
 }
 
 @media (max-width: 700px) {
-  /* Make the top toolbar horizontally scrollable with touch momentum */
+  /* Keep toolbar centered but allow wrapping */
   .toolbar {
-    justify-content: flex-start;
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    gap: 0.35rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
     padding: 0.5rem;
+    overflow-x: visible;
+    overflow-y: visible;
   }
-  .toolbar::-webkit-scrollbar { display: none; }
+  
   .toolbar > * { flex: 0 0 auto; }
   .header-actions .spacer { display: none; }
   .header-actions .brand { display: none; }
@@ -902,18 +931,36 @@ button:disabled { opacity: 0.6; cursor: default; }
     table-layout: auto;
   }
 
-  /* Ensure dropdowns fit on small screens */
+  /* Ensure dropdowns fit on small screens and are centered */
   .dropdown-menu {
     max-width: calc(100vw - 2rem);
     left: 50%;
     right: auto;
     transform: translateX(-50%) translateY(-8px);
+    /* Ensure proper scrolling for long menus */
+    max-height: 70vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .dropdown.open .dropdown-menu {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
+  }
+  
+  /* Better scrollbar for mobile dropdown menus */
+  .dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .dropdown-menu::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .dropdown-menu::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
   }
 
   /* Hero adjustments */
