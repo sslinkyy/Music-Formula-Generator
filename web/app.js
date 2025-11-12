@@ -1414,11 +1414,44 @@ function setupButtons() {
 
   // Trophies
   const trophiesBtn = document.getElementById('open-trophies');
-  if (trophiesBtn) trophiesBtn.addEventListener('click', () => openLibraryDialog('Trophies', buildTrophiesContent()));
+  if (trophiesBtn) {
+    trophiesBtn.addEventListener('click', () => {
+      console.log('[App] Trophies button clicked');
+      openLibraryDialog('Trophies', buildTrophiesContent());
+    });
+  }
   const gamesBtn = document.getElementById('open-games');
-  if (gamesBtn) gamesBtn.addEventListener('click', () => openLibraryDialog('Game Hub (Wireframe)', buildGameHubDialog()));
+  if (gamesBtn) {
+    console.log('[App] Games button found, attaching listener');
+    gamesBtn.addEventListener('click', (e) => {
+      console.log('[App] Play Games clicked!', e);
+      try {
+        openLibraryDialog('Game Hub (Wireframe)', buildGameHubDialog());
+      } catch (err) {
+        console.error('[App] Error opening game hub:', err);
+      }
+    });
+    // Add touch listener for mobile
+    gamesBtn.addEventListener('touchend', (e) => {
+      console.log('[App] Play Games touched!', e);
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        openLibraryDialog('Game Hub (Wireframe)', buildGameHubDialog());
+      } catch (err) {
+        console.error('[App] Error opening game hub (touch):', err);
+      }
+    });
+  } else {
+    console.error('[App] Games button NOT found!');
+  }
   const guideBtn = document.getElementById('open-guide');
-  if (guideBtn) guideBtn.addEventListener('click', () => openLibraryDialog('How to Earn Trophies', buildTrophyGuideContent()));
+  if (guideBtn) {
+    guideBtn.addEventListener('click', () => {
+      console.log('[App] Trophy guide button clicked');
+      openLibraryDialog('How to Earn Trophies', buildTrophyGuideContent());
+    });
+  }
   const importBrickBtn = document.getElementById('import-brick-breaker');
   if (importBrickBtn) importBrickBtn.addEventListener('click', () => {
     try {
@@ -3254,6 +3287,7 @@ function setupDropdowns() {
       };
 
       button.addEventListener('click', (e) => {
+        console.log('[Dropdown] Menu button clicked:', button.id || button.textContent);
         if (touchHandled) {
           touchHandled = false;
           return;
@@ -3264,13 +3298,15 @@ function setupDropdowns() {
       // IMPORTANT: NOT passive so we can preventDefault to stop unwanted behavior
       button.addEventListener('touchstart', (e) => {
         touchHandled = true;
-        e.preventDefault(); // Prevent default touch behavior
         e.stopPropagation();
-      }, { passive: false });
+        // DO NOT preventDefault here - let the click event fire naturally
+      }, { passive: true });
 
       button.addEventListener('touchend', (e) => {
-        e.preventDefault();
+        console.log('[Dropdown] Menu button touched:', button.id || button.textContent);
         e.stopPropagation();
+        // DO NOT preventDefault - we want the click event to fire!
+        // The browser will synthesize a click event after touchend
         closeDropdown(e);
       });
     });
