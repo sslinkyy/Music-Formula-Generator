@@ -65,7 +65,7 @@ function parseSmFile(content) {
  */
 async function extractPackMetadata(zipPath) {
   try {
-    console.log(`  Scanning: ${path.basename(zipPath)}`);
+    console.log(`  Scanning ZIP: ${path.basename(zipPath)}`);
     const zip = new AdmZip(zipPath);
     const entries = zip.getEntries();
 
@@ -95,10 +95,82 @@ async function extractPackMetadata(zipPath) {
     return {
       ...metadata,
       size: `~${sizeInMB}MB`,
-      fileName: path.basename(zipPath)
+      fileName: path.basename(zipPath),
+      type: 'zip'
     };
   } catch (err) {
     console.error(`    ✗ Error reading ${path.basename(zipPath)}:`, err.message);
+    return null;
+  }
+}
+
+/**
+ * Extract metadata from a folder
+ */
+async function extractFolderMetadata(folderPath) {
+  try {
+    console.log(`  Scanning folder: ${path.basename(folderPath)}`);
+    const files = await readdir(folderPath);
+
+    // Find .sm or .ssc file
+    const smFile = files.find(f => f.endsWith('.sm') || f.endsWith('.ssc'));
+    if (!smFile) {
+      console.log(`    ⚠️  No .sm/.ssc file found`);
+      return null;
+    }
+
+    const smPath = path.join(folderPath, smFile);
+    const content = fs.readFileSync(smPath, 'utf8');
+    const metadata = parseSmFile(content);
+
+    // Find audio file
+    const audioFile = files.find(f =>
+      f.endsWith('.ogg') || f.endsWith('.mp3') || f.endsWith('.wav')
+    );
+
+    // Find banner/background
+    const bannerFile = files.find(f =>
+      f.toLowerCase().includes('banner') && (f.endsWith('.png') || f.endsWith('.jpg'))
+    );
+    const bgFile = files.find(f =>
+      (f.toLowerCase().includes('bg') || f.toLowerCase().includes('background')) &&
+      (f.endsWith('.png') || f.endsWith('.jpg'))
+    );
+
+    // Calculate folder size
+    let totalSize = 0;
+    for (const file of files) {
+      const filePath = path.join(folderPath, file);
+      const stats = await stat(filePath);
+      if (stats.isFile()) {
+        totalSize += stats.size;
+      }
+    }
+    const sizeInMB = (totalSize / (1024 * 1024)).toFixed(1);
+
+    console.log(`    ✓ Title: ${metadata.title || 'Unknown'}`);
+    console.log(`    ✓ Artist: ${metadata.artist || 'Unknown'}`);
+    console.log(`    ✓ Charts: ${metadata.chartCount}`);
+    console.log(`    ✓ Audio: ${audioFile || 'None'}`);
+    console.log(`    ✓ Size: ${sizeInMB}MB`);
+
+    // Create file list for fetching
+    const fileList = [smFile];
+    if (audioFile) fileList.push(audioFile);
+    if (bannerFile) fileList.push(bannerFile);
+    if (bgFile) fileList.push(bgFile);
+
+    return {
+      ...metadata,
+      size: `~${sizeInMB}MB`,
+      fileName: path.basename(folderPath),
+      type: 'folder',
+      fileList,
+      smFile,
+      audioFile: audioFile || null
+    };
+  } catch (err) {
+    console.error(`    ✗ Error reading ${path.basename(folderPath)}:`, err.message);
     return null;
   }
 }
@@ -118,23 +190,39 @@ function generateId(fileName) {
  * Main function
  */
 async function generateManifest() {
-  console.log('🔍 Scanning stepmania-packs folder for ZIP files...\n');
+  console.log('🔍 Scanning stepmania-packs folder for packs (ZIPs and folders)...\n');
 
   try {
     // Read all files in directory
     const files = await readdir(PACKS_DIR);
-    const zipFiles = files.filter(f => f.endsWith('.zip'));
 
-    if (zipFiles.length === 0) {
-      console.log('⚠️  No ZIP files found in stepmania-packs folder');
+    // Separate ZIPs and folders
+    const zipFiles = [];
+    const folders = [];
+
+    for (const file of files) {
+      const filePath = path.join(PACKS_DIR, file);
+      const stats = await stat(filePath);
+
+      if (stats.isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
+        folders.push(file);
+      } else if (file.endsWith('.zip')) {
+        zipFiles.push(file);
+      }
+    }
+
+    if (zipFiles.length === 0 && folders.length === 0) {
+      console.log('⚠️  No ZIP files or folders found in stepmania-packs folder');
       console.log('   Add some StepMania packs and run this script again\n');
       return;
     }
 
-    console.log(`Found ${zipFiles.length} ZIP file(s)\n`);
+    console.log(`Found ${zipFiles.length} ZIP file(s) and ${folders.length} folder(s)\n`);
 
     // Extract metadata from each pack
     const packs = [];
+
+    // Process ZIP files
     for (const zipFile of zipFiles) {
       const zipPath = path.join(PACKS_DIR, zipFile);
       const metadata = await extractPackMetadata(zipPath);
@@ -143,6 +231,7 @@ async function generateManifest() {
         const id = generateId(zipFile);
         packs.push({
           id,
+          type: 'zip',
           title: metadata.title || zipFile.replace('.zip', ''),
           artist: metadata.artist || 'Various Artists',
           path: zipFile,
@@ -150,6 +239,32 @@ async function generateManifest() {
           chartCount: metadata.chartCount,
           size: metadata.size,
           bpm: metadata.bpm,
+          enabled: true
+        });
+      }
+      console.log('');
+    }
+
+    // Process folders
+    for (const folder of folders) {
+      const folderPath = path.join(PACKS_DIR, folder);
+      const metadata = await extractFolderMetadata(folderPath);
+
+      if (metadata) {
+        const id = generateId(folder);
+        packs.push({
+          id,
+          type: 'folder',
+          title: metadata.title || folder,
+          artist: metadata.artist || 'Various Artists',
+          path: folder,
+          description: metadata.subtitle || `StepMania pack with ${metadata.chartCount} charts`,
+          chartCount: metadata.chartCount,
+          size: metadata.size,
+          bpm: metadata.bpm,
+          fileList: metadata.fileList,
+          smFile: metadata.smFile,
+          audioFile: metadata.audioFile,
           enabled: true
         });
       }

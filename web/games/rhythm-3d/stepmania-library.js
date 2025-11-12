@@ -261,7 +261,7 @@ export async function loadServerPacks() {
 /**
  * Load a server pack by ID
  * @param {string} packId - Server pack ID
- * @returns {Promise<Blob>} ZIP file as Blob
+ * @returns {Promise<Blob|Object>} ZIP file as Blob or folder data object
  */
 export async function loadServerPack(packId) {
   const serverPacks = await loadServerPacks();
@@ -271,25 +271,68 @@ export async function loadServerPack(packId) {
     throw new Error(`Server pack not found: ${packId}`);
   }
 
-  console.log('Loading server pack:', pack.title, 'from', pack.path);
+  console.log('Loading server pack:', pack.title, 'from', pack.path, 'type:', pack.type);
 
-  const response = await fetch(`./stepmania-packs/${pack.path}`);
-  if (!response.ok) {
-    throw new Error(`Failed to load server pack: ${response.statusText}`);
+  // Handle ZIP files
+  if (pack.type === 'zip') {
+    const response = await fetch(`./stepmania-packs/${pack.path}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load server pack: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+
+    // Attach metadata to blob for easy access
+    blob.packMetadata = {
+      id: pack.id,
+      title: pack.title,
+      artist: pack.artist || 'Various Artists',
+      fileName: pack.path,
+      isServer: true
+    };
+
+    return blob;
   }
 
-  const blob = await response.blob();
+  // Handle folder packs
+  if (pack.type === 'folder') {
+    console.log('Loading folder pack files:', pack.fileList);
 
-  // Attach metadata to blob for easy access
-  blob.packMetadata = {
-    id: pack.id,
-    title: pack.title,
-    artist: pack.artist || 'Various Artists',
-    fileName: pack.path,
-    isServer: true
-  };
+    // Fetch .sm file
+    const smResponse = await fetch(`./stepmania-packs/${pack.path}/${pack.smFile}`);
+    if (!smResponse.ok) {
+      throw new Error(`Failed to load .sm file: ${smResponse.statusText}`);
+    }
+    const smContent = await smResponse.text();
 
-  return blob;
+    // Fetch audio file if available
+    let audioUrl = null;
+    if (pack.audioFile) {
+      const audioResponse = await fetch(`./stepmania-packs/${pack.path}/${pack.audioFile}`);
+      if (audioResponse.ok) {
+        const audioBlob = await audioResponse.blob();
+        audioUrl = URL.createObjectURL(audioBlob);
+      } else {
+        console.warn('Audio file not found:', pack.audioFile);
+      }
+    }
+
+    // Return folder data in a format compatible with the parser
+    return {
+      isFolderPack: true,
+      smContent,
+      audioUrl,
+      packMetadata: {
+        id: pack.id,
+        title: pack.title,
+        artist: pack.artist || 'Various Artists',
+        fileName: pack.path,
+        isServer: true
+      }
+    };
+  }
+
+  throw new Error(`Unknown pack type: ${pack.type}`);
 }
 
 /**

@@ -1,9 +1,465 @@
 {
   "version": "1.0",
-  "generated": "2025-11-11T16:13:25.143Z",
+  "generated": "2025-11-12T00:00:50.880Z",
   "packs": [
     {
+      "id": "all-i-can-do",
+      "type": "folder",
+      "title": "All I Can Do",
+      "artist": "Jump5",
+      "path": "All I Can Do",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~17.0MB",
+      "bpm": 57.25,
+      "fileList": [
+        "All I Can Do.sm",
+        "All I Can Do.ogg",
+        "All I Can Do-bg.png"
+      ],
+      "smFile": "All I Can Do.sm",
+      "audioFile": "All I Can Do.ogg",
+      "enabled": true
+    },
+    {
+      "id": "can-t-defeat-air-man-soundholic-version",
+      "type": "folder",
+      "title": "Can't Defeat Air Man",
+      "artist": "Hanatan",
+      "path": "Can't Defeat Air Man (SoundHolic Version)",
+      "description": "(SoundHolic Version)",
+      "chartCount": 5,
+      "size": "~8.2MB",
+      "bpm": 175,
+      "fileList": [
+        "Can't Defeat Air Man (SoundHolic Version).sm",
+        "Can't Defeat Air Man (SoundHolic Version).ogg",
+        "Can't Defeat Air Man (SoundHolic Version)-bg.png"
+      ],
+      "smFile": "Can't Defeat Air Man (SoundHolic Version).sm",
+      "audioFile": "Can't Defeat Air Man (SoundHolic Version).ogg",
+      "enabled": true
+    },
+    {
+      "id": "candy-planet-remix",
+      "type": "zip",
+      "title": "CANDY",
+      "artist": "Luv UNLIMITED",
+      "path": "CANDY [PLANET REMIX].zip",
+      "description": "[PLANET REMIX]",
+      "chartCount": 5,
+      "size": "~2.0MB",
+      "bpm": 198.42,
+      "enabled": true
+    },
+    {
+      "id": "candy-star",
+      "type": "zip",
+      "title": "CANDY☆",
+      "artist": "Luv UNLIMITED",
+      "path": "CANDY STAR.zip",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~3.7MB",
+      "bpm": 192.513,
+      "enabled": true
+    },
+    {
+      "id": "colorful-precious-life",
+      "type": "folder",
+      "title": "Colorful Precious Life",
+      "artist": "Chata",
+      "path": "Colorful Precious Life",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~3.9MB",
+      "bpm": 180,
+      "fileList": [
+        "Colorful Precious Life.sm",
+        "Colorful Precious Life.ogg",
+        "Colorful Precious Life-bg.png"
+      ],
+      "smFile": "Colorful Precious Life.sm",
+      "audioFile": "Colorful Precious Life.ogg",
+      "enabled": true
+    },
+    {
+      "id": "everytime-we-touch-radio-mix",
+      "type": "zip",
+      "title": "Everytime We Touch (Radio Mix)",
+      "artist": "Cascada",
+      "path": "Everytime We Touch (Radio Mix).zip",
+      "description": "StepMania pack with 4 charts",
+      "chartCount": 4,
+      "size": "~35.1MB",
+      "bpm": 142,
+      "enabled": true
+    },
+    {
+      "id": "groovin-magic",
+      "type": "folder",
+      "title": "Groovin' Magic",
+      "artist": "Round Table feat. Nino",
+      "path": "Groovin' Magic",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~4.7MB",
+      "bpm": 130,
+      "fileList": [
+        "Groovin' Magic.sm",
+        "Groovin' Magic.ogg",
+        "Groovin' Magic-bg.png"
+      ],
+      "smFile": "Groovin' Magic.sm",
+      "audioFile": "Groovin' Magic.ogg",
+      "enabled": true
+    },
+    {
+      "id": "guilt-is-a-useless-emotion-mac-quayle-mix",
+      "type": "zip",
+      "title": "Guilt Is a Useless Emotion (Mac Quayle Mix)",
+      "artist": "New Order",
+      "path": "Guilt Is a Useless Emotion (Mac Quayle Mix).zip",
+      "description": "StepMania pack with 4 charts",
+      "chartCount": 4,
+      "size": "~4.2MB",
+      "bpm": 133,
+      "enabled": true
+    },
+    {
+      "id": "happiness",
+      "type": "folder",
+      "title": "Happiness!",
+      "artist": "Ayumi Murata",
+      "path": "Happiness!",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~6.2MB",
+      "bpm": 168,
+      "fileList": [
+        "Happiness!.sm",
+        "Happiness!.ogg",
+        "Happiness!-bg.png"
+      ],
+      "smFile": "Happiness!.sm",
+      "audioFile": "Happiness!.ogg",
+      "enabled": true
+    },
+    {
+      "id": "happy-sensation",
+      "type": "folder",
+      "title": "Happy Sensation",
+      "artist": "Anndi McAffee",
+      "path": "Happy Sensation",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~3.8MB",
+      "bpm": 144,
+      "fileList": [
+        "Happy Sensation.sm",
+        "Happy Sensation.ogg",
+        "Happy Sensation-bg.png"
+      ],
+      "smFile": "Happy Sensation.sm",
+      "audioFile": "Happy Sensation.ogg",
+      "enabled": true
+    },
+    {
+      "id": "inspector-gadget-theme",
+      "type": "folder",
+      "title": "Inspector Gadget Theme",
+      "artist": "Jacques Cardona",
+      "path": "Inspector Gadget Theme",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~2.9MB",
+      "bpm": 102.9,
+      "fileList": [
+        "Inspector Gadget Theme.sm",
+        "Inspector Gadget Theme.ogg",
+        "Inspector Gadget Theme-bg.png"
+      ],
+      "smFile": "Inspector Gadget Theme.sm",
+      "audioFile": "Inspector Gadget Theme.ogg",
+      "enabled": true
+    },
+    {
+      "id": "lick-my-plump-fox-nuts-short-version",
+      "type": "zip",
+      "title": "Lick My Plump Fox Nuts",
+      "artist": "Emoticon feat. Renard and Kitsune²",
+      "path": "Lick My Plump Fox Nuts -Short Version-.zip",
+      "description": "[Short Version]",
+      "chartCount": 4,
+      "size": "~3.1MB",
+      "bpm": 180,
+      "enabled": true
+    },
+    {
+      "id": "little-busters-theme",
+      "type": "folder",
+      "title": "Little Busters Theme",
+      "artist": "Rita",
+      "path": "Little Busters Theme",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~25.8MB",
+      "bpm": 151,
+      "fileList": [
+        "Little Busters Theme.sm",
+        "Little Busters Theme.ogg",
+        "Little Busters Theme-bg.png"
+      ],
+      "smFile": "Little Busters Theme.sm",
+      "audioFile": "Little Busters Theme.ogg",
+      "enabled": true
+    },
+    {
+      "id": "magic-carpet-ride-steir-s-mix",
+      "type": "zip",
+      "title": "Magic Carpet Ride (Steir's Mix)",
+      "artist": "Philip Steir feat. Steppenwolf",
+      "path": "Magic Carpet Ride (Steir's Mix).zip",
+      "description": "StepMania pack with 4 charts",
+      "chartCount": 4,
+      "size": "~4.4MB",
+      "bpm": 112.12,
+      "enabled": true
+    },
+    {
+      "id": "money",
+      "type": "zip",
+      "title": "MONEY",
+      "artist": "RAGGA TWINS",
+      "path": "MONEY.zip",
+      "description": "StepMania pack with 3 charts",
+      "chartCount": 3,
+      "size": "~1.6MB",
+      "bpm": 118.45,
+      "enabled": true
+    },
+    {
+      "id": "power-4-subtranced-mix",
+      "type": "zip",
+      "title": "Power 4 (subTranced mix)",
+      "artist": "DJ Jiggens",
+      "path": "Power 4 (subTranced Mix).zip",
+      "description": "StepMania pack with 4 charts",
+      "chartCount": 4,
+      "size": "~10.5MB",
+      "bpm": 148.148,
+      "enabled": true
+    },
+    {
+      "id": "rapper-s-delight",
+      "type": "zip",
+      "title": "Rapper's Delight",
+      "artist": "Sugar Hill Gang",
+      "path": "Rapper's Delight.zip",
+      "description": "StepMania pack with 4 charts",
+      "chartCount": 4,
+      "size": "~3.8MB",
+      "bpm": 110.803,
+      "enabled": true
+    },
+    {
+      "id": "recall",
+      "type": "folder",
+      "title": "Recall",
+      "artist": "ClariS",
+      "path": "Recall",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~5.6MB",
+      "bpm": 126,
+      "fileList": [
+        "Recall.sm",
+        "Recall.ogg",
+        "Recall-bg.png"
+      ],
+      "smFile": "Recall.sm",
+      "audioFile": "Recall.ogg",
+      "enabled": true
+    },
+    {
+      "id": "sailor-moon",
+      "type": "folder",
+      "title": "Sailor Moon",
+      "artist": "Nicole & Bynne Price",
+      "path": "Sailor Moon",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~4.9MB",
+      "bpm": 140.22,
+      "fileList": [
+        "Sailor Moon.sm",
+        "Sailor Moon.ogg",
+        "Sailor Moon-bg.png"
+      ],
+      "smFile": "Sailor Moon.sm",
+      "audioFile": "Sailor Moon.ogg",
+      "enabled": true
+    },
+    {
+      "id": "shokuza-belladonna",
+      "type": "folder",
+      "title": "Shokuza Belladonna",
+      "artist": "ave-new feat. Saori Sakura",
+      "path": "Shokuza Belladonna",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~5.7MB",
+      "bpm": 78,
+      "fileList": [
+        "Shokuza Belladonna.sm",
+        "Shokuza Belladonna.ogg",
+        "Shokuza Belladonna-bg.png"
+      ],
+      "smFile": "Shokuza Belladonna.sm",
+      "audioFile": "Shokuza Belladonna.ogg",
+      "enabled": true
+    },
+    {
+      "id": "star-story",
+      "type": "folder",
+      "title": "Star Story",
+      "artist": "Miku Hatsune",
+      "path": "Star Story",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~5.2MB",
+      "bpm": 70,
+      "fileList": [
+        "Star Story.sm",
+        "Star Story.ogg",
+        "Star Story-bg.png"
+      ],
+      "smFile": "Star Story.sm",
+      "audioFile": "Star Story.ogg",
+      "enabled": true
+    },
+    {
+      "id": "stress-free-style",
+      "type": "folder",
+      "title": "Stress-Free Style",
+      "artist": "Mosaic.wav",
+      "path": "Stress-Free Style",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~6.0MB",
+      "bpm": 132,
+      "fileList": [
+        "Stress-Free Style.sm",
+        "Stress-Free Style.ogg",
+        "Stress-Free Style-bg.png"
+      ],
+      "smFile": "Stress-Free Style.sm",
+      "audioFile": "Stress-Free Style.ogg",
+      "enabled": true
+    },
+    {
+      "id": "the-fine-every-day",
+      "type": "folder",
+      "title": "The Fine Every Day",
+      "artist": "Kicco",
+      "path": "The Fine Every Day",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~6.7MB",
+      "bpm": 177,
+      "fileList": [
+        "The Fine Every Day.sm",
+        "The Fine Every Day.ogg",
+        "The Fine Every Day-bg.png"
+      ],
+      "smFile": "The Fine Every Day.sm",
+      "audioFile": "The Fine Every Day.ogg",
+      "enabled": true
+    },
+    {
+      "id": "treble-bass-and-attitude",
+      "type": "zip",
+      "title": "Treble, Bass and Attitude",
+      "artist": "The Acolyte",
+      "path": "Treble, Bass and Attitude.zip",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~3.2MB",
+      "bpm": 172,
+      "enabled": true
+    },
+    {
+      "id": "true-blue",
+      "type": "folder",
+      "title": "True-Blue",
+      "artist": "Kotoko",
+      "path": "True-Blue",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~5.8MB",
+      "bpm": 170,
+      "fileList": [
+        "True-Blue.sm",
+        "True-Blue.ogg",
+        "True-Blue-bg.png"
+      ],
+      "smFile": "True-Blue.sm",
+      "audioFile": "True-Blue.ogg",
+      "enabled": true
+    },
+    {
+      "id": "tsugaru-or-if-is-mix",
+      "type": "zip",
+      "title": "Tsugaru (OR-IF-IS Mix)",
+      "artist": "RevenG",
+      "path": "Tsugaru (OR-IF-IS Mix).zip",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~4.3MB",
+      "bpm": 170,
+      "enabled": true
+    },
+    {
+      "id": "vertex-meister",
+      "type": "folder",
+      "title": "Vertex Meister",
+      "artist": "Idolmaster",
+      "path": "Vertex Meister",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~34.2MB",
+      "bpm": 188,
+      "fileList": [
+        "Vertex Meister.sm",
+        "Vertex Meister.ogg",
+        "Vertex Meister-bg.png"
+      ],
+      "smFile": "Vertex Meister.sm",
+      "audioFile": "Vertex Meister.ogg",
+      "enabled": true
+    },
+    {
+      "id": "walkie-talkie-man",
+      "type": "folder",
+      "title": "Walkie Talkie Man",
+      "artist": "Steriogram",
+      "path": "Walkie Talkie Man",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~26.1MB",
+      "bpm": 141,
+      "fileList": [
+        "Walkie Talkie Man.sm",
+        "Walkie Talkie Man.ogg",
+        "Walkie Talkie Man-bg.png"
+      ],
+      "smFile": "Walkie Talkie Man.sm",
+      "audioFile": "Walkie Talkie Man.ogg",
+      "enabled": true
+    },
+    {
       "id": "we-are-connected-overdrive-mix",
+      "type": "zip",
       "title": "We Are Connected (Overdrive Mix)",
       "artist": "Jondi & Spesh",
       "path": "We Are Connected (Overdrive Mix).zip",
@@ -11,6 +467,25 @@
       "chartCount": 4,
       "size": "~4.6MB",
       "bpm": 140,
+      "enabled": true
+    },
+    {
+      "id": "worldly-spirits",
+      "type": "folder",
+      "title": "Worldly Spirits",
+      "artist": "Odyssey",
+      "path": "Worldly Spirits",
+      "description": "StepMania pack with 5 charts",
+      "chartCount": 5,
+      "size": "~16.0MB",
+      "bpm": 161,
+      "fileList": [
+        "Worldly Spirits.sm",
+        "Worldly Spirits.ogg",
+        "Worldly Spirits-bg.png"
+      ],
+      "smFile": "Worldly Spirits.sm",
+      "audioFile": "Worldly Spirits.ogg",
       "enabled": true
     }
   ]

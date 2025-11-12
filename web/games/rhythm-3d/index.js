@@ -1289,16 +1289,35 @@ Next Note: ${nextNote}ms
       console.log(`Loading pack from ${source}:`, packId);
 
       // Load pack from server or IndexedDB
-      const blob = isServer
+      const packData = isServer
         ? await loadServerPack(packId)
         : await loadPackFromLibrary(parseInt(packId));
 
-      // Convert blob to file-like object
-      const file = new File([blob], blob.packMetadata.fileName, { type: 'application/zip' });
+      // Handle folder packs (server-only)
+      if (packData.isFolderPack) {
+        console.log('Loading folder pack from server');
+        // Parse the .sm content directly
+        const { parseSimfileContent } = await import('./stepmania-parser.js');
+        stepmaniaData = parseSimfileContent(packData.smContent);
+        stepmaniaData.metadata = stepmaniaData.metadata || {};
+        stepmaniaData.audioUrl = packData.audioUrl;
+        stepmaniaData.requiresAudioFile = !packData.audioUrl;
 
-      // Parse the pack
-      stepmaniaData = await loadStepManiaPackage(file);
-      console.log('StepMania data loaded from library:', stepmaniaData);
+        // Copy pack metadata for display
+        Object.assign(stepmaniaData.metadata, {
+          title: packData.packMetadata.title,
+          artist: packData.packMetadata.artist
+        });
+
+        console.log('StepMania folder data loaded:', stepmaniaData);
+      } else {
+        // Handle ZIP/blob packs (both server and local)
+        const file = new File([packData], packData.packMetadata.fileName, { type: 'application/zip' });
+
+        // Parse the pack
+        stepmaniaData = await loadStepManiaPackage(file);
+        console.log('StepMania data loaded from library:', stepmaniaData);
+      }
 
       // Populate difficulty selector
       diffSel.innerHTML = '';
