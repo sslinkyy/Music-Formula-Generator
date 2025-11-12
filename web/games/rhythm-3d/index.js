@@ -922,11 +922,22 @@ Next Note: ${nextNote}ms
 
     renderer.render(scene, camera);
 
-    // Continue until time is up OR all notes have been played/missed
+    // Continue until time is up
+    // If audio is playing, wait for full duration regardless of notes
+    // If no audio, end when all notes complete OR time is up
     const allNotesComplete = notes.length === 0 && noteObjects.length === 0;
     const timeUp = elapsed >= duration * 1000;
 
-    if (!allNotesComplete && !timeUp && running) {
+    let shouldEnd = false;
+    if (useAudioSync) {
+      // With audio: only end when time is up (let full track play)
+      shouldEnd = timeUp;
+    } else {
+      // Without audio: end when notes complete or time is up
+      shouldEnd = allNotesComplete || timeUp;
+    }
+
+    if (!shouldEnd && running) {
       raf = requestAnimationFrame(animate);
     } else if (running) {
       running = false;
