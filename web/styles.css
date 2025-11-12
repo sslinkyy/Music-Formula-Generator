@@ -989,6 +989,11 @@ button:disabled { opacity: 0.6; cursor: default; }
   z-index: 300;
 }
 
+.rhythm-settings-overlay[hidden] {
+  display: none !important;
+  pointer-events: none;
+}
+
 .rhythm-settings-card {
   width: min(520px, 95vw);
   background: var(--panel);
