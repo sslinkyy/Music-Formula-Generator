@@ -140,6 +140,7 @@ import { buildRhythmGameDialog } from './games/rhythm/index.js';
 import { buildRhythm3DGameDialog } from './games/rhythm-3d/index.js';
 import { buildGridGameDialog } from './games/grid/index.js';
 import { buildSnakeGameDialog } from './games/snake/index.js';
+import { buildBallzGameDialog } from './games/ballz/index.js';
 import { ARTIST_PROFILES } from './data/artists.js';
 import { ACCENT_LIBRARY } from './data/accents.js';
 
@@ -4245,6 +4246,18 @@ function buildGameHubDialog() {
         openLibraryDialog('Snake \u0007 Summary', buildGameSummary(output, 'snake'));
       }, { difficulty: 'normal' });
       openLibraryDialog('Snake (Prototype)', content);
+    }
+  }));
+  // Ballz - Brick Breaker
+  grid.appendChild(mkCard('Ballz', 'Launch balls to break numbered bricks. Collect ball powerups and survive as long as possible!', sampleGridOutput, 'ballz', {
+    start: () => {
+      resetInputsForGame();
+      rerenderAll();
+      showToast('Inputs reset for game');
+      const content = buildBallzGameDialog((output) => {
+        openLibraryDialog('Ballz \u0007 Summary', buildGameSummary(output, 'ballz'));
+      }, { difficulty: 'normal' });
+      openLibraryDialog('Ballz', content);
     }
   }));
   // 3D Snake using Three.js
