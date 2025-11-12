@@ -666,13 +666,26 @@ export function buildBallzGameDialog(onFinish, options = {}) {
     const dy = posY - PLATFORM_Y;
     aimAngle = Math.atan2(dy, dx);
 
-    // Clamp angle to upward hemisphere only (-180 to 0 degrees)
+    // Angle limits: 10 degrees minimum from horizontal on each side
+    // This prevents near-horizontal shots that take too long
+    const MIN_ANGLE_FROM_HORIZONTAL = Math.PI / 18; // 10 degrees
+    const LEFT_LIMIT = -Math.PI + MIN_ANGLE_FROM_HORIZONTAL;  // -170 degrees
+    const RIGHT_LIMIT = -MIN_ANGLE_FROM_HORIZONTAL;           // -10 degrees
+
+    // Clamp angle to allowed range (-170 to -10 degrees)
     if (aimAngle > 0) {
-      // If aiming downward, clamp to nearest side
+      // If aiming downward, snap to nearest allowed angle
       if (aimAngle <= Math.PI / 2) {
-        aimAngle = -Math.PI / 20; // Small angle down-right
+        aimAngle = RIGHT_LIMIT; // Snap to right limit (-10 degrees)
       } else {
-        aimAngle = -Math.PI + Math.PI / 20; // Small angle down-left
+        aimAngle = LEFT_LIMIT; // Snap to left limit (-170 degrees)
+      }
+    } else {
+      // Aiming upward - clamp to allowed range
+      if (aimAngle > RIGHT_LIMIT) {
+        aimAngle = RIGHT_LIMIT; // Too far right, clamp to -10 degrees
+      } else if (aimAngle < LEFT_LIMIT) {
+        aimAngle = LEFT_LIMIT; // Too far left, clamp to -170 degrees
       }
     }
   }
