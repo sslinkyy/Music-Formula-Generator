@@ -72,7 +72,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   console.log('Three.js loaded, setting up game...');
   const prefsReduce = document.documentElement.getAttribute('data-reduce-motion') === 'true';
-  let chosenBias = options.preset || 'none';
+  let chosenBias = options.preset || 'random';
   let lanes = buildLaneMap(chosenBias);
   let duration = options.durationSec || 60; // Default, will be updated with actual duration
   const difficulty = options.difficulty || 'normal';
@@ -123,7 +123,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   // Preset bias
   const biasSel = document.createElement('select');
-  ['none','street','club','backpack','streaming'].forEach(b => {
+  ['random','none','street','club','backpack','streaming'].forEach(b => {
     const o = document.createElement('option');
     o.value = b;
     o.textContent = b;
@@ -134,9 +134,92 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   styleSelectElement(biasSel);
   biasSel.addEventListener('change', () => {
     chosenBias = biasSel.value;
-    lanes = buildLaneMap(chosenBias);
+    const manualGenres = getManualGenreSelections();
+    lanes = buildLaneMap(chosenBias, manualGenres);
+    updateLaneVisuals();
   });
   controls.appendChild(biasSel);
+
+  // Manual lane genre selections
+  const manualLaneSelections = [null, null, null, null];
+  const laneSelectors = [];
+
+  // Create a wrapper for lane selectors to center them
+  const laneSelectorsWrapper = document.createElement('div');
+  laneSelectorsWrapper.style.display = 'flex';
+  laneSelectorsWrapper.style.flexWrap = 'wrap';
+  laneSelectorsWrapper.style.justifyContent = 'center';
+  laneSelectorsWrapper.style.alignItems = 'center';
+  laneSelectorsWrapper.style.gap = '8px';
+  laneSelectorsWrapper.style.width = '100%';
+  laneSelectorsWrapper.style.marginTop = '8px';
+  laneSelectorsWrapper.style.marginBottom = '8px';
+
+  // Get all genres from library
+  const allGenres = (GENRE_LIBRARY || []).map(g => g.name);
+
+  // Create 4 lane selection dropdowns
+  for (let i = 0; i < 4; i++) {
+    const laneSel = document.createElement('select');
+
+    // Add "Auto" option as default
+    const autoOption = document.createElement('option');
+    autoOption.value = '';
+    autoOption.textContent = `Lane ${i + 1}: Auto`;
+    laneSel.appendChild(autoOption);
+
+    // Add all genres
+    allGenres.forEach(genre => {
+      const o = document.createElement('option');
+      o.value = genre;
+      o.textContent = genre;
+      laneSel.appendChild(o);
+    });
+
+    laneSel.title = `Lane ${i + 1} Genre`;
+    styleSelectElement(laneSel);
+
+    // Store the lane index for the event listener
+    const laneIndex = i;
+    laneSel.addEventListener('change', () => {
+      manualLaneSelections[laneIndex] = laneSel.value || null;
+      const manualGenres = getManualGenreSelections();
+      lanes = buildLaneMap(chosenBias, manualGenres);
+      updateLaneVisuals();
+    });
+
+    laneSelectors.push(laneSel);
+    laneSelectorsWrapper.appendChild(laneSel);
+  }
+
+  controls.appendChild(laneSelectorsWrapper);
+
+  // Helper function to get manual genre selections (null if all are auto)
+  function getManualGenreSelections() {
+    const hasManualSelection = manualLaneSelections.some(s => s !== null && s !== '');
+    if (!hasManualSelection) return null;
+
+    // Fill in any auto slots with current lane values or random
+    return manualLaneSelections.map((selection, i) => {
+      if (selection) return selection;
+      // If no manual selection, use current lane or pick random
+      return lanes[i]?.label || pickRandomGenre(GENRE_LIBRARY || []);
+    });
+  }
+
+  // Helper function to update lane visuals after genre change
+  function updateLaneVisuals() {
+    // Update lane colors and materials in the 3D scene (if scene is already created)
+    if (typeof laneObjects !== 'undefined' && laneObjects.length > 0) {
+      lanes.forEach((lane, i) => {
+        if (laneObjects[i]) {
+          laneObjects[i].color = lane.color;
+          laneObjects[i].mesh.material.color.set(lane.color);
+          laneObjects[i].mesh.material.emissive.set(lane.color);
+        }
+      });
+    }
+  }
 
   // Music source controls
   let musicSource = 'none';
@@ -264,7 +347,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   // Language/Accent
   let chosenLanguage = 'English';
-  let chosenAccent = 'Neutral / Standard';
+  let chosenAccent = 'Auto/Random';
 
   const langSel = document.createElement('select');
   LANGUAGE_OPTIONS.forEach(L => {
@@ -282,11 +365,17 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   controls.appendChild(langSel);
 
   const accSel = document.createElement('select');
+  // Add Auto/Random option first
+  const autoAccent = document.createElement('option');
+  autoAccent.value = 'Auto/Random';
+  autoAccent.textContent = 'Auto/Random';
+  autoAccent.selected = true;
+  accSel.appendChild(autoAccent);
+
   ACCENT_LIBRARY.forEach(a => {
     const o = document.createElement('option');
     o.value = a.name;
     o.textContent = a.name;
-    if (a.name === chosenAccent) o.selected = true;
     accSel.appendChild(o);
   });
   accSel.title = 'Accent';
@@ -295,6 +384,15 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     chosenAccent = accSel.value;
   });
   controls.appendChild(accSel);
+
+  // Helper function to get actual accent (random if Auto/Random selected)
+  function getActualAccent() {
+    if (chosenAccent === 'Auto/Random') {
+      const randomIndex = Math.floor(Math.random() * ACCENT_LIBRARY.length);
+      return ACCENT_LIBRARY[randomIndex].name;
+    }
+    return chosenAccent;
+  }
 
   // Start/Restart/Quit buttons
   const startBtn = document.createElement('button');
@@ -965,7 +1063,7 @@ Next Note: ${nextNote}ms
       keywords,
       forbidden,
       language: chosenLanguage,
-      accent: chosenAccent,
+      accent: getActualAccent(),
       misses,
       combo: bestCombo,
       duration,
@@ -1677,9 +1775,32 @@ function buildNotesFromBeats(beatTimes, lanes, chosenBias, duration, rand) {
 }
 
 // Helper functions
-function buildLaneMap(bias = 'none') {
+function buildLaneMap(bias = 'none', manualGenres = null) {
   const lib = (GENRE_LIBRARY || []).slice(0, 48);
   const colors = ['#4D96FF','#6BCB77','#FFD93D','#FF6B6B'];
+
+  // If manual genres are provided, use them
+  if (manualGenres && Array.isArray(manualGenres) && manualGenres.length === 4) {
+    return manualGenres.map((genre, i) => ({
+      label: genre || pickRandomGenre(lib),
+      color: colors[i % colors.length]
+    }));
+  }
+
+  // If bias is 'random', pick 4 random genres
+  if (bias === 'random') {
+    const randomGenres = [];
+    const usedIndices = new Set();
+    while (randomGenres.length < 4 && randomGenres.length < lib.length) {
+      const idx = Math.floor(Math.random() * lib.length);
+      if (!usedIndices.has(idx)) {
+        usedIndices.add(idx);
+        randomGenres.push(lib[idx].name);
+      }
+    }
+    return randomGenres.map((label, i) => ({ label, color: colors[i % colors.length] }));
+  }
+
   const targetSets = {
     none: ['Drill','Afrobeats','Trap','R&B'],
     street: ['Drill','Trap','R&B','Afrobeats'],
@@ -1690,6 +1811,11 @@ function buildLaneMap(bias = 'none') {
   const targets = targetSets[bias] || targetSets.none;
   const labels = targets.map(name => pickClosestName(lib, name));
   return labels.slice(0, 4).map((label, i) => ({ label, color: colors[i % colors.length] }));
+}
+
+function pickRandomGenre(lib) {
+  if (!lib || lib.length === 0) return 'Unknown';
+  return lib[Math.floor(Math.random() * lib.length)].name;
 }
 
 function pickClosestName(lib, desired) {
@@ -1727,8 +1853,26 @@ function buildOutput(lanes, hits, extras = {}) {
     influence: Math.round((hits[i] / sum) * 100)
   }));
 
-  const left = ['love','heartbreak','hustle','betrayal','triumph','redemption'];
-  const right = ['loyalty','healing','ambition','trust','celebration','growth'];
+  const left = [
+    'love','heartbreak','hustle','betrayal','triumph','redemption',
+    'struggle','revenge','ambition','desire','freedom','power',
+    'loss','pain','fear','doubt','hope','dreams',
+    'pride','rage','passion','loneliness','desperation','survival',
+    'corruption','temptation','sacrifice','rebellion','justice','chaos',
+    'legacy','identity','destiny','honor','shame','regret',
+    'transformation','awakening','discovery','madness','obsession','addiction',
+    'vulnerability','resilience','defiance','surrender','conflict','peace'
+  ];
+  const right = [
+    'loyalty','healing','ambition','trust','celebration','growth',
+    'glory','wisdom','strength','courage','unity','revolution',
+    'change','redemption','vengeance','acceptance','forgiveness','understanding',
+    'elevation','dominance','escape','recognition','validation','belonging',
+    'truth','illusion','fate','choice','consequence','opportunity',
+    'evolution','legacy','impact','influence','memory','eternity',
+    'balance','harmony','discord','reckoning','salvation','damnation',
+    'enlightenment','darkness','light','shadow','reality','fantasy'
+  ];
   const r1 = Math.random();
   const r2 = Math.random();
   const premise = `${left[((r1) * left.length) | 0]} & ${right[((r2) * right.length) | 0]}`;
@@ -1768,22 +1912,125 @@ function calcAccuracy(hits, misses) {
 
 function pickLaneTag(label) {
   const map = {
-    'Drill': ['dark bounce','street cinema','gritty flow'],
-    'Afrobeats': ['sunny percussion','afro swing','island groove'],
-    'Trap': ['808 slap','hihat rolls','sub heavy'],
-    'R&B': ['silky hook','smooth vibe','melodic runs']
+    // Hip-Hop & Rap
+    'Drill': ['dark bounce','street cinema','gritty flow','menacing bass','raw energy'],
+    'Trap': ['808 slap','hihat rolls','sub heavy','triplet flow','hard-hitting'],
+    'Boom Bap': ['dusty drums','vinyl scratch','head nod','classic break','raw sample'],
+    'Lo-fi': ['tape hiss','jazzy loop','chill vibes','vinyl crackle','lazy beat'],
+    'Pop Rap': ['catchy hook','mainstream appeal','radio ready','melodic rap','crossover sound'],
+    'Rap': ['lyrical flow','wordplay','rhyme scheme','conscious bars','storytelling'],
+
+    // R&B & Soul
+    'R&B': ['silky hook','smooth vibe','melodic runs','sultry vocal','neo soul'],
+    'Soul': ['heartfelt vocal','church organ','emotional depth','gospel roots','warm harmonies'],
+    'Neo-Soul': ['jazzy chord','modern groove','introspective','smooth production','vintage soul'],
+
+    // Afro & Caribbean
+    'Afrobeats': ['sunny percussion','afro swing','island groove','polyrhythm','dance vibe'],
+    'Afro-Caribbean': ['tropical bounce','carnival energy','steel drum','island riddim','coastal sound'],
+    'Dancehall': ['riddim bounce','bashment energy','caribbean flow','sound system','ragga style'],
+    'Reggae': ['one drop','roots reggae','dub echo','skank rhythm','conscious message'],
+    'Reggaeton': ['dembow rhythm','latin heat','perreo beat','urban latino','party anthem'],
+
+    // Electronic & Dance
+    'EDM': ['festival drop','big room','anthem build','euphoric lead','crowd pleaser'],
+    'House': ['four on floor','groovy bass','disco sample','dance floor','uplifting piano'],
+    'Deep House': ['soulful vocal','smooth groove','late night','warm pads','minimal beat'],
+    'Tech House': ['rolling groove','funky bass','club weapon','hypnotic loop','warehouse vibe'],
+    'Drum and Bass': ['breakbeat','amen break','neurofunk','liquid flow','jungle sound'],
+    'Dubstep': ['wobble bass','half-time','aggressive drop','glitch hop','bass weight'],
+    'Future Bass': ['lush chords','vocal chops','melodic drop','dreamy synth','emotional build'],
+    'Synthwave': ['retro synth','80s nostalgia','neon lights','outrun aesthetic','analog warmth'],
+    'Techno': ['industrial pulse','driving kick','warehouse rave','hypnotic loop','minimal groove'],
+
+    // Pop & Mainstream
+    'Pop': ['catchy melody','hook driven','radio hit','mainstream appeal','earworm chorus'],
+    'Indie Pop': ['quirky melody','lo-fi charm','bedroom production','alternative sound','dreamy vocal'],
+    'K-Pop': ['synchronized','production polish','colorful sound','choreographed','global appeal'],
+    'Synth Pop': ['retro synth','electronic pop','new wave','melodic hook','vintage keys'],
+
+    // Rock & Alternative
+    'Rock': ['guitar riff','power chord','drum fill','raw energy','live sound'],
+    'Indie Rock': ['garage sound','alternative vibe','DIY spirit','fuzzy guitar','authentic feel'],
+    'Alternative': ['experimental edge','unique sound','non-conformist','artistic vision','genre blend'],
+    'Punk': ['fast tempo','raw aggression','three chords','rebellious','DIY ethic'],
+    'Grunge': ['distorted guitar','angst','heavy drop D','flannel aesthetic','90s nostalgia'],
+
+    // Jazz & Blues
+    'Jazz': ['swing rhythm','improvisation','blue note','brass section','sophisticated'],
+    'Blues': ['twelve bar','bent note','soulful guitar','emotional depth','raw feeling'],
+    'Smooth Jazz': ['mellow sax','laid back','easy listening','soft groove','relaxing vibe'],
+
+    // Country & Folk
+    'Country': ['steel guitar','storytelling','southern twang','heartland sound','rural roots'],
+    'Folk': ['acoustic guitar','troubadour','honest lyric','organic sound','traditional'],
+
+    // Latin & World
+    'Latin': ['percussion heavy','salsa rhythm','mambo beat','tropical heat','dance energy'],
+    'Bossa Nova': ['samba rhythm','jazzy chord','brazilian sun','smooth guitar','romantic feel'],
+    'Flamenco': ['spanish guitar','passionate vocal','hand claps','gypsy soul','dramatic flair'],
+
+    // Other
+    'Gospel': ['praise vocal','church choir','spiritual lift','organ swell','hallelujah'],
+    'Funk': ['slap bass','tight groove','syncopated rhythm','brass punch','get down'],
+    'Disco': ['four on floor','string section','mirror ball','groove bass','dance fever'],
+    'Metal': ['distorted riff','double kick','aggressive vocal','heavy palm mute','face melting']
   };
-  const list = map[label] || ['anthemic','modern','energetic'];
+  const list = map[label] || ['anthemic','modern','energetic','creative','distinctive'];
   return list[((Math.random() * list.length) | 0)];
 }
 
 function pickKeyword() {
-  const pool = ['crowd','lights','stage','engine','midnight','street','city','radio','festival','basement'];
+  const pool = [
+    // Urban/City
+    'crowd','lights','stage','street','city','radio','basement','rooftop','skyline','subway',
+    'boulevard','downtown','alley','corner','avenue','skyscraper','neon','concrete','metro','district',
+
+    // Performance/Music
+    'festival','concert','amplifier','microphone','speakers','setlist','encore','soundcheck','booth','decks',
+    'turntable','vinyl','studio','mixing','mastering','recording','headphones','monitor','venue','club',
+
+    // Time/Mood
+    'midnight','sunrise','twilight','golden hour','late night','dawn','dusk','evening','afternoon','rush hour',
+
+    // Nature/Outdoors
+    'ocean','mountain','desert','forest','river','coastline','horizon','sunset','storm','rain',
+    'thunder','lightning','wind','clouds','stars','moon','summer','winter','spring','autumn',
+
+    // Emotions/Vibes
+    'energy','passion','freedom','dreams','memories','nostalgia','euphoria','adrenaline','intensity','fire',
+    'ice','heat','electric','magnetic','gravity','momentum','pressure','tension','release','climax',
+
+    // Technology/Modern
+    'engine','digital','cyber','satellite','frequency','wavelength','signal','transmission','voltage','circuit',
+    'laser','chrome','algorithm','matrix','network','wireless','fiber','pixel','binary','quantum',
+
+    // Movement/Action
+    'chase','drift','cruise','ride','flight','jump','dive','run','sprint','accelerate',
+    'velocity','motion','flow','bounce','swing','spin','rotate','orbit','spiral','trajectory'
+  ];
   return pool[((Math.random() * pool.length) | 0)];
 }
 
 function pickForbidden() {
-  const pool = ['glow','glitch','pulse','brand names'];
+  const pool = [
+    // Visual Effects (overused)
+    'glow','glitch','pulse','shimmer','sparkle','flicker','strobe','flash','blur','fade',
+
+    // Corporate/Brand
+    'brand names','trademarked','corporate','commercial','logo','sponsored','advertising','marketing',
+
+    // Cliché Terms
+    'viral','trending','influencer','clout','flex','fire emoji','lit','savage','squad','goals',
+    'vibe check','stan','tea','salty','shook','ghost','simp','cap','slaps','bussin',
+
+    // Overused Phrases
+    'let that sink in','normalize','toxic','problematic','iconic','literally','obsessed','aesthetic',
+    'era','giving','serving','living rent free','main character','understood the assignment',
+
+    // Generic/Vague
+    'stuff','things','whatever','something','basically','honestly','actually','obviously','technically'
+  ];
   return pool[((Math.random() * pool.length) | 0)];
 }
 
