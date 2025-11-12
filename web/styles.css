@@ -778,10 +778,35 @@ button:disabled { opacity: 0.6; cursor: default; }
   max-height: 90vh;
   background: #fff;
   color: var(--text);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  /* Mobile fixes */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  z-index: 9999;
 }
+
+#library-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Fallback for older browsers without ::backdrop support */
+#library-dialog[open] {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -48%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--panel-border); }
-#dialog-content { padding: 1.5rem; overflow-y: auto; max-height: calc(90vh - 4rem); }
-#close-dialog { border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; font-size: 1.4rem; }
+#dialog-content { padding: 1.5rem; overflow-y: auto; max-height: calc(90vh - 4rem); -webkit-overflow-scrolling: touch; }
+#close-dialog { border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; font-size: 1.4rem; cursor: pointer; border: none; background: transparent; }
 
 .library-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .library-table th,
@@ -904,7 +929,7 @@ button:disabled { opacity: 0.6; cursor: default; }
     overflow-x: visible;
     overflow-y: visible;
   }
-  
+
   .toolbar > * { flex: 0 0 auto; }
   .header-actions .spacer { display: none; }
   .header-actions .brand { display: none; }
@@ -915,6 +940,28 @@ button:disabled { opacity: 0.6; cursor: default; }
   .inline-buttons { flex-direction: column; align-items: stretch; }
   .grid-form { grid-template-columns: 1fr; }
   .table-grid { grid-template-columns: 1fr; }
+
+  /* Mobile dialog improvements */
+  #library-dialog {
+    width: 98vw;
+    max-height: 95vh;
+    border-radius: 12px;
+    /* Ensure dialog is visible and accessible on mobile */
+    inset: 0 !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  .dialog-header {
+    padding: 0.75rem 1rem;
+  }
+
+  #dialog-content {
+    padding: 1rem;
+    max-height: calc(95vh - 3.5rem);
+  }
 
   /* Tables should scroll horizontally on mobile */
   .library-table {

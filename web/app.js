@@ -1556,15 +1556,47 @@ function applyPreset(name) {
 }
 
 function openLibraryDialog(title, content) {
+  console.log('[Dialog] Opening:', title);
   const dialog = document.getElementById('library-dialog');
+  if (!dialog) {
+    console.error('[Dialog] Element not found');
+    return;
+  }
+
   document.getElementById('dialog-title').textContent = title;
   const contentEl = document.getElementById('dialog-content');
   contentEl.innerHTML = '';
-  contentEl.appendChild(content);
-  if (typeof dialog.showModal === 'function') {
-    dialog.showModal();
+
+  if (content && typeof content.then === 'function') {
+    // Handle async content (promises)
+    console.log('[Dialog] Waiting for async content...');
+    contentEl.innerHTML = '<p style="padding: 2rem; text-align: center;">Loading...</p>';
+
+    // Show dialog immediately with loading message
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', 'true');
+    }
+
+    content.then(resolvedContent => {
+      console.log('[Dialog] Content loaded');
+      contentEl.innerHTML = '';
+      contentEl.appendChild(resolvedContent);
+    }).catch(err => {
+      console.error('[Dialog] Error loading content:', err);
+      contentEl.innerHTML = '<p style="padding: 2rem; text-align: center; color: red;">Error loading content. Please try again.</p>';
+    });
   } else {
-    dialog.setAttribute('open', 'true');
+    // Handle sync content
+    contentEl.appendChild(content);
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+      console.log('[Dialog] showModal() called');
+    } else {
+      dialog.setAttribute('open', 'true');
+      console.log('[Dialog] Fallback: setAttribute(open)');
+    }
   }
 }
 
