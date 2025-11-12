@@ -327,7 +327,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // HUD
   const hud = document.createElement('div');
   hud.className = 'hint';
-  hud.textContent = 'Keys: D F J K / Click lanes / Controller: D-pad or A B X Y. Hit notes on the line! (3D Mode)';
+  hud.textContent = 'Keys: D F J K or Arrow Keys / Click lanes / Controller: D-pad or A B X Y. Hit notes on the line! (3D Mode)';
   hud.style.margin = '6px 0';
   wrap.appendChild(hud);
 
@@ -659,7 +659,10 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   }
 
   // Input handling
-  const laneForKey = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+  const laneForKey = {
+    'd': 0, 'f': 1, 'j': 2, 'k': 3,
+    'arrowleft': 0, 'arrowdown': 1, 'arrowup': 2, 'arrowright': 3
+  };
 
   function onPress(laneIndex) {
     if (!running) return;
