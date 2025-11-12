@@ -132,26 +132,64 @@ export function buildPlatformerShooterDialog(onFinish, options = {}) {
   import('./game.js').then(gameModule => {
     const { initGame, updateGame, renderGame } = gameModule;
 
-    function start() {
+    let platformerState = null;
+    let gameState = null;
+    let rafId = 0;
+
+    async function start() {
       reset();
+      cleanupScene();
+      hud.textContent = 'Loading level...';
+      startBtn.disabled = true;
 
-      // Initialize Three.js scene
-      const result = initGame(container, difficulty, hpByDiff, speedByDiff);
-      scene = result.scene;
-      camera = result.camera;
-      renderer = result.renderer;
-      player = result.player;
-      playerMesh = result.playerMesh;
-      platforms = result.platforms;
+      try {
+        const result = await initGame(container, difficulty, hpByDiff, speedByDiff);
+        scene = result.scene;
+        camera = result.camera;
+        renderer = result.renderer;
+        player = result.player;
+        playerMesh = result.playerMesh;
+        platforms = result.platforms;
+        platformerState = result.platformerState;
+        gameState = {
+          player,
+          enemies: platformerState.enemies,
+          projectiles: [],
+          powerups: [],
+          particles: [],
+          platforms,
+          score: 0,
+          kills: 0,
+          combo: 0,
+          bestCombo: 0,
+          genreKills,
+          styleTags,
+          keywords,
+          forbidden,
+          shots: 0,
+          hits: 0,
+          elapsed: 0,
+          difficulty: diffSel.value,
+          sfxOn,
+          sfxVol,
+          platformerState,
+          statusMessage: platformerState.statusMessage,
+        };
 
-      running = true;
-      t0 = 0;
-      now = 0;
-      pauseAccum = 0;
-      paused = false;
-      restartBtn.disabled = false;
-
-      requestAnimationFrame(loop);
+        running = true;
+        t0 = 0;
+        now = 0;
+        pauseAccum = 0;
+        paused = false;
+        restartBtn.disabled = false;
+        hud.textContent = 'Ready';
+        rafId = requestAnimationFrame(loop);
+      } catch (error) {
+        console.error(error);
+        hud.textContent = 'Failed to load the platformer.';
+      } finally {
+        startBtn.disabled = false;
+      }
     }
 
     function reset() {
@@ -171,56 +209,73 @@ export function buildPlatformerShooterDialog(onFinish, options = {}) {
       forbidden.clear();
     }
 
+    function cleanupScene() {
+      running = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      if (platformerState?.destroy) {
+        platformerState.destroy();
+        platformerState = null;
+      }
+      if (renderer) {
+        renderer.dispose();
+        const canvasEl = renderer.domElement;
+        if (canvasEl && canvasEl.parentNode === container) {
+          canvasEl.parentNode.removeChild(canvasEl);
+        }
+      }
+      renderer = null;
+      scene = null;
+      camera = null;
+      player = null;
+      playerMesh = null;
+      gameState = null;
+    }
+
     function loop(ts) {
       if (!t0) t0 = ts;
       now = ts;
       const elapsed = (now - t0) / 1000 - pauseAccum;
+      if (!gameState) return;
+
+      gameState.elapsed = elapsed;
 
       if (paused) {
         renderGame(scene, camera, renderer);
         drawPausedOverlay();
-        requestAnimationFrame(loop);
+      } else {
+        updateGame(gameState, 1 / 60, playSfx);
+        score = gameState.score;
+        kills = gameState.kills;
+        combo = gameState.combo;
+        bestCombo = gameState.bestCombo;
+        shots = gameState.shots;
+        hits = gameState.hits;
+        renderGame(scene, camera, renderer);
+        updateHUD(elapsed);
+      }
+
+      if (
+        elapsed >= duration ||
+        !running ||
+        (gameState.player && gameState.player.hp <= 0)
+      ) {
+        endGame();
         return;
       }
 
-      const gameState = {
-        player,
-        enemies,
-        projectiles,
-        powerups,
-        particles,
-        platforms,
-        score,
-        kills,
-        combo,
-        bestCombo,
-        genreKills,
-        styleTags,
-        keywords,
-        forbidden,
-        shots,
-        hits,
-        elapsed,
-        difficulty: diffSel.value,
-        sfxOn,
-        sfxVol
-      };
-
-      updateGame(gameState, 1/60, playSfx);
-      renderGame(scene, camera, renderer);
-      updateHUD(elapsed);
-
-      if (elapsed < duration && running && player.hp > 0) {
-        requestAnimationFrame(loop);
-      } else {
-        endGame();
-      }
+      rafId = requestAnimationFrame(loop);
     }
 
     function endGame() {
       running = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
 
-      // Calculate top genres
       const top = Object.entries(genreKills)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3);
@@ -265,13 +320,12 @@ export function buildPlatformerShooterDialog(onFinish, options = {}) {
       const mult = 1 + Math.floor(combo / 10);
       const timeLeft = Math.max(0, (duration - elapsed) | 0);
       const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 0;
+      const status = gameState?.statusMessage ? ` | ${gameState.statusMessage}` : '';
 
-      hud.textContent = `Time: ${timeLeft}s | HP: ${player.hp} | Kills: ${kills} | Combo: ${combo} (x${mult}) | Acc: ${accuracy}% | Score: ${Math.round(score)}`;
+      hud.textContent = `Time: ${timeLeft}s | HP: ${player?.hp ?? 0} | Kills: ${kills} | Combo: ${combo} (x${mult}) | Acc: ${accuracy}% | Score: ${Math.round(score)}${status}`;
     }
 
     function drawPausedOverlay() {
-      // This would be rendered as an HTML overlay or using canvas
-      // For now, just show in HUD
       if (paused) {
         hud.textContent = 'PAUSED - Press P or click Pause to resume';
       }
@@ -370,16 +424,11 @@ export function buildPlatformerShooterDialog(onFinish, options = {}) {
     }
 
     // Event listeners
-    startBtn.addEventListener('click', start);
-    restartBtn.addEventListener('click', () => {
-      reset();
-      start();
-    });
+    startBtn.addEventListener('click', () => start());
+    restartBtn.addEventListener('click', () => start());
     quitBtn.addEventListener('click', () => {
       running = false;
-      if (renderer) {
-        renderer.dispose();
-      }
+      cleanupScene();
     });
     pauseBtn.addEventListener('click', togglePause);
     sfxBtn.addEventListener('click', () => {

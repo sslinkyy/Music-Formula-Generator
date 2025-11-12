@@ -1,641 +1,586 @@
-// Core game logic with Three.js
-import * as THREE from 'https://unpkg.com/three@0.150.0/build/three.module.js';
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js";
+import { SkeletonUtils } from "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/utils/SkeletonUtils.js";
 
-// Side-scroll camera state
-let SCROLL = { x: 0, speed: 0, viewWidth: 30, viewHeight: 24 };
-const WORLD = { minX: -240, maxX: 240 };
-import { GENRE_LIBRARY } from '../../data/genres.js';
+const assetBase = "./assets/models";
+const assetMap = {
+  player: `${assetBase}/characters/character.glb`,
+  platform: `${assetBase}/environment/platform.glb`,
+  platformMedium: `${assetBase}/environment/platform-medium.glb`,
+  platformLarge: `${assetBase}/environment/platform-large.glb`,
+  platformGrass: `${assetBase}/environment/platform-grass-large-round.glb`,
+  platformFalling: `${assetBase}/environment/platform-falling.glb`,
+  coin: `${assetBase}/environment/coin.glb`,
+  flag: `${assetBase}/environment/flag.glb`,
+  cloud: `${assetBase}/environment/cloud.glb`,
+  grass: `${assetBase}/environment/grass.glb`,
+  dust: `${assetBase}/environment/dust.glb`,
+  brick: `${assetBase}/environment/brick.glb`,
+  brickParticle: `${assetBase}/environment/brick-particle.glb`,
+  blockCoin: `${assetBase}/environment/block-coin.glb`,
+};
 
-// Enemy types based on genres
-const ENEMY_TYPES = [
-  { genre: 'Synthwave', color: 0xff6b9d, shape: 'pyramid', speed: 1.0 },
-  { genre: 'Cyberpunk', color: 0x00ffff, shape: 'cube', speed: 1.2 },
-  { genre: 'Industrial', color: 0xff6b6b, shape: 'spike', speed: 0.8 },
-  { genre: 'Vaporwave', color: 0xb084cc, shape: 'pyramid', speed: 0.9 },
-  { genre: 'Trap', color: 0xffd93d, shape: 'cube', speed: 1.3 }
+const platformLayout = [
+  { model: "platform", position: [0, -3.8, 0], scale: 2.6 },
+  { model: "platformGrass", position: [6, -2.5, 0], scale: 1.3 },
+  { model: "platformMedium", position: [13, -1.3, 0], scale: 1 },
+  { model: "platformLarge", position: [20, -2.8, 0], scale: 1.4 },
+  { model: "platformFalling", position: [27, -1.5, 0], scale: 1.1 },
+  { model: "platform", position: [34, -3.7, 0], scale: 2.2 },
+  { model: "platformGrass", position: [42, -2.4, 0], scale: 1.2 },
+  { model: "platformMedium", position: [49, -1.9, 0], scale: 1 },
 ];
 
-// Powerup types
-const POWERUP_TYPES = [
-  { type: 'health', color: 0x6bcb77, label: 'health boost', styleTag: 'healing vibes' },
-  { type: 'speed', color: 0x4d96ff, label: 'speed boost', styleTag: 'fast tempo' },
-  { type: 'rapidfire', color: 0xffd93d, label: 'rapid fire', styleTag: 'rapid fire beats' },
-  { type: 'shield', color: 0x22d3ee, label: 'shield', styleTag: 'protected energy' },
-  { type: 'damage', color: 0xff6b6b, label: 'damage boost', styleTag: 'heavy impact' }
+const coinPositions = [
+  [2.5, -1.2],
+  [8.1, -0.3],
+  [15.5, 0.4],
+  [22, -1.1],
+  [29, -0.5],
+  [36.7, -1.8],
+  [44.5, -2.1],
+  [52, -1.2],
 ];
 
-export function initGame(container, difficulty, hpByDiff, speedByDiff) {
-  // Scene setup
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a14);
-  scene.fog = new THREE.Fog(0x0a0a14, 50, 200);
+const cloudPositions = [
+  [2, 6, -8],
+  [12, 5.2, -10],
+  [24, 6.5, -12],
+  [36, 4.8, -9],
+  [48, 6.1, -11],
+];
 
-  // Camera — orthographic 2D side-scroller
-  const aspect = container.clientWidth / container.clientHeight;
-  SCROLL.viewHeight = 24;
-  SCROLL.viewWidth = SCROLL.viewHeight * aspect;
-  const camera = new THREE.OrthographicCamera(
-    -SCROLL.viewWidth / 2,
-    SCROLL.viewWidth / 2,
-    SCROLL.viewHeight / 2,
-    -SCROLL.viewHeight / 2,
-    0.1,
-    1000
-  );
-  SCROLL.x = 0;
-  camera.position.set(SCROLL.x, 0, 100);
-  camera.lookAt(SCROLL.x, 0, 0);
+const enemyLayout = [
+  { model: "brick", center: 18, range: 3.2, speed: 1.1 },
+  { model: "blockCoin", center: 32, range: 2.5, speed: 1.6 },
+  { model: "brick", center: 44, range: 4, speed: 1.2 },
+];
 
-  // Renderer
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  container.appendChild(renderer.domElement);
+const cameraConfig = {
+  offsetX: 6,
+  offsetY: 4.3,
+  offsetZ: 17,
+  minX: 5,
+  maxX: 58,
+};
 
-  // Lighting - retro neon aesthetic
-  const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
-  scene.add(ambientLight);
+const worldLimits = { minX: -6.5, maxX: 58 };
 
-  // Neon rim lights
-  const light1 = new THREE.DirectionalLight(0xff00ff, 1);
-  light1.position.set(20, 30, 10);
-  light1.castShadow = true;
-  light1.shadow.camera.left = -50;
-  light1.shadow.camera.right = 50;
-  light1.shadow.camera.top = 50;
-  light1.shadow.camera.bottom = -50;
-  scene.add(light1);
+const loader = new GLTFLoader();
+let modelsLoading = null;
+const loadedModels = {};
 
-  const light2 = new THREE.DirectionalLight(0x00ffff, 0.8);
-  light2.position.set(-20, 20, -10);
-  scene.add(light2);
-
-  const light3 = new THREE.PointLight(0xffd93d, 1, 50);
-  light3.position.set(0, 10, 0);
-  scene.add(light3);
-
-  // Floor strip (wide, thin)
-  const floorGeometry = new THREE.BoxGeometry(500, 1, 2);
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, emissive: 0x0a0a14, roughness: 0.7, metalness: 0.3 });
-  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.position.set(0, 0, 0);
-  floor.receiveShadow = true;
-  scene.add(floor);
-
-  // Platforms disabled for side-scroll MVP (ground only)
-  const platforms = [];
-
-  // Helper to create an emoji sprite texture
-  function makeEmojiTexture(emoji = '👾', size = 64) {
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, size, size);
-    // Optional subtle glow for contrast
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = size * 0.08;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    // Use common color emoji fonts across platforms
-    const px = Math.floor(size * 0.8);
-    ctx.font = `${px}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", system-ui, sans-serif`;
-    ctx.fillText(emoji, size / 2, size / 2);
-    const tex = new THREE.CanvasTexture(c);
-    tex.needsUpdate = true;
-    return tex;
+async function ensureModels() {
+  if (modelsLoading) {
+    await modelsLoading;
+    return;
   }
 
-  // Player — sprite
-  const playerTex = makeEmojiTexture('🧑‍🎤', 96);
-  const playerMat = new THREE.SpriteMaterial({ map: playerTex, transparent: true });
-  const playerMesh = new THREE.Sprite(playerMat);
-  playerMesh.scale.set(3, 3, 1);
-  playerMesh.position.set(0, 1.5, 0);
-  scene.add(playerMesh);
-  const playerGlow = null;
+  modelsLoading = (async () => {
+    const entries = Object.entries(assetMap);
+    for (const [key, path] of entries) {
+      const gltf = await loader.loadAsync(path);
+      const sceneNode = gltf.scene;
+      sceneNode.traverse(child => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      loadedModels[key] = sceneNode;
+    }
+  })();
 
-  // Player state
-  const player = {
-    mesh: playerMesh,
-    glow: playerGlow,
-    position: playerMesh.position,
-    velocity: new THREE.Vector3(0, 0, 0),
-    rotation: 0,
-    facing: 1,
-    speed: speedByDiff[difficulty] || 10,
+  await modelsLoading;
+}
+
+function cloneModel(key) {
+  const source = loadedModels[key];
+  if (!source) return null;
+  return SkeletonUtils.clone(source);
+}
+
+function registerControls(state) {
+  const down = event => {
+    switch (event.code) {
+      case "ArrowLeft":
+      case "KeyA":
+        state.input.left = true;
+        event.preventDefault();
+        break;
+      case "ArrowRight":
+      case "KeyD":
+        state.input.right = true;
+        event.preventDefault();
+        break;
+      case "ArrowUp":
+      case "KeyW":
+      case "Space":
+        state.input.jump = true;
+        event.preventDefault();
+        break;
+      default:
+        break;
+    }
+  };
+
+  const up = event => {
+    switch (event.code) {
+      case "ArrowLeft":
+      case "KeyA":
+        state.input.left = false;
+        break;
+      case "ArrowRight":
+      case "KeyD":
+        state.input.right = false;
+        break;
+      case "ArrowUp":
+      case "KeyW":
+      case "Space":
+        state.input.jump = false;
+        break;
+      default:
+        break;
+    }
+  };
+
+  state.keyDownHandler = down;
+  state.keyUpHandler = up;
+  window.addEventListener("keydown", down);
+  window.addEventListener("keyup", up);
+}
+
+function addSkyDome(state) {
+  const geometry = new THREE.SphereGeometry(110, 32, 16);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x040d21,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const dome = new THREE.Mesh(geometry, material);
+  dome.position.set(25, 18, -20);
+  state.scene.add(dome);
+}
+
+function addStarField(state) {
+  const starGeometry = new THREE.BufferGeometry();
+  const starCount = 420;
+  const positions = new Float32Array(starCount * 3);
+  for (let i = 0; i < starCount; i += 1) {
+    positions[i * 3] = Math.random() * 80 - 10;
+    positions[i * 3 + 1] = Math.random() * 10 + 3;
+    positions[i * 3 + 2] = -15 - Math.random() * 20;
+  }
+  starGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const starMaterial = new THREE.PointsMaterial({
+    size: 0.12,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.75,
+  });
+  const stars = new THREE.Points(starGeometry, starMaterial);
+  state.scene.add(stars);
+  state.parallaxStars.push(stars);
+}
+
+function addFloor(scene) {
+  const geometry = new THREE.PlaneGeometry(220, 220);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x040510,
+    roughness: 0.8,
+    metalness: 0.1,
+  });
+  const floor = new THREE.Mesh(geometry, material);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -4.5;
+  floor.receiveShadow = true;
+  scene.add(floor);
+}
+
+function addPlatforms(scene, state) {
+  platformLayout.forEach(layout => {
+    const mesh = cloneModel(layout.model);
+    if (!mesh) return;
+    mesh.position.set(...layout.position);
+    const scale = layout.scale ?? 1;
+    mesh.scale.setScalar(scale);
+    mesh.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = false;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(mesh);
+    const box = new THREE.Box3().setFromObject(mesh);
+    state.platformBoxes.push({ box, mesh });
+  });
+}
+
+function addPlayer(scene, state, hpByDiff, speedByDiff, difficulty) {
+  const template = cloneModel("player");
+  if (!template) return null;
+  template.scale.setScalar(0.12);
+  template.position.set(-1.5, -2, 0);
+  template.rotation.y = Math.PI;
+  template.traverse(child => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  scene.add(template);
+  return {
+    mesh: template,
+    velocity: new THREE.Vector3(),
+    onGround: false,
+    height: 1.6,
+    moveSpeed: speedByDiff[difficulty] || 10,
     jumpForce: 12,
     hp: hpByDiff[difficulty] || 3,
     maxHp: hpByDiff[difficulty] || 3,
-    onGround: false,
-    powerups: {
-      speed: 1,
-      rapidFire: 1,
-      damage: 1,
-      shield: false
-    },
-    powerupTimers: {}
   };
+}
 
-  // Input state
-  const keys = {};
-  const mouse = { x: 0, y: 0, buttons: 0 };
-  let pointerLocked = false;
+function addDecorations(scene, state) {
+  const grass = cloneModel("grass");
+  if (grass) {
+    grass.scale.setScalar(0.6);
+    grass.position.set(-3.5, -3.6, 1);
+    scene.add(grass);
+  }
+  const dust = cloneModel("dust");
+  if (dust) {
+    dust.scale.setScalar(0.4);
+    dust.position.set(18, -3.4, -0.5);
+    scene.add(dust);
+  }
+  const brickCluster = cloneModel("brick");
+  if (brickCluster) {
+    brickCluster.scale.setScalar(0.4);
+    brickCluster.position.set(8, -2.1, -2);
+    scene.add(brickCluster);
+  }
+  const brickParticle = cloneModel("brickParticle");
+  if (brickParticle) {
+    brickParticle.scale.setScalar(0.35);
+    brickParticle.position.set(26, -1.7, -1);
+    brickParticle.rotation.y = Math.PI / 2;
+    scene.add(brickParticle);
+  }
+}
 
-  // Simple mouse input (no pointer lock needed in side-scroll)
-  window.addEventListener('mousemove', () => {});
-  window.addEventListener('mousedown', e => { mouse.buttons = e.buttons; });
-  window.addEventListener('mouseup', e => { mouse.buttons = e.buttons; });
-  document.addEventListener('pointerlockchange', () => {});
-
-  window.addEventListener('keydown', e => {
-    keys[e.key.toLowerCase()] = true;
-  });
-
-  window.addEventListener('keyup', e => {
-    keys[e.key.toLowerCase()] = false;
-  });
-
-  // Resize handler
-  window.addEventListener('resize', () => {
-    const aspectN = container.clientWidth / container.clientHeight;
-    SCROLL.viewWidth = SCROLL.viewHeight * aspectN;
-    camera.left = -SCROLL.viewWidth / 2;
-    camera.right = SCROLL.viewWidth / 2;
-    camera.top = SCROLL.viewHeight / 2;
-    camera.bottom = -SCROLL.viewHeight / 2;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-  });
-
-  // Initialize global input state (only when game starts)
-  if (!window.__gameKeys) {
-    window.__gameKeys = {};
-    window.__gameMouse = { x: 0, y: 0, buttons: 0 };
-
-    window.addEventListener('keydown', e => {
-      window.__gameKeys[e.key.toLowerCase()] = true;
-    });
-
-    window.addEventListener('keyup', e => {
-      window.__gameKeys[e.key.toLowerCase()] = false;
-    });
-
-    window.addEventListener('mousemove', e => {
-      if (document.pointerLockElement) {
-        window.__gameMouse.x += e.movementX * 0.002;
-        window.__gameMouse.y += e.movementY * 0.002;
+function addClouds(scene, state) {
+  cloudPositions.forEach(([x, y, z]) => {
+    const cloud = cloneModel("cloud");
+    if (!cloud) return;
+    cloud.scale.setScalar(0.6 + Math.random() * 0.4);
+    cloud.position.set(x, y, z);
+    cloud.traverse(child => {
+      if (child.isMesh) {
+        child.material.transparent = true;
       }
     });
+    scene.add(cloud);
+  });
+}
 
-    window.addEventListener('mousedown', e => {
-      window.__gameMouse.buttons = e.buttons;
+function addCoins(scene, state) {
+  coinPositions.forEach(([x, y]) => {
+    const coin = cloneModel("coin");
+    if (!coin) return;
+    coin.scale.setScalar(0.35);
+    coin.position.set(x, y, 0);
+    scene.add(coin);
+    state.coins.push({
+      mesh: coin,
+      box: new THREE.Box3().setFromObject(coin),
     });
+  });
+}
 
-    window.addEventListener('mouseup', e => {
-      window.__gameMouse.buttons = e.buttons;
+function addEnemies(scene, state) {
+  enemyLayout.forEach(layout => {
+    const enemy = cloneModel(layout.model);
+    if (!enemy) return;
+    enemy.scale.setScalar(0.4);
+    enemy.position.set(layout.center, -2.1, 0);
+    enemy.userData = { direction: 1, baseY: enemy.position.y };
+    enemy.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
     });
+    scene.add(enemy);
+    state.enemies.push({
+      mesh: enemy,
+      box: new THREE.Box3().setFromObject(enemy),
+      config: layout,
+      cooldown: 0,
+    });
+  });
+}
+
+function placeFlag(scene, state) {
+  const flag = cloneModel("flag");
+  if (!flag) return;
+  flag.scale.setScalar(0.4);
+  flag.position.set(56, -1.8, 0);
+  scene.add(flag);
+  state.goalBox = new THREE.Box3().setFromObject(flag);
+}
+
+function handleMovement(state, delta) {
+  const player = state.playerState;
+  if (!player) return;
+  const moveInput = (state.input.right ? 1 : 0) - (state.input.left ? 1 : 0);
+  player.mesh.position.x += moveInput * player.moveSpeed * delta;
+  player.mesh.position.x = THREE.MathUtils.clamp(player.mesh.position.x, worldLimits.minX, worldLimits.maxX);
+  if (state.input.jump && player.onGround) {
+    player.velocity.y = player.jumpForce;
+    player.onGround = false;
   }
+  player.velocity.y += -28 * delta;
+  player.mesh.position.y += player.velocity.y * delta;
+  if (player.mesh.position.y < -10) {
+    player.mesh.position.set(-1.5, -2, 0);
+    player.velocity.set(0, 0, 0);
+  }
+}
+
+function detectPlatformCollisions(state) {
+  if (!state.playerState) return;
+  state.playerState.onGround = false;
+  state.playerBounds.setFromCenterAndSize(
+    state.playerState.mesh.position,
+    new THREE.Vector3(0.75, state.playerState.height, 0.8)
+  );
+
+  for (const platform of state.platformBoxes) {
+    if (state.playerBounds.intersectsBox(platform.box)) {
+      const playerBottom = state.playerState.mesh.position.y - state.playerState.height / 2;
+      const platformTop = platform.box.max.y;
+      if (playerBottom <= platformTop + 0.1 && state.playerState.velocity.y <= 0) {
+        state.playerState.mesh.position.y = platformTop + state.playerState.height / 2;
+        state.playerState.velocity.y = 0;
+        state.playerState.onGround = true;
+        break;
+      }
+    }
+  }
+}
+
+function checkCoins(state, playSfx) {
+  if (!state.playerState) return;
+  for (let i = state.coins.length - 1; i >= 0; i -= 1) {
+    const coin = state.coins[i];
+    coin.box.setFromObject(coin.mesh);
+    if (state.playerBounds.intersectsBox(coin.box)) {
+      state.score += 100;
+      if (playSfx) playSfx("powerup");
+      state.scene.remove(coin.mesh);
+      state.coins.splice(i, 1);
+    }
+  }
+}
+
+function updateEnemies(state, delta) {
+  state.enemies.forEach((enemy, index) => {
+    const cfg = enemy.config;
+    const moveDelta = cfg.speed * delta * enemy.mesh.userData.direction;
+    enemy.mesh.position.x += moveDelta;
+    if (enemy.mesh.position.x > cfg.center + cfg.range) {
+      enemy.mesh.userData.direction = -1;
+    } else if (enemy.mesh.position.x < cfg.center - cfg.range) {
+      enemy.mesh.userData.direction = 1;
+    }
+    enemy.mesh.position.y =
+      enemy.mesh.userData.baseY + Math.sin(state.time * 2 + index) * 0.13;
+    enemy.box.setFromObject(enemy.mesh);
+    enemy.cooldown = Math.max(0, enemy.cooldown - delta);
+  });
+}
+
+function checkEnemyCollisions(state, playSfx) {
+  if (!state.playerState) return;
+  state.enemies.forEach(enemy => {
+    if (enemy.cooldown > 0) return;
+    if (state.playerBounds.intersectsBox(enemy.box)) {
+      enemy.cooldown = 0.7;
+      state.playerState.velocity.y = 8;
+      state.playerState.onGround = false;
+      state.playerState.hp = Math.max(0, state.playerState.hp - 1);
+      state.enemyHits += 1;
+      state.score = Math.max(0, state.score - 120);
+      if (playSfx) playSfx("damage");
+      state.statusMessage = "Ouch! Bounce off the threat!";
+    }
+  });
+}
+
+function checkGoal(state) {
+  if (!state.goalBox || state.goalReached || !state.playerState) return;
+  if (state.playerBounds.intersectsBox(state.goalBox)) {
+    state.goalReached = true;
+    state.statusMessage = "Checkpoint reached! Nice job!";
+  }
+}
+
+function updateCamera(state) {
+  if (!state.camera || !state.playerState) return;
+  const targetX = THREE.MathUtils.clamp(
+    state.playerState.mesh.position.x + cameraConfig.offsetX,
+    cameraConfig.minX,
+    cameraConfig.maxX
+  );
+  const targetY = state.playerState.mesh.position.y + cameraConfig.offsetY;
+  state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetX, 0.1);
+  state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY, 0.08);
+  state.camera.position.z = THREE.MathUtils.lerp(
+    state.camera.position.z,
+    cameraConfig.offsetZ,
+    0.05
+  );
+  state.camera.lookAt(state.playerState.mesh.position.x, state.playerState.mesh.position.y + 1, 0);
+}
+
+function updateStarField(state, delta) {
+  state.parallaxStars.forEach(points => {
+    points.position.x -= delta * 1.5;
+    if (points.position.x < -34) points.position.x = 60;
+  });
+}
+
+export async function initGame(container, difficulty, hpByDiff, speedByDiff) {
+  await ensureModels();
+  container.innerHTML = "";
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x030411);
+  scene.fog = new THREE.Fog(0x030411, 25, 110);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+  const directionalLight = new THREE.DirectionalLight(0xfff0d2, 0.9);
+  directionalLight.position.set(4, 12, 6);
+  directionalLight.castShadow = true;
+  directionalLight.shadow.mapSize.set(1024, 1024);
+  directionalLight.shadow.camera.near = 0.1;
+  directionalLight.shadow.camera.far = 60;
+  scene.add(ambientLight, directionalLight);
+
+  const rimLight = new THREE.PointLight(0x88ccff, 0.5, 40);
+  rimLight.position.set(-6, 6, 7);
+  const fillLight = new THREE.PointLight(0xff7ccf, 0.45, 40);
+  fillLight.position.set(22, 4, 10);
+  scene.add(rimLight, fillLight);
+
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    container.clientWidth / container.clientHeight,
+    0.1,
+    200
+  );
+  camera.position.set(-4, 3, 15);
+
+  const state = {
+    scene,
+    camera,
+    renderer,
+    playerState: null,
+    platformBoxes: [],
+    coins: [],
+    enemies: [],
+    parallaxStars: [],
+    goalBox: null,
+    goalReached: false,
+    statusMessage: "Loading assets...",
+    score: 0,
+    time: 0,
+    input: { left: false, right: false, jump: false },
+    playerBounds: new THREE.Box3(),
+    enemyHits: 0,
+  };
+
+  addSkyDome(state);
+  addStarField(state);
+  addFloor(scene);
+  addPlatforms(scene, state);
+  state.playerState = addPlayer(scene, state, hpByDiff, speedByDiff, difficulty);
+  addDecorations(scene, state);
+  addClouds(scene, state);
+  addCoins(scene, state);
+  addEnemies(scene, state);
+  placeFlag(scene, state);
+  registerControls(state);
+  state.statusMessage = "Ready";
+
+  state.resizeHandler = () => {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  };
+
+  window.addEventListener("resize", state.resizeHandler);
+  state.destroy = () => {
+    window.removeEventListener("resize", state.resizeHandler);
+    window.removeEventListener("keydown", state.keyDownHandler);
+    window.removeEventListener("keyup", state.keyUpHandler);
+  };
 
   return {
     scene,
     camera,
     renderer,
-    player,
-    playerMesh,
-    platforms,
-    keys,
-    mouse,
-    floor
+    player: state.playerState,
+    playerMesh: state.playerState?.mesh ?? null,
+    platforms: state.platformBoxes,
+    platformerState: state,
   };
 }
 
 export function updateGame(gameState, dt, playSfx) {
-  const {
-    player,
-    enemies,
-    projectiles,
-    powerups,
-    particles,
-    platforms,
-    genreKills,
-    styleTags,
-    keywords,
-    forbidden,
-    difficulty
-  } = gameState;
+  const state = gameState.platformerState;
+  if (!state) return;
+  state.time += dt;
+  updateStarField(state, dt);
+  handleMovement(state, dt);
+  detectPlatformCollisions(state);
+  checkCoins(state, playSfx);
+  updateEnemies(state, dt);
+  checkEnemyCollisions(state, playSfx);
+  checkGoal(state);
+  updateCamera(state);
 
-  // Camera target is player; SCROLL.x follows player within world bounds
-  SCROLL.x = Math.max(
-    WORLD.minX + SCROLL.viewWidth / 2,
-    Math.min(WORLD.maxX - SCROLL.viewWidth / 2, gameState.player.position.x)
-  );
-
-  // Get input state from global
-  const keys = window.__gameKeys || {};
-  const mouse = window.__gameMouse || { x: 0, y: 0, buttons: 0 };
-
-  // Update player movement (side-scroll)
-  updatePlayer(player, keys, platforms, dt, playSfx);
-  // Camera follow (side view, driven by SCROLL.x)
-  updateCamera(player);
-
-  // Floor remains static (wide enough to cover the scene)
-
-  // Spawn enemies
-  if (Math.random() < 0.02) {
-    spawnEnemy(gameState);
+  if (!state.goalReached) {
+    state.statusMessage = state.playerState?.onGround
+      ? "Grounded · Keep pacing"
+      : "Airborne · Find the next landing";
   }
 
-  // Spawn powerups
-  if (Math.random() < 0.008) {
-    spawnPowerup(gameState);
-  }
-
-  // Update enemies
-  updateEnemies(gameState, dt, playSfx);
-
-  // Shooting
-  if (mouse.buttons & 1 && gameState.lastShot < Date.now() - 100 / player.powerups.rapidFire) {
-    shootProjectile(gameState, playSfx);
-    gameState.lastShot = Date.now();
-  }
-
-  // Update projectiles
-  updateProjectiles(gameState, dt, playSfx);
-
-  // Update powerups
-  updatePowerups(gameState, dt, playSfx);
-
-  // Update particles
-  updateParticles(gameState, dt);
-
-  // Update powerup timers
-  updatePowerupTimers(player, dt);
-}
-
-function updatePlayer(player, keys, platforms, dt, playSfx) {
-  const moveSpeed = player.speed * player.powerups.speed;
-  // Horizontal movement (A/D or Left/Right)
-  const left = keys['a'] || keys['arrowleft'];
-  const right = keys['d'] || keys['arrowright'];
-  if (left && !right) { player.velocity.x = -moveSpeed; player.facing = -1; }
-  else if (right && !left) { player.velocity.x = moveSpeed; player.facing = 1; }
-  else { player.velocity.x *= 0.85; }
-  // No depth in side-scroll
-  player.velocity.z = 0;
-
-  // Gravity
-  player.velocity.y -= 30 * dt;
-
-  // Apply velocity (x/y only)
-  player.position.x += player.velocity.x * dt;
-  player.position.y += player.velocity.y * dt;
-  player.position.z = 0;
-
-  // Ground collision
-  player.onGround = false;
-  if (player.position.y <= 1) {
-    player.position.y = 1;
-    player.velocity.y = 0;
-    player.onGround = true;
-  }
-
-  // Platforms disabled in MVP (keep ground-only jumping)
-
-  // Jumping
-  if (keys[' '] && player.onGround) {
-    player.velocity.y = player.jumpForce;
-    player.onGround = false;
-    if (playSfx) playSfx('jump');
-  }
-
-  // Update glow position
-  if (player.glow) {
-    player.glow.position.copy(player.position);
-  }
-
-  // Bounds (keep player within world limits)
-  player.position.x = Math.max(WORLD.minX, Math.min(WORLD.maxX, player.position.x));
-  player.position.z = 0;
-}
-
-function updateCamera(player) {
-  if (!player.mesh.parent) return;
-  const camera = player.mesh.parent.children.find(child => child instanceof THREE.PerspectiveCamera);
-  const orthoCam = camera || player.mesh.parent.children.find(child => child instanceof THREE.OrthographicCamera);
-  if (!orthoCam) return;
-  orthoCam.position.x = SCROLL.x;
-  orthoCam.position.y = Math.max(8, player.position.y + 4);
-  orthoCam.position.z = 100;
-  orthoCam.lookAt(new THREE.Vector3(SCROLL.x, player.position.y + 2, 0));
-}
-
-function spawnEnemy(gameState) {
-  const { scene, enemies } = gameState;
-  if (!scene) return;
-
-  const enemyType = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
-  const GENRE_EMOJI = {
-    'Synthwave': '👾',
-    'Cyberpunk': '🤖',
-    'Industrial': '🦾',
-    'Vaporwave': '🌴',
-    'Trap': '🐍'
-  };
-  const eEmoji = GENRE_EMOJI[enemyType.genre] || '👾';
-  const tex = makeEmojiTexture(eEmoji, 64);
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-  const mesh = new THREE.Sprite(mat);
-  mesh.scale.set(2.5, 2.5, 1);
-  // Spawn ahead of camera (right side)
-  const startX = SCROLL.x + SCROLL.viewWidth * 0.6 + Math.random() * 10;
-  mesh.position.set(startX, 2.5 + Math.random() * 6, 0);
-  scene.add(mesh);
-
-  const enemy = {
-    mesh,
-    type: enemyType,
-    hp: 2,
-    speed: enemyType.speed * (gameState.difficulty === 'hard' ? 1.3 : gameState.difficulty === 'easy' ? 0.8 : 1),
-    rotation: 0
-  };
-
-  enemies.push(enemy);
-}
-
-function updateEnemies(gameState, dt, playSfx) {
-  const { player, enemies, scene, combo } = gameState;
-
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const enemy = enemies[i];
-
-    // Move left with some tracking toward player
-    const base = -1; // Left
-    const chase = Math.sign((player.position.x) - (enemy.mesh.position.x)) * 0.3;
-    const vx = (base + chase) * enemy.speed * 8;
-    enemy.mesh.position.x += vx * dt;
-
-    // Check collision with player
-    const dx = Math.abs(enemy.mesh.position.x - player.position.x);
-    const dy = Math.abs(enemy.mesh.position.y - player.position.y);
-    if (dx < 2.5 && dy < 2.5) {
-      // Damage player
-      if (!player.powerups.shield) {
-        player.hp -= 1;
-        gameState.combo = 0;
-        gameState.forbidden.add('enemy contact');
-        if (playSfx) playSfx('damage');
-      }
-
-      // Remove enemy
-      scene.remove(enemy.mesh);
-      enemies.splice(i, 1);
-      spawnParticles(gameState, enemy.mesh.position, enemy.type.color);
-    }
-
-    // Remove if too far or dead
-    if (enemy.hp <= 0) {
-      scene.remove(enemy.mesh);
-      enemies.splice(i, 1);
-      gameState.kills++;
-      gameState.combo++;
-      gameState.bestCombo = Math.max(gameState.bestCombo, gameState.combo);
-      gameState.score += 100 * (1 + Math.floor(gameState.combo / 10));
-
-      // Track genre
-      const genre = enemy.type.genre;
-      gameState.genreKills[genre] = (gameState.genreKills[genre] || 0) + 1;
-
-      // Add keyword
-      const kws = ['neon', 'retro', 'cyber', 'synth', 'digital', 'future', 'grid', 'electric'];
-      gameState.keywords.add(kws[Math.floor(Math.random() * kws.length)]);
-
-      spawnParticles(gameState, enemy.mesh.position, enemy.type.color);
-      if (playSfx) playSfx('hit');
-
-      if (gameState.combo % 5 === 0 && playSfx) playSfx('combo');
-    }
-  }
-}
-
-function shootProjectile(gameState, playSfx) {
-  const { scene, player, projectiles } = gameState;
-  if (!scene) return;
-
-  const tex = makeEmojiTexture('🔸', 48);
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-  const mesh = new THREE.Sprite(mat);
-  mesh.scale.set(1, 1, 1);
-
-  mesh.position.copy(player.position);
-  mesh.position.y += 1;
-
-  scene.add(mesh);
-
-  // Direction from player facing (horizontal)
-  const direction = new THREE.Vector3(player.facing, 0, 0);
-
-  const projectile = {
-    mesh,
-    velocity: direction.multiplyScalar(60),
-    lifetime: 3,
-    damage: player.powerups.damage
-  };
-
-  projectiles.push(projectile);
-  gameState.shots++;
-
-  if (playSfx) playSfx('shoot');
-}
-
-function updateProjectiles(gameState, dt, playSfx) {
-  const { projectiles, enemies, scene } = gameState;
-
-  for (let i = projectiles.length - 1; i >= 0; i--) {
-    const proj = projectiles[i];
-
-    // Move
-    proj.mesh.position.x += proj.velocity.x * dt;
-    proj.mesh.position.y += proj.velocity.y * dt;
-    // No depth in side-scroll
-    proj.mesh.position.z = 0;
-
-    proj.lifetime -= dt;
-
-    // Check collision with enemies
-    let hit = false;
-    for (const enemy of enemies) {
-      const dx = Math.abs(proj.mesh.position.x - enemy.mesh.position.x);
-      const dy = Math.abs(proj.mesh.position.y - enemy.mesh.position.y);
-      if (dx < 2 && dy < 2) {
-        enemy.hp -= proj.damage;
-        hit = true;
-        gameState.hits++;
-        spawnParticles(gameState, proj.mesh.position, 0xffd93d);
-        break;
-      }
-    }
-
-    // Remove if hit or expired
-    if (hit || proj.lifetime <= 0 || Math.abs(proj.mesh.position.y) > 50) {
-      scene.remove(proj.mesh);
-      projectiles.splice(i, 1);
-    }
-  }
-}
-
-function spawnPowerup(gameState) {
-  const { scene, powerups } = gameState;
-  if (!scene) return;
-
-  const powerupType = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
-
-  const geometry = new THREE.OctahedronGeometry(0.8);
-  const material = new THREE.MeshStandardMaterial({
-    color: powerupType.color,
-    emissive: powerupType.color,
-    emissiveIntensity: 0.8,
-    roughness: 0.2,
-    metalness: 0.8
-  });
-
-  const mesh = new THREE.Mesh(geometry, material);
-
-  // Random position
-  mesh.position.set(
-    (Math.random() - 0.5) * 60,
-    5 + Math.random() * 10,
-    (Math.random() - 0.5) * 60
-  );
-
-  scene.add(mesh);
-
-  const powerup = {
-    mesh,
-    type: powerupType,
-    rotation: 0,
-    bobOffset: Math.random() * Math.PI * 2
-  };
-
-  powerups.push(powerup);
-}
-
-function updatePowerups(gameState, dt, playSfx) {
-  const { player, powerups, scene, styleTags } = gameState;
-
-  for (let i = powerups.length - 1; i >= 0; i--) {
-    const powerup = powerups[i];
-
-    // Rotate and bob
-    powerup.rotation += dt * 2;
-    powerup.mesh.rotation.y = powerup.rotation;
-    powerup.bobOffset += dt * 3;
-    powerup.mesh.position.y += Math.sin(powerup.bobOffset) * 0.05;
-
-    // Check collision with player
-    const dist = powerup.mesh.position.distanceTo(player.position);
-    if (dist < 3) {
-      // Apply powerup
-      applyPowerup(player, powerup.type);
-      styleTags.add(powerup.type.styleTag);
-      gameState.score += 50;
-
-      scene.remove(powerup.mesh);
-      powerups.splice(i, 1);
-
-      spawnParticles(gameState, powerup.mesh.position, powerup.type.color);
-      if (playSfx) playSfx('powerup');
-    }
-  }
-}
-
-function applyPowerup(player, powerupType) {
-  const duration = 10; // seconds
-
-  if (powerupType.type === 'health') {
-    player.hp = Math.min(player.maxHp, player.hp + 1);
-  } else if (powerupType.type === 'speed') {
-    player.powerups.speed = 1.5;
-    player.powerupTimers.speed = duration;
-  } else if (powerupType.type === 'rapidfire') {
-    player.powerups.rapidFire = 3;
-    player.powerupTimers.rapidFire = duration;
-  } else if (powerupType.type === 'shield') {
-    player.powerups.shield = true;
-    player.powerupTimers.shield = duration;
-    // Change player color
-    if (player.mesh) {
-      player.mesh.material.emissive.setHex(0x22d3ee);
-    }
-  } else if (powerupType.type === 'damage') {
-    player.powerups.damage = 2;
-    player.powerupTimers.damage = duration;
-  }
-}
-
-function updatePowerupTimers(player, dt) {
-  Object.keys(player.powerupTimers).forEach(key => {
-    player.powerupTimers[key] -= dt;
-    if (player.powerupTimers[key] <= 0) {
-      delete player.powerupTimers[key];
-
-      // Reset powerup
-      if (key === 'speed') player.powerups.speed = 1;
-      else if (key === 'rapidFire') player.powerups.rapidFire = 1;
-      else if (key === 'shield') {
-        player.powerups.shield = false;
-        if (player.mesh) {
-          player.mesh.material.emissive.setHex(0x4d96ff);
-        }
-      } else if (key === 'damage') player.powerups.damage = 1;
-    }
-  });
-}
-
-function spawnParticles(gameState, position, color) {
-  const { scene, particles } = gameState;
-  if (!scene) return;
-
-  for (let i = 0; i < 10; i++) {
-    const geometry = new THREE.SphereGeometry(0.1, 4, 4);
-    const material = new THREE.MeshBasicMaterial({ color });
-    const mesh = new THREE.Mesh(geometry, material);
-
-    mesh.position.copy(position);
-    scene.add(mesh);
-
-    const velocity = new THREE.Vector3(
-      (Math.random() - 0.5) * 10,
-      (Math.random() - 0.5) * 10,
-      (Math.random() - 0.5) * 10
-    );
-
-    particles.push({
-      mesh,
-      velocity,
-      lifetime: 0.5 + Math.random() * 0.5
-    });
-  }
-}
-
-function updateParticles(gameState, dt) {
-  const { particles, scene } = gameState;
-
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const particle = particles[i];
-
-    particle.mesh.position.x += particle.velocity.x * dt;
-    particle.mesh.position.y += particle.velocity.y * dt;
-    particle.mesh.position.z += particle.velocity.z * dt;
-
-    particle.lifetime -= dt;
-
-    if (particle.lifetime <= 0) {
-      scene.remove(particle.mesh);
-      particles.splice(i, 1);
-    }
-  }
+  gameState.score = Math.round(state.score);
+  gameState.player = state.playerState;
+  gameState.player.hp = state.playerState?.hp ?? 0;
+  gameState.kills = state.enemyHits;
+  gameState.combo = 0;
+  gameState.bestCombo = 0;
+  gameState.shots = gameState.shots || 0;
+  gameState.hits = gameState.hits || 0;
+  gameState.styleTags = gameState.styleTags || new Set();
+  gameState.keywords = gameState.keywords || new Set();
+  gameState.forbidden = gameState.forbidden || new Set();
+  gameState.statusMessage = state.statusMessage;
 }
 
 export function renderGame(scene, camera, renderer) {

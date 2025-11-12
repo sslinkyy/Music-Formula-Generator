@@ -45,21 +45,22 @@ scene.add(rimLight, fillLight);
 
 const loader = new GLTFLoader();
 
+const assetBase = "../web/games/platformer-shooter/assets/models";
 const assetMap = {
-  player: "assets/models/characters/character.glb",
-  platform: "assets/models/environment/platform.glb",
-  platformMedium: "assets/models/environment/platform-medium.glb",
-  platformLarge: "assets/models/environment/platform-large.glb",
-  platformGrass: "assets/models/environment/platform-grass-large-round.glb",
-  platformFalling: "assets/models/environment/platform-falling.glb",
-  coin: "assets/models/environment/coin.glb",
-  flag: "assets/models/environment/flag.glb",
-  cloud: "assets/models/environment/cloud.glb",
-  grass: "assets/models/environment/grass.glb",
-  dust: "assets/models/environment/dust.glb",
-  brick: "assets/models/environment/brick.glb",
-  brickParticle: "assets/models/environment/brick-particle.glb",
-  blockCoin: "assets/models/environment/block-coin.glb",
+  player: `${assetBase}/characters/character.glb`,
+  platform: `${assetBase}/environment/platform.glb`,
+  platformMedium: `${assetBase}/environment/platform-medium.glb`,
+  platformLarge: `${assetBase}/environment/platform-large.glb`,
+  platformGrass: `${assetBase}/environment/platform-grass-large-round.glb`,
+  platformFalling: `${assetBase}/environment/platform-falling.glb`,
+  coin: `${assetBase}/environment/coin.glb`,
+  flag: `${assetBase}/environment/flag.glb`,
+  cloud: `${assetBase}/environment/cloud.glb`,
+  grass: `${assetBase}/environment/grass.glb`,
+  dust: `${assetBase}/environment/dust.glb`,
+  brick: `${assetBase}/environment/brick.glb`,
+  brickParticle: `${assetBase}/environment/brick-particle.glb`,
+  blockCoin: `${assetBase}/environment/block-coin.glb`,
 };
 
 const cameraConfig = {

@@ -1,4 +1,4 @@
-﻿import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, MUSICAL_KEY_OPTIONS, MUSICAL_KEY_DEFAULT, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js?v=2';
+import { CONSTANTS, CONTROLS, DEFAULT_WEIGHTS, WEIGHT_PRESETS, BASE_INPUTS, DERIVED_INPUTS, USER_SECTION_DEFS, PREMISE_OPTIONS, MUSICAL_KEY_OPTIONS, MUSICAL_KEY_DEFAULT, GENRE_SLOTS, GENRE_SLOT_WEIGHT_TOTAL, ACCENT_DEFAULT, DEFAULT_AI_SETTINGS, CREATIVE_FIELDS } from './js/config.js?v=2';
 import { computeScores } from './js/scoring.js';
 import { analyzeGenreMix, appendStyleAccent } from './js/genre.js';
 import { getPhoneticMode, applyPhoneticSpelling } from './js/phonetics.js';
@@ -541,7 +541,7 @@ function suggestArtistProfiles(name, limit=5) {
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.className = 'chip-remove';
-          removeBtn.textContent = '�';
+          removeBtn.textContent = '?';
           removeBtn.title = 'Remove';
 
           removeBtn.addEventListener('click', (e) => {
@@ -926,7 +926,7 @@ function renderPremise() {
     custom = document.createElement('input');
     custom.type = 'text';
     custom.id = 'premise-custom-input';
-    custom.placeholder = 'Type custom premise…';
+    custom.placeholder = 'Type custom premise�';
     custom.value = state.customPremise || '';
     custom.style.minWidth = '220px';
     custom.style.marginLeft = '8px';
@@ -1032,7 +1032,7 @@ function renderLanguage() {
 // Utility: clean VBA artifact tokens from structure strings for display
 function cleanStructureDisplay(text) {
   return String(text || '')
-    .replace(/\s*a-[\'’]\s*/g, ' | ')
+    .replace(/\s*a-[\'�]\s*/g, ' | ')
     .replace(/\s+\|\s+/g, ' | ')
     .trim();
 }
@@ -1074,14 +1074,14 @@ function renderComputed() {
     ];
   } else {
     entries = [
-      { label: 'Core', value: '—' },
-      { label: 'Tech', value: '—' },
-      { label: 'Anthem', value: '—' },
-      { label: 'StyleSig', value: '—' },
-      { label: 'Group', value: '—' },
-      { label: 'Perf', value: '—' },
-      { label: 'Regularizer', value: '—' },
-      { label: 'Final Score', value: '—' }
+      { label: 'Core', value: '�' },
+      { label: 'Tech', value: '�' },
+      { label: 'Anthem', value: '�' },
+      { label: 'StyleSig', value: '�' },
+      { label: 'Group', value: '�' },
+      { label: 'Perf', value: '�' },
+      { label: 'Regularizer', value: '�' },
+      { label: 'Final Score', value: '�' }
     ];
   }
   // Build grid with meters for numeric values
@@ -1372,9 +1372,9 @@ function setupButtons() {
       list.forEach(c => {
         const li = document.createElement('li');
         const name = c.url ? `<a href="${c.url}" target="_blank" rel="noreferrer">${c.name||'Asset'}</a>` : (c.name||'Asset');
-        const lic = c.license ? ` — ${c.license}` : '';
+        const lic = c.license ? ` � ${c.license}` : '';
         const author = c.author ? ` by ${c.author}` : '';
-        const notes = c.notes ? ` — ${c.notes}` : '';
+        const notes = c.notes ? ` � ${c.notes}` : '';
         li.innerHTML = `${name}${author}${lic}${notes}`;
         ul.appendChild(li);
       });
@@ -1688,8 +1688,8 @@ function buildGenreLibraryTable() {
   const splitStructure = (text) => {
     const raw = String(text || '').trim();
     if (!raw) return [];
-    // Split on the VBA artifact token a-' or a-’ and clean pieces
-    return raw.split(/\s*a-[\'’]\s*/i).map(s => s.trim()).filter(Boolean);
+    // Split on the VBA artifact token a-' or a-� and clean pieces
+    return raw.split(/\s*a-[\'�]\s*/i).map(s => s.trim()).filter(Boolean);
   };
   const splitCsv = (text) => String(text || '')
     .split(',')
@@ -2160,7 +2160,7 @@ function buildProductionDirectives(analysis) {
   const mastering = [
     'Master bus: gentle glue 1.5:1, slow attack, auto release',
     'True peak: -1.0 dBTP; streaming target: ~-14 LUFS; optional club alt: ~-9 LUFS',
-    'Low cut 20�30 Hz on mix bus; bass mono below ~120 Hz',
+    'Low cut 20?30 Hz on mix bus; bass mono below ~120 Hz',
     'Avoid clipping; preserve dynamics; tasteful stereo width'
   ];
   return {
@@ -2389,7 +2389,7 @@ function buildPhoneticCheatsheet(label) {
       'Crisp consonants; careful enunciation.'
     ],
     'british english (london)': [
-      'Glottal stops (bottle ? bo’ul).',
+      'Glottal stops (bottle ? bo�ul).',
       'TH-fronting (think ? fink).',
       'L-vocalisation (milk ? miwk).'
     ],
@@ -2804,7 +2804,7 @@ function init() {
   } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
-  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
+  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '�'; } catch (_) {}
   renderConstants();
   renderControls();
   renderWeights();
@@ -3517,7 +3517,7 @@ Formatting rules (MANDATORY):
 - Do NOT reference any instruments in the lyrics.
 
 Creative guidance:
-- Treat songs as stories told through metaphor and innuendo � life lessons expressed with different examples but the same underlying principles.
+- Treat songs as stories told through metaphor and innuendo ? life lessons expressed with different examples but the same underlying principles.
 - Do not always tell the story directly; think bigger.
 
 Output only valid Suno blocks as instructed.`;
@@ -3944,7 +3944,7 @@ function renderPromptHistory() {
     <div class="history-item" data-idx="${idx}" style="border:1px solid var(--panel-border); border-radius:10px; padding:0.6rem; margin:0.5rem 0; background: var(--panel);">
       <div class="history-head" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
         <div style="font-size:.9rem; color: var(--muted);">
-          <strong>${safe(item.language)}</strong> • ${safe(item.accent)}${item.score?` • Score ${safe(item.score)}`:''}${item.mix?` • ${safe(item.mix)}`:''}
+          <strong>${safe(item.language)}</strong> � ${safe(item.accent)}${item.score?` � Score ${safe(item.score)}`:''}${item.mix?` � ${safe(item.mix)}`:''}
           <div style="font-size:.8rem;">${safe(fmt(item.ts))}</div>
         </div>
         <div style="display:flex; gap:.4rem;">
@@ -3977,40 +3977,40 @@ function renderPromptHistory() {
 const __GAMIFY_KEY = 'rgf_gamify_v1';
 // Known achievements registry for consistent labeling + icons
 const ACHIEVEMENTS = {
-  firstPrompt: { label: 'First Prompt!', icon: '✨', desc: 'Build your first prompt.' },
-  perfectWeights: { label: 'Perfect Weights', icon: '⚖️', desc: 'Make weights sum to exactly 1.00.' },
-  fusionChef: { label: 'Fusion Chef', icon: '🍳', desc: 'Use 3 or more genres in a mix.' },
-  build5: { label: '5 Prompts', icon: '5️⃣', desc: 'Build 5 prompts total.' },
-  build10: { label: '10 Prompts', icon: '🔟', desc: 'Build 10 prompts total.' },
-  build25: { label: '25 Prompts', icon: '🏆', desc: 'Build 25 prompts total.' },
-  readyToRoll: { label: 'Ready to Roll', icon: '🚀', desc: 'Reach 100% readiness and build.' },
-  streak3: { label: '3-Day Streak', icon: '📆', desc: 'Build prompts 3 days in a row.' },
-  streak7: { label: '7-Day Streak', icon: '📅', desc: 'Build prompts 7 days in a row.' },
-  apprenticeWizard: { label: 'Apprentice Wizard', icon: '🧙', desc: 'Turn on Wizard Mode.' },
-  wizardGraduate: { label: 'Wizard Graduate', icon: '🎓', desc: 'Reach the Build step in Wizard Mode.' },
-  demoExplorer: { label: 'Demo Explorer', icon: '🧪', desc: 'Load the demo setup.' },
-  muse: { label: 'Muse', icon: '🎨', desc: 'Use Suggest for Premise.' },
-  djBlend: { label: 'Blend DJ', icon: '🎛️', desc: 'Use Suggest Blend for Genre Mix.' },
-  curator: { label: 'Curator', icon: '🗂️', desc: 'Apply a curated Blend Preset.' },
-  promptCopier: { label: 'Prompt Copier', icon: '📋', desc: 'Copy the AI prompt to clipboard.' },
-  briefCopier: { label: 'Brief Copier', icon: '📝', desc: 'Copy the Creative Brief.' },
-  sunoCopier: { label: 'Suno Copier', icon: '🔊', desc: 'Copy the Suno blocks.' },
-  apiCaller: { label: 'API Caller', icon: '🔌', desc: 'Call the AI endpoint successfully.' },
-  voiceActor: { label: 'Voice Actor', icon: '🎙️', desc: 'Select a non-neutral accent.' },
-  accentExplorer: { label: 'Accent Explorer', icon: '🧭', desc: 'Use 3 or more different accents.' },
-  polyglot1: { label: 'Polyglot I', icon: '🌐', desc: 'Select a non-English language.' },
-  polyglot2: { label: 'Polyglot II', icon: '🌍', desc: 'Enter a custom language.' },
-  polyglotExplorer: { label: 'Polyglot Explorer', icon: '🗺️', desc: 'Use 3 or more different languages.' },
-  presetDriver: { label: 'Preset Driver', icon: '🎚️', desc: 'Apply a weight preset.' },
-  presetMaestro: { label: 'Preset Maestro', icon: '🏅', desc: 'Apply weight presets 5 times.' },
-  lyricist: { label: 'Lyricist', icon: '✍️', desc: 'Enter any user section (title/intro/hook/etc.).' },
-  composer: { label: 'Composer', icon: '🎼', desc: 'Enter 3 or more user sections.' },
-  crateDigger: { label: 'Crate Digger', icon: '📦', desc: 'Use 5 unique genres across mixes.' },
-  crateCurator: { label: 'Crate Curator', icon: '🧰', desc: 'Use 10 unique genres across mixes.' },
-  rhythmFirst: { label: 'Rhythm First Round', icon: '🥁', desc: 'Finish a Rhythm Tapper round.' },
-  rhythmAce: { label: 'Rhythm Ace', icon: '💯', desc: 'Finish Rhythm with =90% accuracy.' },
-  comboMaster: { label: 'Combo Master', icon: '🔥', desc: 'Reach a 30+ combo in Rhythm.' },
-  hazardAvoider: { label: 'Hazard Avoider', icon: '🛡️', desc: 'Finish Rhythm with 0 hazards collected.' }
+  firstPrompt: { label: 'First Prompt!', icon: '?', desc: 'Build your first prompt.' },
+  perfectWeights: { label: 'Perfect Weights', icon: '??', desc: 'Make weights sum to exactly 1.00.' },
+  fusionChef: { label: 'Fusion Chef', icon: '??', desc: 'Use 3 or more genres in a mix.' },
+  build5: { label: '5 Prompts', icon: '5??', desc: 'Build 5 prompts total.' },
+  build10: { label: '10 Prompts', icon: '??', desc: 'Build 10 prompts total.' },
+  build25: { label: '25 Prompts', icon: '??', desc: 'Build 25 prompts total.' },
+  readyToRoll: { label: 'Ready to Roll', icon: '??', desc: 'Reach 100% readiness and build.' },
+  streak3: { label: '3-Day Streak', icon: '??', desc: 'Build prompts 3 days in a row.' },
+  streak7: { label: '7-Day Streak', icon: '??', desc: 'Build prompts 7 days in a row.' },
+  apprenticeWizard: { label: 'Apprentice Wizard', icon: '??', desc: 'Turn on Wizard Mode.' },
+  wizardGraduate: { label: 'Wizard Graduate', icon: '??', desc: 'Reach the Build step in Wizard Mode.' },
+  demoExplorer: { label: 'Demo Explorer', icon: '??', desc: 'Load the demo setup.' },
+  muse: { label: 'Muse', icon: '??', desc: 'Use Suggest for Premise.' },
+  djBlend: { label: 'Blend DJ', icon: '???', desc: 'Use Suggest Blend for Genre Mix.' },
+  curator: { label: 'Curator', icon: '???', desc: 'Apply a curated Blend Preset.' },
+  promptCopier: { label: 'Prompt Copier', icon: '??', desc: 'Copy the AI prompt to clipboard.' },
+  briefCopier: { label: 'Brief Copier', icon: '??', desc: 'Copy the Creative Brief.' },
+  sunoCopier: { label: 'Suno Copier', icon: '??', desc: 'Copy the Suno blocks.' },
+  apiCaller: { label: 'API Caller', icon: '??', desc: 'Call the AI endpoint successfully.' },
+  voiceActor: { label: 'Voice Actor', icon: '???', desc: 'Select a non-neutral accent.' },
+  accentExplorer: { label: 'Accent Explorer', icon: '??', desc: 'Use 3 or more different accents.' },
+  polyglot1: { label: 'Polyglot I', icon: '??', desc: 'Select a non-English language.' },
+  polyglot2: { label: 'Polyglot II', icon: '??', desc: 'Enter a custom language.' },
+  polyglotExplorer: { label: 'Polyglot Explorer', icon: '???', desc: 'Use 3 or more different languages.' },
+  presetDriver: { label: 'Preset Driver', icon: '???', desc: 'Apply a weight preset.' },
+  presetMaestro: { label: 'Preset Maestro', icon: '??', desc: 'Apply weight presets 5 times.' },
+  lyricist: { label: 'Lyricist', icon: '??', desc: 'Enter any user section (title/intro/hook/etc.).' },
+  composer: { label: 'Composer', icon: '??', desc: 'Enter 3 or more user sections.' },
+  crateDigger: { label: 'Crate Digger', icon: '??', desc: 'Use 5 unique genres across mixes.' },
+  crateCurator: { label: 'Crate Curator', icon: '??', desc: 'Use 10 unique genres across mixes.' },
+  rhythmFirst: { label: 'Rhythm First Round', icon: '??', desc: 'Finish a Rhythm Tapper round.' },
+  rhythmAce: { label: 'Rhythm Ace', icon: '??', desc: 'Finish Rhythm with =90% accuracy.' },
+  comboMaster: { label: 'Combo Master', icon: '??', desc: 'Reach a 30+ combo in Rhythm.' },
+  hazardAvoider: { label: 'Hazard Avoider', icon: '???', desc: 'Finish Rhythm with 0 hazards collected.' }
 };
 function getGamify() {
   try { return JSON.parse(localStorage.getItem(__GAMIFY_KEY) || '{}'); } catch(_) { return {}; }
@@ -4150,7 +4150,7 @@ function buildGameHubDialog() {
     const sample = document.createElement('button'); sample.textContent = 'Sample';
     sample.addEventListener('click', () => {
       const out = sampleFn();
-      openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
+      openLibraryDialog(`${title} � Summary`, buildGameSummary(out, key));
     });
     row.appendChild(sample);
     if (opts.start) {
@@ -4167,7 +4167,7 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildRhythmGameDialog((output) => {
-        openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
+        openLibraryDialog('Rhythm � Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('Rhythm Tapper', content);
     }
@@ -4178,33 +4178,20 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = await buildRhythm3DGameDialog((output) => {
-        openLibraryDialog('3D Rhythm • Summary', buildGameSummary(output, 'rhythm-3d'));
+        openLibraryDialog('3D Rhythm � Summary', buildGameSummary(output, 'rhythm-3d'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('3D Rhythm Tapper', content);
     }
   }));
-  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3�4 turns to compose your blend.', sampleGridOutput, 'grid', {
     start: () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildGridGameDialog((output) => {
-        openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
+        openLibraryDialog('Grid � Summary', buildGameSummary(output, 'grid'));
       }, { difficulty: 'normal' });
       openLibraryDialog('Grid Picker', content);
-    }
-  }));
-  grid.appendChild(mkCard('Shooter (concept)', 'Arena shooter mapping hits to influences.', sampleShooterOutput, 'shooter', {
-    start: async () => {
-      resetInputsForGame();
-      rerenderAll();
-      showToast('Inputs reset for game');
-      // Lazy load the shooter game module to avoid passive event listener violations on page load
-      const { buildShooterGameDialog } = await import('./games/shooter/index.js');
-      const content = buildShooterGameDialog((output) => {
-        openLibraryDialog('Shooter • Summary', buildGameSummary(output, 'shooter'));
-      }, { durationSec: 60 });
-      openLibraryDialog('Shooter (Concept)', content);
     }
   }));
   grid.appendChild(mkCard('Snake (prototype)', 'Classic snake with pickups mapping to tags/keywords.', sampleGridOutput, 'snake', {
@@ -4219,7 +4206,7 @@ function buildGameHubDialog() {
     }
   }));
   // 3D Snake using Three.js
-  grid.appendChild(mkCard('Snake 3D', 'Three.js remake of Snake on a 3D grid. Same pickups → tags/keywords/genres.', sampleGridOutput, 'snake-3d', {
+  grid.appendChild(mkCard('Snake 3D', 'Three.js remake of Snake on a 3D grid. Same pickups ? tags/keywords/genres.', sampleGridOutput, 'snake-3d', {
     start: async () => {
       resetInputsForGame();
       rerenderAll();
@@ -4239,7 +4226,7 @@ function buildGameHubDialog() {
       // Lazy load the game module to avoid loading Three.js and event listeners on page load
       const { buildPlatformerShooterDialog } = await import('./games/platformer-shooter/index.js');
       const content = buildPlatformerShooterDialog((output) => {
-        openLibraryDialog('Platformer Shooter • Summary', buildGameSummary(output, 'platformer-shooter'));
+        openLibraryDialog('Platformer Shooter � Summary', buildGameSummary(output, 'platformer-shooter'));
       }, { durationSec: 120, difficulty: 'normal' });
       openLibraryDialog('3D Platformer Shooter', content);
     }
@@ -4641,6 +4628,7 @@ function applyGenrePreset(preset) {
   showToast(`Applied: ${preset.label}`);
   try { scheduleAutoSave(); } catch(_){}
 }
+
 
 
 
