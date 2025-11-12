@@ -768,7 +768,56 @@ button:disabled { opacity: 0.6; cursor: default; }
 .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.5rem 0.75rem; }
 .grid-form .span-2 { grid-column: 1 / -1; }
 
+#user-sections {
+  display: grid;
+  gap: 0.85rem;
+}
+
 #user-sections textarea { min-height: 72px; }
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.section-heading h3 {
+  margin: 0;
+}
+.context-add-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+}
+.context-hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.user-section-extra {
+  border: 1px solid var(--panel-border-soft);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: var(--panel-elevated);
+  display: grid;
+  gap: 0.65rem;
+}
+.user-section-extra-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.user-section-extra-header input {
+  flex: 1;
+  min-width: 0;
+}
+.user-section-extra textarea {
+  min-height: 96px;
+}
+.context-remove-btn {
+  white-space: nowrap;
+}
 
 #library-dialog {
   border: 0;

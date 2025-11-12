@@ -1037,8 +1037,36 @@ function cleanStructureDisplay(text) {
     .replace(/\s+\|\s+/g, ' | ')
     .trim();
 }
+
+function ensureUserSectionExtras() {
+  if (!Array.isArray(state.userSectionExtras)) {
+    state.userSectionExtras = [];
+  }
+  return state.userSectionExtras;
+}
+
+function addUserContextArea() {
+  const extras = ensureUserSectionExtras();
+  const labelIndex = extras.length + 1;
+  extras.push({
+    id: `extra-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    label: `Context ${labelIndex}`,
+    value: ''
+  });
+  renderUserSections();
+  try { scheduleAutoSave(); } catch (_) {}
+}
+
+function removeUserContextArea(id) {
+  const extras = ensureUserSectionExtras();
+  state.userSectionExtras = extras.filter(section => section.id !== id);
+  renderUserSections();
+  try { scheduleAutoSave(); } catch (_) {}
+}
+
 function renderUserSections() {
   const container = document.getElementById('user-sections');
+  if (!container) return;
   container.innerHTML = '';
   USER_SECTION_DEFS.forEach(section => {
     const label = document.createElement('label');
@@ -1051,6 +1079,52 @@ function renderUserSections() {
     });
     label.appendChild(textarea);
     container.appendChild(label);
+  });
+
+  const extras = ensureUserSectionExtras();
+  extras.forEach((section, index) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'user-section-extra';
+
+    const header = document.createElement('div');
+    header.className = 'user-section-extra-header';
+
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.value = section.label || `Context ${index + 1}`;
+    labelInput.placeholder = 'Context label (optional)';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-tertiary context-remove-btn';
+    removeBtn.textContent = 'Remove';
+
+    const updateRemoveLabel = () => {
+      const baseLabel = (labelInput.value || section.label || `Context ${index + 1}`).trim() || `Context ${index + 1}`;
+      removeBtn.setAttribute('aria-label', `Remove extra context ${baseLabel}`);
+    };
+    updateRemoveLabel();
+
+    labelInput.addEventListener('input', () => {
+      section.label = labelInput.value;
+      updateRemoveLabel();
+    });
+
+    removeBtn.addEventListener('click', () => removeUserContextArea(section.id));
+
+    header.appendChild(labelInput);
+    header.appendChild(removeBtn);
+    wrapper.appendChild(header);
+
+    const textarea = document.createElement('textarea');
+    textarea.value = section.value || '';
+    textarea.placeholder = 'Guidance, references, or cues for the AI.';
+    textarea.addEventListener('input', () => {
+      section.value = textarea.value;
+    });
+
+    wrapper.appendChild(textarea);
+    container.appendChild(wrapper);
   });
 }
 
@@ -1312,6 +1386,13 @@ function setupButtons() {
         console.error('Copy failed', err);
         flashButton(copyAiResponseBtn, 'Copy failed', 1200);
       }
+    });
+  }
+  const addContextBtn = document.getElementById('add-context-area');
+  if (addContextBtn) {
+    addContextBtn.addEventListener('click', () => {
+      addUserContextArea();
+      flashButton(addContextBtn, 'Context added', 900);
     });
   }
   document.getElementById('apply-genre-mix').addEventListener('click', () => {
@@ -3518,6 +3599,15 @@ function buildLockedSections() {
       if (line.trim().length) locked.push(line.trim());
     });
   });
+  ensureUserSectionExtras().forEach(section => {
+    const raw = (section.value || '').trim();
+    if (!raw) return;
+    const label = section.label || 'Context';
+    locked.push(`[${label}]`);
+    raw.split(/\r?\n/).forEach(line => {
+      if (line.trim().length) locked.push(line.trim());
+    });
+  });
   return locked;
 }
 
@@ -3754,8 +3844,11 @@ function checkUserSectionAchievements() {
   try {
     const sections = state.userSections || {};
     const nonEmpty = Object.entries(sections).filter(([k,v]) => typeof v === 'string' && v.trim().length > 0).map(([k])=>k);
-    if (nonEmpty.length >= 1) unlockAchievement('lyricist','Lyricist');
-    if (nonEmpty.length >= 3) unlockAchievement('composer','Composer');
+    const extras = ensureUserSectionExtras();
+    const extraNonEmpty = extras.filter(entry => (entry.value || '').trim().length > 0).length;
+    const totalNonEmpty = nonEmpty.length + extraNonEmpty;
+    if (totalNonEmpty >= 1) unlockAchievement('lyricist','Lyricist');
+    if (totalNonEmpty >= 3) unlockAchievement('composer','Composer');
   } catch(_){}
 }
 function checkGenreAchievements() {
@@ -4335,6 +4428,7 @@ function resetInputsForGame() {
       const keys = ['titleIdea','intro','hook','verse1','verse2','bridge','outro','notes'];
       keys.forEach(k => { if (k in state.userSections) state.userSections[k] = ''; });
     }
+    state.userSectionExtras = [];
     // Clear any prior genre analysis
     state.genreAnalysis = null;
     // Clear Outputs panes (Brief / Suno / Prompt / AI Response)

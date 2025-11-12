@@ -25,6 +25,7 @@ export function buildDefaultState() {
     language: 'English',
     customLanguage: '',
     userSections: Object.fromEntries(USER_SECTION_DEFS.map(item => [item.id, ''])),
+    userSectionExtras: [],
     aiSettings: { ...DEFAULT_AI_SETTINGS },
     computed: null,
     genreAnalysis: null,
@@ -117,6 +118,15 @@ function validateStateValues() {
   if (!state.weights) state.weights = { ...DEFAULT_WEIGHTS };
   if (!state.aiSettings) state.aiSettings = { ...DEFAULT_AI_SETTINGS };
   if (!state.outputs) state.outputs = { brief: '', suno: '', prompt: '', aiResponse: '' };
+  if (!Array.isArray(state.userSectionExtras)) {
+    state.userSectionExtras = [];
+  } else {
+    state.userSectionExtras = state.userSectionExtras.map((item, index) => ({
+      id: item?.id || `extra-${index}`,
+      label: (typeof item?.label === 'string' && item.label.trim()) ? item.label : `Context ${index + 1}`,
+      value: typeof item?.value === 'string' ? item.value : ''
+    }));
+  }
 }
 
 /**
