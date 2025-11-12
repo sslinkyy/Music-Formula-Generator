@@ -926,7 +926,7 @@ function renderPremise() {
     custom = document.createElement('input');
     custom.type = 'text';
     custom.id = 'premise-custom-input';
-    custom.placeholder = 'Type custom premise…';
+    custom.placeholder = 'Type custom premiseï¿½';
     custom.value = state.customPremise || '';
     custom.style.minWidth = '220px';
     custom.style.marginLeft = '8px';
@@ -1032,7 +1032,7 @@ function renderLanguage() {
 // Utility: clean VBA artifact tokens from structure strings for display
 function cleanStructureDisplay(text) {
   return String(text || '')
-    .replace(/\s*a-[\'’]\s*/g, ' | ')
+    .replace(/\s*a-[\'ï¿½]\s*/g, ' | ')
     .replace(/\s+\|\s+/g, ' | ')
     .trim();
 }
@@ -1074,14 +1074,14 @@ function renderComputed() {
     ];
   } else {
     entries = [
-      { label: 'Core', value: '—' },
-      { label: 'Tech', value: '—' },
-      { label: 'Anthem', value: '—' },
-      { label: 'StyleSig', value: '—' },
-      { label: 'Group', value: '—' },
-      { label: 'Perf', value: '—' },
-      { label: 'Regularizer', value: '—' },
-      { label: 'Final Score', value: '—' }
+      { label: 'Core', value: 'ï¿½' },
+      { label: 'Tech', value: 'ï¿½' },
+      { label: 'Anthem', value: 'ï¿½' },
+      { label: 'StyleSig', value: 'ï¿½' },
+      { label: 'Group', value: 'ï¿½' },
+      { label: 'Perf', value: 'ï¿½' },
+      { label: 'Regularizer', value: 'ï¿½' },
+      { label: 'Final Score', value: 'ï¿½' }
     ];
   }
   // Build grid with meters for numeric values
@@ -1344,6 +1344,25 @@ function setupButtons() {
   });
   document.getElementById('close-dialog').addEventListener('click', () => closeDialog());
 
+  // Also listen for dialog close event (ESC key, clicking outside, etc.)
+  const libDialog = document.getElementById('library-dialog');
+  if (libDialog) {
+    libDialog.addEventListener('close', () => {
+      console.log('[Dialog] Dialog close event fired');
+      // Clean up any game resources
+      const contentEl = document.getElementById('dialog-content');
+      if (contentEl && contentEl._cleanup && typeof contentEl._cleanup === 'function') {
+        console.log('[Dialog] Calling cleanup from close event');
+        try {
+          contentEl._cleanup();
+          contentEl._cleanup = null;
+        } catch (err) {
+          console.error('[Dialog] Error during cleanup:', err);
+        }
+      }
+    });
+  }
+
   // Header/toolbar app actions
   const saveBtn = document.getElementById('save-state');
   const loadBtn = document.getElementById('load-state');
@@ -1372,9 +1391,9 @@ function setupButtons() {
       list.forEach(c => {
         const li = document.createElement('li');
         const name = c.url ? `<a href="${c.url}" target="_blank" rel="noreferrer">${c.name||'Asset'}</a>` : (c.name||'Asset');
-        const lic = c.license ? ` — ${c.license}` : '';
+        const lic = c.license ? ` ï¿½ ${c.license}` : '';
         const author = c.author ? ` by ${c.author}` : '';
-        const notes = c.notes ? ` — ${c.notes}` : '';
+        const notes = c.notes ? ` ï¿½ ${c.notes}` : '';
         li.innerHTML = `${name}${author}${lic}${notes}`;
         ul.appendChild(li);
       });
@@ -1616,6 +1635,11 @@ function openLibraryDialog(title, content) {
       console.log('[Dialog] Content loaded');
       contentEl.innerHTML = '';
       contentEl.appendChild(resolvedContent);
+      // Transfer cleanup function if it exists
+      if (resolvedContent._cleanup) {
+        contentEl._cleanup = resolvedContent._cleanup;
+        console.log('[Dialog] Cleanup function attached from async content');
+      }
     }).catch(err => {
       console.error('[Dialog] Error loading content:', err);
       contentEl.innerHTML = '<p style="padding: 2rem; text-align: center; color: red;">Error loading content. Please try again.</p>';
@@ -1623,6 +1647,11 @@ function openLibraryDialog(title, content) {
   } else {
     // Handle sync content
     contentEl.appendChild(content);
+    // Transfer cleanup function if it exists
+    if (content._cleanup) {
+      contentEl._cleanup = content._cleanup;
+      console.log('[Dialog] Cleanup function attached from sync content');
+    }
     if (typeof dialog.showModal === 'function') {
       dialog.showModal();
       console.log('[Dialog] showModal() called');
@@ -1635,6 +1664,19 @@ function openLibraryDialog(title, content) {
 
 function closeDialog() {
   const dialog = document.getElementById('library-dialog');
+
+  // Clean up any game audio/resources before closing
+  const contentEl = document.getElementById('dialog-content');
+  if (contentEl && contentEl._cleanup && typeof contentEl._cleanup === 'function') {
+    console.log('[Dialog] Calling cleanup function before closing');
+    try {
+      contentEl._cleanup();
+      contentEl._cleanup = null;
+    } catch (err) {
+      console.error('[Dialog] Error during cleanup:', err);
+    }
+  }
+
   if (dialog.hasAttribute('open')) {
     dialog.close();
   }
@@ -1688,8 +1730,8 @@ function buildGenreLibraryTable() {
   const splitStructure = (text) => {
     const raw = String(text || '').trim();
     if (!raw) return [];
-    // Split on the VBA artifact token a-' or a-’ and clean pieces
-    return raw.split(/\s*a-[\'’]\s*/i).map(s => s.trim()).filter(Boolean);
+    // Split on the VBA artifact token a-' or a-ï¿½ and clean pieces
+    return raw.split(/\s*a-[\'ï¿½]\s*/i).map(s => s.trim()).filter(Boolean);
   };
   const splitCsv = (text) => String(text || '')
     .split(',')
@@ -2389,7 +2431,7 @@ function buildPhoneticCheatsheet(label) {
       'Crisp consonants; careful enunciation.'
     ],
     'british english (london)': [
-      'Glottal stops (bottle ? bo’ul).',
+      'Glottal stops (bottle ? boï¿½ul).',
       'TH-fronting (think ? fink).',
       'L-vocalisation (milk ? miwk).'
     ],
@@ -2804,7 +2846,7 @@ function init() {
   } catch (_) {}
   try { document.body.classList.add('density-compact'); } catch (_) {}
   // Ensure close button glyph renders correctly regardless of HTML encoding
-  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = '×'; } catch (_) {}
+  try { const btn = document.getElementById('close-dialog'); if (btn) btn.textContent = 'ï¿½'; } catch (_) {}
   renderConstants();
   renderControls();
   renderWeights();
@@ -3944,7 +3986,7 @@ function renderPromptHistory() {
     <div class="history-item" data-idx="${idx}" style="border:1px solid var(--panel-border); border-radius:10px; padding:0.6rem; margin:0.5rem 0; background: var(--panel);">
       <div class="history-head" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
         <div style="font-size:.9rem; color: var(--muted);">
-          <strong>${safe(item.language)}</strong> • ${safe(item.accent)}${item.score?` • Score ${safe(item.score)}`:''}${item.mix?` • ${safe(item.mix)}`:''}
+          <strong>${safe(item.language)}</strong> ï¿½ ${safe(item.accent)}${item.score?` ï¿½ Score ${safe(item.score)}`:''}${item.mix?` ï¿½ ${safe(item.mix)}`:''}
           <div style="font-size:.8rem;">${safe(fmt(item.ts))}</div>
         </div>
         <div style="display:flex; gap:.4rem;">
@@ -4150,7 +4192,7 @@ function buildGameHubDialog() {
     const sample = document.createElement('button'); sample.textContent = 'Sample';
     sample.addEventListener('click', () => {
       const out = sampleFn();
-      openLibraryDialog(`${title} • Summary`, buildGameSummary(out, key));
+      openLibraryDialog(`${title} ï¿½ Summary`, buildGameSummary(out, key));
     });
     row.appendChild(sample);
     if (opts.start) {
@@ -4167,7 +4209,7 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildRhythmGameDialog((output) => {
-        openLibraryDialog('Rhythm • Summary', buildGameSummary(output, 'rhythm'));
+        openLibraryDialog('Rhythm ï¿½ Summary', buildGameSummary(output, 'rhythm'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('Rhythm Tapper', content);
     }
@@ -4178,18 +4220,18 @@ function buildGameHubDialog() {
       rerenderAll();
       showToast('Inputs reset for game');
       const content = await buildRhythm3DGameDialog((output) => {
-        openLibraryDialog('3D Rhythm • Summary', buildGameSummary(output, 'rhythm-3d'));
+        openLibraryDialog('3D Rhythm ï¿½ Summary', buildGameSummary(output, 'rhythm-3d'));
       }, { preset: 'streaming', difficulty: 'normal' });
       openLibraryDialog('3D Rhythm Tapper', content);
     }
   }));
-  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3–4 turns to compose your blend.', sampleGridOutput, 'grid', {
+  grid.appendChild(mkCard('Grid Picker', 'Draft cards over 3ï¿½4 turns to compose your blend.', sampleGridOutput, 'grid', {
     start: () => {
       resetInputsForGame();
       rerenderAll();
       showToast('Inputs reset for game');
       const content = buildGridGameDialog((output) => {
-        openLibraryDialog('Grid • Summary', buildGameSummary(output, 'grid'));
+        openLibraryDialog('Grid ï¿½ Summary', buildGameSummary(output, 'grid'));
       }, { difficulty: 'normal' });
       openLibraryDialog('Grid Picker', content);
     }
@@ -4226,7 +4268,7 @@ function buildGameHubDialog() {
       // Lazy load the game module to avoid loading Three.js and event listeners on page load
       const { buildPlatformerShooterDialog } = await import('./games/platformer-shooter/index.js');
       const content = buildPlatformerShooterDialog((output) => {
-        openLibraryDialog('Platformer Shooter • Summary', buildGameSummary(output, 'platformer-shooter'));
+        openLibraryDialog('Platformer Shooter ï¿½ Summary', buildGameSummary(output, 'platformer-shooter'));
       }, { durationSec: 120, difficulty: 'normal' });
       openLibraryDialog('3D Platformer Shooter', content);
     }

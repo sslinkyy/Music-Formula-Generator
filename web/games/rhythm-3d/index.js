@@ -1696,6 +1696,13 @@ Next Note: ${nextNote}ms
   }
   window.addEventListener('resize', onWindowResize);
 
+  // Expose cleanup function for when dialog closes
+  wrap._cleanup = function() {
+    console.log('[3D Rhythm] Cleanup called - stopping audio and removing listeners');
+    stopPlayback();
+    window.removeEventListener('resize', onWindowResize);
+  };
+
   return wrap;
 }
 
