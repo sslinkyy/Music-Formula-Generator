@@ -425,7 +425,11 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // HUD
   const hud = document.createElement('div');
   hud.className = 'hint';
-  hud.textContent = 'Keys: D F J K or Arrow Keys / Click lanes / Controller: D-pad or A B X Y. Hit notes on the line! (3D Mode)';
+  // Detect if touch device
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  hud.textContent = isTouchDevice
+    ? 'Touch the buttons below to hit notes! (Mobile Mode)'
+    : 'Keys: D F J K or Arrow Keys / Click lanes / Controller: D-pad or A B X Y. Hit notes on the line! (3D Mode)';
   hud.style.margin = '6px 0';
   wrap.appendChild(hud);
 
@@ -520,6 +524,136 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setClearColor(0x0f1115);
   container.appendChild(renderer.domElement);
+
+  // Touch controls overlay for mobile devices
+  const touchControlsContainer = document.createElement('div');
+  touchControlsContainer.style.position = 'absolute';
+  touchControlsContainer.style.bottom = '0';
+  touchControlsContainer.style.left = '0';
+  touchControlsContainer.style.right = '0';
+  touchControlsContainer.style.height = '100px';
+  touchControlsContainer.style.display = isTouchDevice ? 'flex' : 'none';
+  touchControlsContainer.style.gap = '4px';
+  touchControlsContainer.style.padding = '4px';
+  touchControlsContainer.style.background = 'rgba(0, 0, 0, 0.3)';
+  touchControlsContainer.style.backdropFilter = 'blur(5px)';
+  touchControlsContainer.style.zIndex = '100';
+  touchControlsContainer.style.touchAction = 'none'; // Prevent scrolling
+  touchControlsContainer.style.userSelect = 'none';
+
+  const laneLabels = ['D', 'F', 'J', 'K'];
+  const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+  const touchButtons = [];
+  const activeTouches = new Map(); // Track which touch ID is on which button
+
+  // Create 4 touch buttons for the 4 lanes
+  for (let i = 0; i < 4; i++) {
+    const button = document.createElement('div');
+    button.style.flex = '1';
+    button.style.display = 'flex';
+    button.style.alignItems = 'center';
+    button.style.justifyContent = 'center';
+    button.style.background = `linear-gradient(to bottom, ${laneColors[i]}40, ${laneColors[i]}20)`;
+    button.style.border = `2px solid ${laneColors[i]}`;
+    button.style.borderRadius = '8px';
+    button.style.color = '#fff';
+    button.style.fontSize = '24px';
+    button.style.fontWeight = 'bold';
+    button.style.textShadow = '0 0 8px #000';
+    button.style.cursor = 'pointer';
+    button.style.transition = 'all 0.05s';
+    button.style.touchAction = 'none';
+    button.textContent = laneLabels[i];
+    button.dataset.lane = i;
+
+    touchButtons.push(button);
+    touchControlsContainer.appendChild(button);
+  }
+
+  container.appendChild(touchControlsContainer);
+
+  // Multi-touch handler functions
+  function handleTouchStart(e) {
+    if (!running) return;
+    e.preventDefault();
+
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+      if (element && element.dataset && element.dataset.lane !== undefined) {
+        const lane = parseInt(element.dataset.lane);
+        activeTouches.set(touch.identifier, lane);
+
+        // Visual feedback
+        touchButtons[lane].style.background = `linear-gradient(to bottom, ${laneColors[lane]}, ${laneColors[lane]}80)`;
+        touchButtons[lane].style.transform = 'scale(0.95)';
+
+        // Trigger note hit
+        onPress(lane);
+      }
+    }
+  }
+
+  function handleTouchMove(e) {
+    if (!running) return;
+    e.preventDefault();
+
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      const currentLane = activeTouches.get(touch.identifier);
+
+      if (element && element.dataset && element.dataset.lane !== undefined) {
+        const newLane = parseInt(element.dataset.lane);
+
+        // If touch moved to a different button
+        if (currentLane !== newLane) {
+          // Release old button
+          if (currentLane !== undefined) {
+            touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
+            touchButtons[currentLane].style.transform = 'scale(1)';
+          }
+
+          // Press new button
+          activeTouches.set(touch.identifier, newLane);
+          touchButtons[newLane].style.background = `linear-gradient(to bottom, ${laneColors[newLane]}, ${laneColors[newLane]}80)`;
+          touchButtons[newLane].style.transform = 'scale(0.95)';
+          onPress(newLane);
+        }
+      } else {
+        // Touch moved outside buttons - release
+        if (currentLane !== undefined) {
+          touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
+          touchButtons[currentLane].style.transform = 'scale(1)';
+          activeTouches.delete(touch.identifier);
+        }
+      }
+    }
+  }
+
+  function handleTouchEnd(e) {
+    if (!running) return;
+    e.preventDefault();
+
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      const lane = activeTouches.get(touch.identifier);
+
+      if (lane !== undefined) {
+        // Reset visual feedback
+        touchButtons[lane].style.background = `linear-gradient(to bottom, ${laneColors[lane]}40, ${laneColors[lane]}20)`;
+        touchButtons[lane].style.transform = 'scale(1)';
+        activeTouches.delete(touch.identifier);
+      }
+    }
+  }
+
+  // Add touch event listeners
+  touchControlsContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+  touchControlsContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+  touchControlsContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+  touchControlsContainer.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
   // Lighting
   const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
