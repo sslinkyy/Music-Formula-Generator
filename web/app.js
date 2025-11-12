@@ -3186,10 +3186,12 @@ function setupDropdowns() {
     });
 
     // Handle touch events (mobile)
+    // IMPORTANT: NOT passive so we can preventDefault to stop focus behavior
     toggle.addEventListener('touchstart', (e) => {
       touchHandled = true;
+      e.preventDefault(); // Prevent default touch behavior (like focusing inputs)
       e.stopPropagation();
-    }, { passive: true });
+    }, { passive: false });
 
     toggle.addEventListener('touchend', (e) => {
       e.preventDefault();
@@ -3213,10 +3215,12 @@ function setupDropdowns() {
         closeDropdown(e);
       });
 
+      // IMPORTANT: NOT passive so we can preventDefault to stop unwanted behavior
       button.addEventListener('touchstart', (e) => {
         touchHandled = true;
+        e.preventDefault(); // Prevent default touch behavior
         e.stopPropagation();
-      }, { passive: true });
+      }, { passive: false });
 
       button.addEventListener('touchend', (e) => {
         e.preventDefault();
