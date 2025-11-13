@@ -828,6 +828,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const totalWidth = (laneWidth + laneSpacing) * lanes.length - laneSpacing;
   const laneObjects = [];
   const laneGeometry = new THREE.BoxGeometry(laneWidth, 0.1, 40);
+  const overlayProjector = new THREE.Vector3();
 
   lanes.forEach((lane, i) => {
     const x = (i - lanes.length / 2) * (laneWidth + laneSpacing) + laneWidth / 2;
@@ -846,6 +847,33 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     laneObjects.push({ mesh: laneMesh, x, color: lane.color });
   });
 
+  function alignTouchControlsWithTrack() {
+    if (!touchControlsContainer || laneObjects.length === 0) return;
+    const stageWidth = renderer.domElement.clientWidth;
+    if (stageWidth <= 0) return;
+
+    const clampX = (value) => Math.max(0, Math.min(value, stageWidth));
+    const projectX = (worldX) => {
+      overlayProjector.set(worldX, 0, NOTE_TARGET_Z);
+      overlayProjector.project(camera);
+      return clampX((overlayProjector.x * 0.5 + 0.5) * stageWidth);
+    };
+
+    const leftWorld = laneObjects[0].x - laneWidth / 2;
+    const rightWorld = laneObjects[laneObjects.length - 1].x + laneWidth / 2;
+    const leftScreen = projectX(leftWorld);
+    const rightScreen = projectX(rightWorld);
+    const margin = 6;
+    const overlayWidth = Math.max((rightScreen - leftScreen) + margin * 2, 0);
+    const leftPx = Math.max(leftScreen - margin, 0);
+    const maxWidth = stageWidth - leftPx;
+
+    touchControlsContainer.style.left = `${leftPx}px`;
+    touchControlsContainer.style.width = `${Math.min(overlayWidth, maxWidth)}px`;
+  }
+
+  alignTouchControlsWithTrack();
+
   // Initial render to make scene visible immediately
   // Use requestAnimationFrame to ensure container has proper dimensions
   requestAnimationFrame(() => {
@@ -855,6 +883,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
     console.log('Initial scene rendered at', container.clientWidth, 'x', container.clientHeight);
+    alignTouchControlsWithTrack();
   });
 
   // Game state
@@ -2011,6 +2040,7 @@ Next Note: ${nextNote}ms
     if (!running) {
       renderer.render(scene, camera);
     }
+    alignTouchControlsWithTrack();
   }
   window.addEventListener('resize', onWindowResize);
 

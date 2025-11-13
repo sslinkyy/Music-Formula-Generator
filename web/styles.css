@@ -1014,7 +1014,8 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 .rhythm-touch-controls {
   position: absolute;
-  inset: auto 0 20px;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  left: 0;
   padding: 0.65rem;
   gap: 9px;
   z-index: 80;
@@ -1023,7 +1024,8 @@ button:disabled { opacity: 0.6; cursor: default; }
   background: rgba(7, 10, 18, 0.45);
   backdrop-filter: blur(12px);
   pointer-events: auto;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-bottom: 0;
+  width: 100%;
 }
 
 .rhythm-touch-btn {
