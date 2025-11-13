@@ -107,6 +107,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const NOTE_TRAVEL_TIME = 3;
   const MAX_NOTE_POINTS = 160;
   const NOTE_READY_WINDOW = 0.28;
+  const ARROW_TIGHTNESS = 0.5;
 
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const wrap = document.createElement('div');
@@ -690,6 +691,12 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const touchControlsContainer = document.createElement('div');
   touchControlsContainer.className = 'rhythm-touch-controls';
   touchControlsContainer.style.display = isTouchDevice ? 'flex' : 'none';
+  touchControlsContainer.style.flexDirection = 'column';
+  touchControlsContainer.style.alignItems = 'stretch';
+  const arrowGuidesContainer = document.createElement('div');
+  arrowGuidesContainer.className = 'rhythm-arrow-guides';
+  touchControlsContainer.appendChild(arrowGuidesContainer);
+  const arrowGuideElements = [];
 
   const laneLabels = ['D', 'F', 'J', 'K'];
   const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
@@ -719,6 +726,17 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     touchButtons.push(button);
     touchControlsContainer.appendChild(button);
+    const guide = document.createElement('div');
+    guide.className = 'rhythm-arrow-outline';
+    guide.dataset.direction = touchDirections[i];
+    guide.style.setProperty('--lane-color', laneColors[i]);
+    guide.innerHTML = `
+      <svg class="lane-arrow-outline-svg" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M50 15 L18 47 L36 47 L36 85 L64 85 L64 47 L82 47 Z"></path>
+      </svg>
+    `;
+    arrowGuidesContainer.appendChild(guide);
+    arrowGuideElements.push(guide);
   }
 
   container.appendChild(touchControlsContainer);
@@ -1115,7 +1133,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       }, 100);
 
       const isHazard = note.type === 'hazard';
-      const accuracyRatio = Math.max(0, 1 - (Math.min(bestDelta, judgement.good) / judgement.good));
+      const timingPenalty = Math.min(1, bestDelta / judgement.good);
+      const spatialPenalty = Math.min(1, Math.abs(note.mesh.position.z - NOTE_TARGET_Z) / ARROW_TIGHTNESS);
+      const accuracyRatio = Math.max(0, 1 - Math.max(timingPenalty, spatialPenalty));
       const pointsEarned = isHazard ? 0 : Math.round(MAX_NOTE_POINTS * Math.pow(accuracyRatio, 1.2));
       lastHitAccuracy = isHazard ? 0 : Math.round(accuracyRatio * 100);
       lastHitDelta = isHazard ? 0 : bestDelta;
@@ -1305,6 +1325,10 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     touchButtons.forEach((btn, idx) => {
       if (!btn) return;
       btn.classList.toggle('rhythm-touch-ready', laneReady[idx]);
+    });
+    arrowGuideElements.forEach((guide, idx) => {
+      if (!guide) return;
+      guide.classList.toggle('rhythm-arrow-outline-ready', laneReady[idx]);
     });
 
     // Update stats

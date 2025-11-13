@@ -1026,19 +1026,55 @@ button:disabled { opacity: 0.6; cursor: default; }
   pointer-events: auto;
   padding-bottom: 0;
   width: 100%;
-  --touch-btn-height: 70px;
 }
 
-.rhythm-touch-controls::after {
-  content: '';
+.rhythm-arrow-guides {
   position: absolute;
+  bottom: calc(100% + 12px);
   left: 0;
   right: 0;
-  bottom: calc(100% + calc(var(--touch-btn-height) * 1.5));
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), var(--accent-primary, #f97316), rgba(255, 255, 255, 0.3));
-  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  height: 68px;
+  z-index: 81;
+  align-items: flex-end;
+}
+
+.rhythm-arrow-outline {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+
+.rhythm-arrow-outline-svg {
+  width: 60%;
+  height: 60%;
+  stroke: var(--lane-color, #fff);
+  stroke-width: 6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.5;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.rhythm-arrow-outline[data-direction="down"] .rhythm-arrow-outline-svg {
+  transform: rotate(180deg);
+}
+.rhythm-arrow-outline[data-direction="left"] .rhythm-arrow-outline-svg {
+  transform: rotate(-90deg);
+}
+.rhythm-arrow-outline[data-direction="right"] .rhythm-arrow-outline-svg {
+  transform: rotate(90deg);
+}
+
+.rhythm-arrow-outline-ready .rhythm-arrow-outline-svg {
+  opacity: 1;
+  filter: drop-shadow(0 0 10px var(--lane-color, #fff));
 }
 
 .rhythm-touch-btn {
