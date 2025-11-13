@@ -1014,7 +1014,7 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 .rhythm-touch-controls {
   position: absolute;
-  inset: auto 0 0;
+  inset: auto 0 20px;
   padding: 0.65rem;
   gap: 9px;
   z-index: 80;
@@ -1023,7 +1023,7 @@ button:disabled { opacity: 0.6; cursor: default; }
   background: rgba(7, 10, 18, 0.45);
   backdrop-filter: blur(12px);
   pointer-events: auto;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 .rhythm-touch-btn {
@@ -1066,10 +1066,10 @@ button:disabled { opacity: 0.6; cursor: default; }
   transform: rotate(180deg);
 }
 .rhythm-touch-btn[data-direction="left"] .lane-arrow-svg {
-  transform: rotate(90deg);
+  transform: rotate(-90deg);
 }
 .rhythm-touch-btn[data-direction="right"] .lane-arrow-svg {
-  transform: rotate(-90deg);
+  transform: rotate(90deg);
 }
 
 .rhythm-touch-btn.rhythm-touch-ready {

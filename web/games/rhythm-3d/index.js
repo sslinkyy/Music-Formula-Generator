@@ -103,7 +103,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
   const judgement = { perfect: 120, good: 220 };
   const NOTE_START_Z = -30;
-  const NOTE_TARGET_Z = 0.8;
+  const NOTE_TARGET_Z = 5;
   const NOTE_TRAVEL_TIME = 3;
   const MAX_NOTE_POINTS = 160;
   const NOTE_READY_WINDOW = 0.28;
@@ -724,6 +724,14 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   container.appendChild(touchControlsContainer);
 
   // Multi-touch handler functions
+  function findTouchLane(element) {
+    if (!element || !element.closest) return undefined;
+    const button = element.closest('.rhythm-touch-btn');
+    if (!button || button.dataset.lane === undefined) return undefined;
+    const parsed = parseInt(button.dataset.lane, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
   function handleTouchStart(e) {
     if (!running) return;
     e.preventDefault();
@@ -732,8 +740,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       const touch = e.changedTouches[i];
       const element = document.elementFromPoint(touch.clientX, touch.clientY);
 
-      if (element && element.dataset && element.dataset.lane !== undefined) {
-        const lane = parseInt(element.dataset.lane);
+      const lane = findTouchLane(element);
+
+      if (lane !== undefined) {
         activeTouches.set(touch.identifier, lane);
 
         // Visual feedback
@@ -755,11 +764,10 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       const element = document.elementFromPoint(touch.clientX, touch.clientY);
       const currentLane = activeTouches.get(touch.identifier);
 
-      if (element && element.dataset && element.dataset.lane !== undefined) {
-        const newLane = parseInt(element.dataset.lane);
+      const newLane = findTouchLane(element);
 
         // If touch moved to a different button
-        if (currentLane !== newLane) {
+        if (newLane !== undefined && currentLane !== newLane) {
           // Release old button
           if (currentLane !== undefined) {
             touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
