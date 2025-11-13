@@ -499,7 +499,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // Three.js container
   const container = document.createElement('div');
   container.className = 'rhythm-game-stage';
-  const defaultStageHeight = Math.min(600, Math.max(360, window.innerHeight * 0.55));
+  const defaultStageHeight = Math.min(600, Math.max(320, window.innerHeight * 0.45));
   container.style.height = `${defaultStageHeight}px`;
   wrap.appendChild(container);
 
@@ -707,10 +707,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   touchControlsContainer.style.display = isTouchDevice ? 'flex' : 'none';
   touchControlsContainer.style.flexDirection = 'column';
   touchControlsContainer.style.alignItems = 'stretch';
-  const arrowGuidesContainer = document.createElement('div');
-  arrowGuidesContainer.className = 'rhythm-arrow-guides';
-  touchControlsContainer.appendChild(arrowGuidesContainer);
-  const arrowGuideElements = [];
 
   // Create a row container for the buttons
   const buttonRowContainer = document.createElement('div');
@@ -747,17 +743,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     touchButtons.push(button);
     buttonRowContainer.appendChild(button);
-    const guide = document.createElement('div');
-    guide.className = 'rhythm-arrow-outline';
-    guide.dataset.direction = touchDirections[i];
-    guide.style.setProperty('--lane-color', laneColors[i]);
-    guide.innerHTML = `
-      <svg class="lane-arrow-outline-svg" viewBox="0 0 100 100" aria-hidden="true">
-        <path d="M50 15 L18 47 L36 47 L36 85 L64 85 L64 47 L82 47 Z"></path>
-      </svg>
-    `;
-    arrowGuidesContainer.appendChild(guide);
-    arrowGuideElements.push(guide);
   }
 
   touchControlsContainer.appendChild(buttonRowContainer);
@@ -1408,11 +1393,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       if (!btn) return;
       btn.classList.toggle('rhythm-touch-ready', laneReady[idx]);
     });
-    arrowGuideElements.forEach((guide, idx) => {
-      if (!guide) return;
-      guide.classList.toggle('rhythm-arrow-outline-ready', laneReady[idx]);
-    });
-
     // Update stats
     const sum = hits.reduce((a, b) => a + b, 0) || 1;
     const genreText = hits.map((h, i) => `${lanes[i].label}:${Math.round((h/sum)*100)}%`).join('  ');
