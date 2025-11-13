@@ -101,13 +101,22 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let duration = options.durationSec || 60; // Default, will be updated with actual duration
   const difficulty = options.difficulty || 'normal';
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
-  const judgement = { perfect: 120, good: 220 };
+
+  // Timing windows based on DDR/StepMania standards (in milliseconds)
+  // DDR: Marvelous ±16.7ms, Perfect ±33ms, Great ±92ms, Good ±142ms
+  // We use slightly more forgiving windows for web gameplay
+  const judgement = {
+    marvelous: 22,  // ±22ms - tight window for perfect hits
+    perfect: 45,    // ±45ms - good timing
+    great: 90,      // ±90ms - decent timing
+    good: 135,      // ±135ms - acceptable
+    miss: 180       // ±180ms - outside this is a miss
+  };
   const NOTE_START_Z = -30;
   const NOTE_TARGET_Z = 9;
   const NOTE_TRAVEL_TIME = 3;
   const MAX_NOTE_POINTS = 160;
   const NOTE_READY_WINDOW = 0.28;
-  const ARROW_TIGHTNESS = 0.5;
 
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const wrap = document.createElement('div');
@@ -927,6 +936,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let lastHitAccuracy = 0;
   let lastPointsEarned = 0;
   let lastHitDelta = 0;
+  let lastJudgment = '';
   const tagCounts = {};
   const keywords = [];
   const forbidden = [];
@@ -1164,10 +1174,10 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
         bestDelta = d;
         bestIdx = i;
       }
-      if (n.timeMs - t > judgement.good) break;
+      if (n.timeMs - t > judgement.miss) break;
     }
 
-    if (bestIdx >= 0 && bestDelta <= judgement.good) {
+    if (bestIdx >= 0 && bestDelta <= judgement.miss) {
       const note = noteObjects[bestIdx];
       note.judged = true;
 
@@ -1180,12 +1190,31 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       }, 100);
 
       const isHazard = note.type === 'hazard';
-      const timingPenalty = Math.min(1, bestDelta / judgement.good);
-      const spatialPenalty = Math.min(1, Math.abs(note.mesh.position.z - NOTE_TARGET_Z) / ARROW_TIGHTNESS);
-      const accuracyRatio = Math.max(0, 1 - Math.max(timingPenalty, spatialPenalty));
-      const pointsEarned = isHazard ? 0 : Math.round(MAX_NOTE_POINTS * Math.pow(accuracyRatio, 1.2));
-      lastHitAccuracy = isHazard ? 0 : Math.round(accuracyRatio * 100);
+
+      // Determine judgment tier based on timing accuracy (DDR-style)
+      let judgmentTier;
+      let pointsMultiplier;
+      if (bestDelta <= judgement.marvelous) {
+        judgmentTier = 'MARVELOUS';
+        pointsMultiplier = 1.0;
+      } else if (bestDelta <= judgement.perfect) {
+        judgmentTier = 'PERFECT';
+        pointsMultiplier = 0.95;
+      } else if (bestDelta <= judgement.great) {
+        judgmentTier = 'GREAT';
+        pointsMultiplier = 0.75;
+      } else if (bestDelta <= judgement.good) {
+        judgmentTier = 'GOOD';
+        pointsMultiplier = 0.5;
+      } else {
+        judgmentTier = 'OK';
+        pointsMultiplier = 0.25;
+      }
+
+      const pointsEarned = isHazard ? 0 : Math.round(MAX_NOTE_POINTS * pointsMultiplier);
+      lastHitAccuracy = isHazard ? 0 : Math.round(pointsMultiplier * 100);
       lastHitDelta = isHazard ? 0 : bestDelta;
+      lastJudgment = isHazard ? 'HAZARD' : judgmentTier;
       lastPointsEarned = pointsEarned;
       if (!isHazard) score += pointsEarned;
 
@@ -1215,6 +1244,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       combo = 0;
       lastHitAccuracy = 0;
       lastHitDelta = 0;
+      lastJudgment = '';
       lastPointsEarned = 0;
       beep(soundOn, 120);
     }
@@ -1360,8 +1390,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       const z = NOTE_START_Z + (NOTE_TARGET_Z - NOTE_START_Z) * clampedProgress;
       note.mesh.position.z = z;
 
-      // Remove missed notes
-      if (elapsed - note.timeMs > judgement.good + 100 && !note.judged) {
+      // Remove missed notes (past the miss window)
+      if (elapsed - note.timeMs > judgement.miss && !note.judged) {
         misses++;
         combo = 0;
         scene.remove(note.mesh);
@@ -1385,9 +1415,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     const totalTimeSec = Math.floor(duration);
     const timeDisplay = `${Math.floor(currentTimeSec / 60)}:${(currentTimeSec % 60).toString().padStart(2, '0')} / ${Math.floor(totalTimeSec / 60)}:${(totalTimeSec % 60).toString().padStart(2, '0')}`;
     const scoreDisplay = score.toLocaleString();
-    const precisionText = lastHitAccuracy > 0 ? `${lastHitAccuracy}%` : '—';
+    const judgmentText = lastJudgment || '—';
     const timingText = lastHitDelta ? `±${Math.round(lastHitDelta)}ms` : '—';
-    statsDiv.innerHTML = `${genreText}<br>Time: ${timeDisplay}  Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}<br>Score: ${scoreDisplay} (+${lastPointsEarned})  Precision: ${precisionText}  Timing: ${timingText}`;
+    statsDiv.innerHTML = `${genreText}<br>Time: ${timeDisplay}  Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}<br>Score: ${scoreDisplay} (+${lastPointsEarned})  ${judgmentText}  ${timingText}`;
 
     // Update debug info
     if (debugMode) {
@@ -1495,6 +1525,7 @@ Next Note: ${nextNote}ms
     lastHitAccuracy = 0;
     lastPointsEarned = 0;
     lastHitDelta = 0;
+    lastJudgment = '';
 
     // Clear all note objects
     noteObjects.forEach(note => {
@@ -1689,6 +1720,7 @@ Next Note: ${nextNote}ms
       lastHitAccuracy = 0;
       lastPointsEarned = 0;
       lastHitDelta = 0;
+      lastJudgment = '';
 
       console.log('Game state reset. Notes array length:', notes.length);
       console.log('Starting animation loop...');
