@@ -1035,15 +1035,16 @@ button:disabled { opacity: 0.6; cursor: default; }
   right: 0;
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   pointer-events: none;
-  height: 68px;
+  height: 70px;
   z-index: 81;
   align-items: flex-end;
 }
 
 .rhythm-arrow-outline {
-  flex: 1;
+  flex: 0 1 calc((100% - 36px)/4);
+  max-width: 110px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1051,8 +1052,8 @@ button:disabled { opacity: 0.6; cursor: default; }
 }
 
 .rhythm-arrow-outline-svg {
-  width: 60%;
-  height: 60%;
+  width: min(56px, 90%);
+  height: min(56px, 90%);
   stroke: var(--lane-color, #fff);
   stroke-width: 6;
   fill: none;
