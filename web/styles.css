@@ -1026,6 +1026,19 @@ button:disabled { opacity: 0.6; cursor: default; }
   pointer-events: auto;
   padding-bottom: 0;
   width: 100%;
+  --touch-btn-height: 70px;
+}
+
+.rhythm-touch-controls::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + calc(var(--touch-btn-height) * 1.5));
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), var(--accent-primary, #f97316), rgba(255, 255, 255, 0.3));
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
 }
 
 .rhythm-touch-btn {
