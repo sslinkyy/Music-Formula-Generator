@@ -766,27 +766,23 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
       const newLane = findTouchLane(element);
 
-        // If touch moved to a different button
-        if (newLane !== undefined && currentLane !== newLane) {
-          // Release old button
-          if (currentLane !== undefined) {
-            touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
-            touchButtons[currentLane].style.transform = 'scale(1)';
-          }
-
-          // Press new button
-          activeTouches.set(touch.identifier, newLane);
-          touchButtons[newLane].style.background = `linear-gradient(to bottom, ${laneColors[newLane]}, ${laneColors[newLane]}80)`;
-          touchButtons[newLane].style.transform = 'scale(0.95)';
-          onPress(newLane);
-        }
-      } else {
-        // Touch moved outside buttons - release
+      if (newLane !== undefined && currentLane !== newLane) {
+        // Release old button
         if (currentLane !== undefined) {
           touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
           touchButtons[currentLane].style.transform = 'scale(1)';
-          activeTouches.delete(touch.identifier);
         }
+
+        // Press new button
+        activeTouches.set(touch.identifier, newLane);
+        touchButtons[newLane].style.background = `linear-gradient(to bottom, ${laneColors[newLane]}, ${laneColors[newLane]}80)`;
+        touchButtons[newLane].style.transform = 'scale(0.95)';
+        onPress(newLane);
+      } else if (newLane === undefined && currentLane !== undefined) {
+        // Touch moved outside buttons - release
+        touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
+        touchButtons[currentLane].style.transform = 'scale(1)';
+        activeTouches.delete(touch.identifier);
       }
     }
   }
