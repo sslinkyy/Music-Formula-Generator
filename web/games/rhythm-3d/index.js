@@ -698,6 +698,13 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   touchControlsContainer.appendChild(arrowGuidesContainer);
   const arrowGuideElements = [];
 
+  // Create a row container for the buttons
+  const buttonRowContainer = document.createElement('div');
+  buttonRowContainer.style.display = 'flex';
+  buttonRowContainer.style.flexDirection = 'row';
+  buttonRowContainer.style.gap = '9px';
+  buttonRowContainer.style.width = '100%';
+
   const laneLabels = ['D', 'F', 'J', 'K'];
   const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
   const touchDirections = ['left', 'down', 'up', 'right'];
@@ -725,7 +732,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     `;
 
     touchButtons.push(button);
-    touchControlsContainer.appendChild(button);
+    buttonRowContainer.appendChild(button);
     const guide = document.createElement('div');
     guide.className = 'rhythm-arrow-outline';
     guide.dataset.direction = touchDirections[i];
@@ -739,6 +746,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     arrowGuideElements.push(guide);
   }
 
+  touchControlsContainer.appendChild(buttonRowContainer);
   container.appendChild(touchControlsContainer);
 
   // Multi-touch handler functions
