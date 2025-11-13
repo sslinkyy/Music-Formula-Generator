@@ -103,7 +103,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
   const judgement = { perfect: 120, good: 220 };
   const NOTE_START_Z = -30;
-  const NOTE_TARGET_Z = 5;
+  const NOTE_TARGET_Z = 9;
   const NOTE_TRAVEL_TIME = 3;
   const MAX_NOTE_POINTS = 160;
   const NOTE_READY_WINDOW = 0.28;
@@ -970,6 +970,45 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   // Map lanes to arrow directions
   const laneDirections = ['left', 'down', 'up', 'right'];
+
+  // Create 3D arrow markers at the hit line for each lane
+  const hitLineMarkers = [];
+  lanes.forEach((lane, i) => {
+    const laneObj = laneObjects[i];
+    const direction = laneDirections[i];
+
+    // Create arrow outline (dark background for contrast)
+    const outlineGeometry = createArrowGeometry(direction);
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.6
+    });
+    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    outlineMesh.scale.set(2.2, 2.2, 1);
+    outlineMesh.position.set(laneObj.x, 0.12, NOTE_TARGET_Z);
+    outlineMesh.rotation.x = -Math.PI / 2;
+    scene.add(outlineMesh);
+
+    // Create main arrow marker (bright white with lane color glow)
+    const markerGeometry = createArrowGeometry(direction);
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(lane.color),
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8,
+      emissive: new THREE.Color(lane.color),
+      emissiveIntensity: 0.5
+    });
+    const markerMesh = new THREE.Mesh(markerGeometry, markerMaterial);
+    markerMesh.scale.set(2.0, 2.0, 1);
+    markerMesh.position.set(laneObj.x, 0.15, NOTE_TARGET_Z);
+    markerMesh.rotation.x = -Math.PI / 2;
+    scene.add(markerMesh);
+
+    hitLineMarkers.push({ outline: outlineMesh, marker: markerMesh });
+  });
 
   // Note creation
   function createNote(lane, timeMs, type, lenMs) {
