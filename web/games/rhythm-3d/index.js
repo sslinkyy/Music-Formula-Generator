@@ -102,6 +102,11 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   const difficulty = options.difficulty || 'normal';
   const speed = difficulty === 'hard' ? 1.35 : difficulty === 'easy' ? 0.85 : 1.0;
   const judgement = { perfect: 120, good: 220 };
+  const NOTE_START_Z = -30;
+  const NOTE_TARGET_Z = 0.8;
+  const NOTE_TRAVEL_TIME = 3;
+  const MAX_NOTE_POINTS = 160;
+  const NOTE_READY_WINDOW = 0.28;
 
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const wrap = document.createElement('div');
@@ -688,28 +693,29 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   const laneLabels = ['D', 'F', 'J', 'K'];
   const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+  const touchDirections = ['left', 'down', 'up', 'right'];
   const touchButtons = [];
   const activeTouches = new Map(); // Track which touch ID is on which button
 
   // Create 4 touch buttons for the 4 lanes
   for (let i = 0; i < 4; i++) {
     const button = document.createElement('div');
-    button.style.flex = '1';
-    button.style.display = 'flex';
-    button.style.alignItems = 'center';
-    button.style.justifyContent = 'center';
-    button.style.background = `linear-gradient(to bottom, ${laneColors[i]}40, ${laneColors[i]}20)`;
-    button.style.border = `2px solid ${laneColors[i]}`;
-    button.style.borderRadius = '8px';
-    button.style.color = '#fff';
-    button.style.fontSize = '24px';
-    button.style.fontWeight = 'bold';
-    button.style.textShadow = '0 0 8px #000';
-    button.style.cursor = 'pointer';
-    button.style.transition = 'all 0.05s';
-    button.style.touchAction = 'none';
-    button.textContent = laneLabels[i];
+    button.className = 'rhythm-touch-btn';
     button.dataset.lane = i;
+    button.dataset.direction = touchDirections[i];
+    button.setAttribute('role', 'button');
+    button.setAttribute('tabindex', '0');
+    button.style.setProperty('--lane-color', laneColors[i]);
+    button.style.background = `linear-gradient(to bottom, ${laneColors[i]}40, ${laneColors[i]}20)`;
+    button.style.borderColor = laneColors[i];
+    button.style.touchAction = 'none';
+    button.style.cursor = 'pointer';
+    button.innerHTML = `
+      <svg class="lane-arrow-svg" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M50 15 L18 47 L36 47 L36 85 L64 85 L64 47 L82 47 Z"></path>
+      </svg>
+      <span class="lane-label">${laneLabels[i]}</span>
+    `;
 
     touchButtons.push(button);
     touchControlsContainer.appendChild(button);
@@ -836,19 +842,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     laneObjects.push({ mesh: laneMesh, x, color: lane.color });
   });
 
-  // Hit line
-  const hitLineGeometry = new THREE.PlaneGeometry(totalWidth + 2, 0.3);
-  const hitLineMaterial = new THREE.MeshBasicMaterial({
-    color: 0x00ff88,
-    transparent: true,
-    opacity: 0.8,
-    side: THREE.DoubleSide
-  });
-  const hitLine = new THREE.Mesh(hitLineGeometry, hitLineMaterial);
-  hitLine.position.set(0, 0.2, 5);
-  hitLine.rotation.x = -Math.PI / 2;
-  scene.add(hitLine);
-
   // Initial render to make scene visible immediately
   // Use requestAnimationFrame to ensure container has proper dimensions
   requestAnimationFrame(() => {
@@ -871,6 +864,10 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   let misses = 0;
   let combo = 0;
   let bestCombo = 0;
+  let score = 0;
+  let lastHitAccuracy = 0;
+  let lastPointsEarned = 0;
+  let lastHitDelta = 0;
   const tagCounts = {};
   const keywords = [];
   const forbidden = [];
@@ -936,7 +933,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(laneObj.x, 0.5, -30);
+    mesh.position.set(laneObj.x, 0.5, NOTE_START_Z);
     scene.add(mesh);
 
     // Add directional arrow on top of note
@@ -1084,6 +1081,14 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
         }
       }, 100);
 
+      const isHazard = note.type === 'hazard';
+      const accuracyRatio = Math.max(0, 1 - (Math.min(bestDelta, judgement.good) / judgement.good));
+      const pointsEarned = isHazard ? 0 : Math.round(MAX_NOTE_POINTS * Math.pow(accuracyRatio, 1.2));
+      lastHitAccuracy = isHazard ? 0 : Math.round(accuracyRatio * 100);
+      lastHitDelta = isHazard ? 0 : bestDelta;
+      lastPointsEarned = pointsEarned;
+      if (!isHazard) score += pointsEarned;
+
       if (note.type === 'short') {
         hits[laneIndex]++;
         combo++;
@@ -1104,10 +1109,13 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
         combo = 0;
       }
 
-      beep(soundOn, note.type === 'hazard' ? 200 : 440);
+      beep(soundOn, isHazard ? 200 : 440);
       noteObjects.splice(bestIdx, 1);
     } else {
       combo = 0;
+      lastHitAccuracy = 0;
+      lastHitDelta = 0;
+      lastPointsEarned = 0;
       beep(soundOn, 120);
     }
   }
@@ -1240,17 +1248,16 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     }
 
     // Update notes
+    const laneReady = new Array(lanes.length).fill(false);
     for (let i = noteObjects.length - 1; i >= 0; i--) {
       const note = noteObjects[i];
       const timeUntilHit = (note.timeMs - elapsed) / 1000;
-      const targetZ = 5;      // Where note should be hit (in front of camera)
-      const startZ = -30;     // Where note spawns (far away)
-      const travelTime = 3;   // Seconds to travel from start to target
+      laneReady[note.lane] = laneReady[note.lane] || Math.abs(timeUntilHit) <= NOTE_READY_WINDOW;
 
-      // Calculate progress: 0 at spawn (3s away), 1 at target (0s away)
-      const progress = 1 - (timeUntilHit / travelTime);
-      const z = startZ + (targetZ - startZ) * progress;
-
+      // Calculate progress: 0 at spawn, 1 as it reaches the button line
+      const progress = 1 - (timeUntilHit / NOTE_TRAVEL_TIME);
+      const clampedProgress = Math.min(Math.max(progress, 0), 1);
+      const z = NOTE_START_Z + (NOTE_TARGET_Z - NOTE_START_Z) * clampedProgress;
       note.mesh.position.z = z;
 
       // Remove missed notes
@@ -1262,13 +1269,21 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       }
     }
 
+    touchButtons.forEach((btn, idx) => {
+      if (!btn) return;
+      btn.classList.toggle('rhythm-touch-ready', laneReady[idx]);
+    });
+
     // Update stats
     const sum = hits.reduce((a, b) => a + b, 0) || 1;
     const genreText = hits.map((h, i) => `${lanes[i].label}:${Math.round((h/sum)*100)}%`).join('  ');
     const currentTimeSec = Math.floor(elapsed / 1000);
     const totalTimeSec = Math.floor(duration);
     const timeDisplay = `${Math.floor(currentTimeSec / 60)}:${(currentTimeSec % 60).toString().padStart(2, '0')} / ${Math.floor(totalTimeSec / 60)}:${(totalTimeSec % 60).toString().padStart(2, '0')}`;
-    statsDiv.innerHTML = `${genreText}<br>Time: ${timeDisplay}  Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}`;
+    const scoreDisplay = score.toLocaleString();
+    const precisionText = lastHitAccuracy > 0 ? `${lastHitAccuracy}%` : '—';
+    const timingText = lastHitDelta ? `±${Math.round(lastHitDelta)}ms` : '—';
+    statsDiv.innerHTML = `${genreText}<br>Time: ${timeDisplay}  Combo: ${combo}  Best: ${bestCombo}  Misses: ${misses}<br>Score: ${scoreDisplay} (+${lastPointsEarned})  Precision: ${precisionText}  Timing: ${timingText}`;
 
     // Update debug info
     if (debugMode) {
@@ -1299,9 +1314,6 @@ Next Note: ${nextNote}ms
         vuFill.style.width = pct + '%';
       }
     } catch(_) {}
-
-    // Animate hit line
-    hitLine.material.opacity = 0.8 + Math.sin(elapsed * 0.003) * 0.2;
 
     renderer.render(scene, camera);
 
@@ -1351,6 +1363,7 @@ Next Note: ${nextNote}ms
       accent: getActualAccent(),
       misses,
       combo: bestCombo,
+      score,
       duration,
       track: trackMeta
     });
@@ -1374,6 +1387,10 @@ Next Note: ${nextNote}ms
     useAudioSync = false;
     vuStatus.textContent = 'Stopped';
     vuFill.style.width = '0%';
+    score = 0;
+    lastHitAccuracy = 0;
+    lastPointsEarned = 0;
+    lastHitDelta = 0;
 
     // Clear all note objects
     noteObjects.forEach(note => {
@@ -1564,6 +1581,10 @@ Next Note: ${nextNote}ms
       misses = 0;
       combo = 0;
       noteObjects = []; // Clear any existing note objects
+      score = 0;
+      lastHitAccuracy = 0;
+      lastPointsEarned = 0;
+      lastHitDelta = 0;
 
       console.log('Game state reset. Notes array length:', notes.length);
       console.log('Starting animation loop...');
@@ -2204,6 +2225,7 @@ function buildOutput(lanes, hits, extras = {}) {
       duration: extras.duration || 0,
       accuracy: calcAccuracy(hits, extras.misses || 0),
       bestCombo: extras.combo || 0,
+      score: extras.score || 0,
       track: extras.track || null
     }
   };
