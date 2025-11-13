@@ -1012,6 +1012,29 @@ button:disabled { opacity: 0.6; cursor: default; }
   position: relative;
 }
 
+.rhythm-hit-line-tip {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.55rem 1rem;
+  background: rgba(7, 10, 18, 0.85);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  z-index: 85;
+  gap: 0.35rem;
+  max-width: calc(100% - 30px);
+}
+
 .rhythm-touch-controls {
   position: absolute;
   bottom: calc(32px + env(safe-area-inset-bottom, 0px));

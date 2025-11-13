@@ -503,6 +503,11 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   container.style.height = `${defaultStageHeight}px`;
   wrap.appendChild(container);
 
+  const hitLineTip = document.createElement('p');
+  hitLineTip.className = 'rhythm-hit-line-tip';
+  hitLineTip.innerHTML = 'Tap notes as they pass the glowing arrows at the front of the lanes. Use <kbd>DFJK</kbd>, the arrow keys, or the buttons below.';
+  container.appendChild(hitLineTip);
+
   const stageSizeSlider = document.createElement('input');
   stageSizeSlider.type = 'range';
   stageSizeSlider.min = '320';
