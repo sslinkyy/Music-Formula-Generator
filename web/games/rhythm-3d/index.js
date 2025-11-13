@@ -499,19 +499,14 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // Three.js container
   const container = document.createElement('div');
   container.className = 'rhythm-game-stage';
-  const defaultStageHeight = Math.min(600, Math.max(320, window.innerHeight * 0.45));
+  const defaultStageHeight = Math.min(520, Math.max(280, Math.round(window.innerHeight * 0.35)));
   container.style.height = `${defaultStageHeight}px`;
   wrap.appendChild(container);
 
-  const hitLineTip = document.createElement('p');
-  hitLineTip.className = 'rhythm-hit-line-tip';
-  hitLineTip.innerHTML = 'Tap notes as they pass the glowing arrows at the front of the lanes. Use <kbd>DFJK</kbd>, the arrow keys, or the buttons below.';
-  container.appendChild(hitLineTip);
-
   const stageSizeSlider = document.createElement('input');
   stageSizeSlider.type = 'range';
-  stageSizeSlider.min = '320';
-  stageSizeSlider.max = '720';
+  stageSizeSlider.min = '280';
+  stageSizeSlider.max = '640';
   stageSizeSlider.step = '10';
   stageSizeSlider.className = 'rhythm-stage-slider';
   stageSizeSlider.value = `${Math.round(defaultStageHeight)}`;
