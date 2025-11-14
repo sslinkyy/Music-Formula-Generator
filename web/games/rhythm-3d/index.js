@@ -696,139 +696,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   renderer.setClearColor(0x0f1115);
   container.appendChild(renderer.domElement);
 
-  // Touch controls overlay for mobile devices
-  const touchControlsContainer = document.createElement('div');
-  touchControlsContainer.className = 'rhythm-touch-controls';
-  touchControlsContainer.style.display = isTouchDevice ? 'flex' : 'none';
-  touchControlsContainer.style.flexDirection = 'column';
-  touchControlsContainer.style.alignItems = 'stretch';
-
-  // Create a row container for the buttons
-  const buttonRowContainer = document.createElement('div');
-  buttonRowContainer.style.display = 'flex';
-  buttonRowContainer.style.flexDirection = 'row';
-  buttonRowContainer.style.gap = '9px';
-  buttonRowContainer.style.width = '100%';
-
-  const laneLabels = ['D', 'F', 'J', 'K'];
-  const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
-  const touchDirections = ['left', 'down', 'up', 'right'];
-  const touchButtons = [];
-  const activeTouches = new Map(); // Track which touch ID is on which button
-
-  // Create 4 touch buttons for the 4 lanes
-  for (let i = 0; i < 4; i++) {
-    const button = document.createElement('div');
-    button.className = 'rhythm-touch-btn';
-    button.dataset.lane = i;
-    button.dataset.direction = touchDirections[i];
-    button.setAttribute('role', 'button');
-    button.setAttribute('tabindex', '0');
-    button.style.setProperty('--lane-color', laneColors[i]);
-    button.style.background = `linear-gradient(to bottom, ${laneColors[i]}40, ${laneColors[i]}20)`;
-    button.style.borderColor = laneColors[i];
-    button.style.touchAction = 'none';
-    button.style.cursor = 'pointer';
-    button.innerHTML = `
-      <svg class="lane-arrow-svg" viewBox="0 0 100 100" aria-hidden="true">
-        <path d="M50 15 L18 47 L36 47 L36 85 L64 85 L64 47 L82 47 Z"></path>
-      </svg>
-      <span class="lane-label">${laneLabels[i]}</span>
-    `;
-
-    touchButtons.push(button);
-    buttonRowContainer.appendChild(button);
-  }
-
-  touchControlsContainer.appendChild(buttonRowContainer);
-  container.appendChild(touchControlsContainer);
-
-  // Multi-touch handler functions
-  function findTouchLane(element) {
-    if (!element || !element.closest) return undefined;
-    const button = element.closest('.rhythm-touch-btn');
-    if (!button || button.dataset.lane === undefined) return undefined;
-    const parsed = parseInt(button.dataset.lane, 10);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  }
-
-  function handleTouchStart(e) {
-    if (!running) return;
-    e.preventDefault();
-
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      const element = document.elementFromPoint(touch.clientX, touch.clientY);
-
-      const lane = findTouchLane(element);
-
-      if (lane !== undefined) {
-        activeTouches.set(touch.identifier, lane);
-
-        // Visual feedback
-        touchButtons[lane].style.background = `linear-gradient(to bottom, ${laneColors[lane]}, ${laneColors[lane]}80)`;
-        touchButtons[lane].style.transform = 'scale(0.95)';
-
-        // Trigger note hit
-        onPress(lane);
-      }
-    }
-  }
-
-  function handleTouchMove(e) {
-    if (!running) return;
-    e.preventDefault();
-
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      const element = document.elementFromPoint(touch.clientX, touch.clientY);
-      const currentLane = activeTouches.get(touch.identifier);
-
-      const newLane = findTouchLane(element);
-
-      if (newLane !== undefined && currentLane !== newLane) {
-        // Release old button
-        if (currentLane !== undefined) {
-          touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
-          touchButtons[currentLane].style.transform = 'scale(1)';
-        }
-
-        // Press new button
-        activeTouches.set(touch.identifier, newLane);
-        touchButtons[newLane].style.background = `linear-gradient(to bottom, ${laneColors[newLane]}, ${laneColors[newLane]}80)`;
-        touchButtons[newLane].style.transform = 'scale(0.95)';
-        onPress(newLane);
-      } else if (newLane === undefined && currentLane !== undefined) {
-        // Touch moved outside buttons - release
-        touchButtons[currentLane].style.background = `linear-gradient(to bottom, ${laneColors[currentLane]}40, ${laneColors[currentLane]}20)`;
-        touchButtons[currentLane].style.transform = 'scale(1)';
-        activeTouches.delete(touch.identifier);
-      }
-    }
-  }
-
-  function handleTouchEnd(e) {
-    if (!running) return;
-    e.preventDefault();
-
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      const lane = activeTouches.get(touch.identifier);
-
-      if (lane !== undefined) {
-        // Reset visual feedback
-        touchButtons[lane].style.background = `linear-gradient(to bottom, ${laneColors[lane]}40, ${laneColors[lane]}20)`;
-        touchButtons[lane].style.transform = 'scale(1)';
-        activeTouches.delete(touch.identifier);
-      }
-    }
-  }
-
-  // Add touch event listeners
-  touchControlsContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
-  touchControlsContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-  touchControlsContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
-  touchControlsContainer.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
   // Lighting
   const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
@@ -868,32 +735,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     laneObjects.push({ mesh: laneMesh, x, color: lane.color });
   });
 
-  function alignTouchControlsWithTrack() {
-    if (!touchControlsContainer || laneObjects.length === 0) return;
-    const stageWidth = renderer.domElement.clientWidth;
-    if (stageWidth <= 0) return;
-
-    const clampX = (value) => Math.max(0, Math.min(value, stageWidth));
-    const projectX = (worldX) => {
-      overlayProjector.set(worldX, 0, NOTE_TARGET_Z);
-      overlayProjector.project(camera);
-      return clampX((overlayProjector.x * 0.5 + 0.5) * stageWidth);
-    };
-
-    const leftWorld = laneObjects[0].x - laneWidth / 2;
-    const rightWorld = laneObjects[laneObjects.length - 1].x + laneWidth / 2;
-    const leftScreen = projectX(leftWorld);
-    const rightScreen = projectX(rightWorld);
-    const margin = 6;
-    const overlayWidth = Math.max((rightScreen - leftScreen) + margin * 2, 0);
-    const leftPx = Math.max(leftScreen - margin, 0);
-    const maxWidth = stageWidth - leftPx;
-
-    touchControlsContainer.style.left = `${leftPx}px`;
-    touchControlsContainer.style.width = `${Math.min(overlayWidth, maxWidth)}px`;
-  }
-
-    alignTouchControlsWithTrack();
 
   // Initial render to make scene visible immediately
   // Use requestAnimationFrame to ensure container has proper dimensions
@@ -904,7 +745,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
     console.log('Initial scene rendered at', container.clientWidth, 'x', container.clientHeight);
-    alignTouchControlsWithTrack();
+    updateLaneProjection();
   });
 
   // Game state
@@ -1002,6 +843,94 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     hitLineMarkers.push({ outline: outlineMesh, marker: markerMesh });
   });
+
+  const activePointers = new Map();
+  const laneBounds = [];
+
+  function updateLaneProjection() {
+    if (laneObjects.length === 0) return;
+    const stageWidth = renderer.domElement.clientWidth;
+    if (stageWidth <= 0) return;
+
+    const clampX = (value) => Math.max(0, Math.min(value, stageWidth));
+    const projectX = (worldX) => {
+      overlayProjector.set(worldX, 0, NOTE_TARGET_Z);
+      overlayProjector.project(camera);
+      return clampX((overlayProjector.x * 0.5 + 0.5) * stageWidth);
+    };
+
+    laneObjects.forEach((laneObj, idx) => {
+      const leftWorld = laneObj.x - laneWidth / 2;
+      const rightWorld = laneObj.x + laneWidth / 2;
+      const leftPx = projectX(leftWorld);
+      const rightPx = projectX(rightWorld);
+      laneBounds[idx] = {
+        left: Math.max(0, Math.min(leftPx, rightPx)),
+        right: Math.min(stageWidth, Math.max(leftPx, rightPx))
+      };
+    });
+  }
+
+  function getLaneForPoint(clientX) {
+    if (laneBounds.length === 0) return undefined;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const padding = 10;
+    for (let i = 0; i < laneBounds.length; i++) {
+      const bounds = laneBounds[i];
+      if (!bounds) continue;
+      if (x >= bounds.left - padding && x <= bounds.right + padding) {
+        return i;
+      }
+    }
+    return undefined;
+  }
+
+  function handlePointerDown(event) {
+    if (!running) return;
+    event.preventDefault();
+    const lane = getLaneForPoint(event.clientX);
+    if (lane === undefined) return;
+    activePointers.set(event.pointerId, lane);
+    onPress(lane);
+  }
+
+  function handlePointerMove(event) {
+    if (!running) return;
+    event.preventDefault();
+    const newLane = getLaneForPoint(event.clientX);
+    const currentLane = activePointers.get(event.pointerId);
+    if (newLane !== undefined && newLane !== currentLane) {
+      activePointers.set(event.pointerId, newLane);
+      onPress(newLane);
+    } else if (newLane === undefined) {
+      activePointers.delete(event.pointerId);
+    }
+  }
+
+  function handlePointerEnd(event) {
+    activePointers.delete(event.pointerId);
+  }
+
+  container.style.touchAction = 'none';
+  container.addEventListener('pointerdown', handlePointerDown, { passive: false });
+  container.addEventListener('pointermove', handlePointerMove, { passive: false });
+  container.addEventListener('pointerup', handlePointerEnd);
+  container.addEventListener('pointercancel', handlePointerEnd);
+
+  updateLaneProjection();
+
+  function updateHitLineMarkers(laneReady) {
+    hitLineMarkers.forEach((marker, idx) => {
+      if (!marker) return;
+      const ready = Boolean(laneReady[idx]);
+      marker.outline.material.opacity = ready ? 0.95 : 0.5;
+      marker.marker.material.opacity = ready ? 1 : 0.65;
+      const scale = ready ? 2.3 : 2.0;
+      marker.marker.scale.set(scale, scale, 1);
+    });
+  }
+
 
   // Note creation
   function createNote(lane, timeMs, type, lenMs) {
@@ -1382,10 +1311,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       }
     }
 
-    touchButtons.forEach((btn, idx) => {
-      if (!btn) return;
-      btn.classList.toggle('rhythm-touch-ready', laneReady[idx]);
-    });
+    updateHitLineMarkers(laneReady);
     // Update stats
     const sum = hits.reduce((a, b) => a + b, 0) || 1;
     const genreText = hits.map((h, i) => `${lanes[i].label}:${Math.round((h/sum)*100)}%`).join('  ');
@@ -2121,7 +2047,7 @@ Next Note: ${nextNote}ms
     if (!running) {
       renderer.render(scene, camera);
     }
-    alignTouchControlsWithTrack();
+    updateLaneProjection();
   }
   window.addEventListener('resize', onWindowResize);
 
@@ -2136,6 +2062,10 @@ Next Note: ${nextNote}ms
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     }
+    container.removeEventListener('pointerdown', handlePointerDown);
+    container.removeEventListener('pointermove', handlePointerMove);
+    container.removeEventListener('pointerup', handlePointerEnd);
+    container.removeEventListener('pointercancel', handlePointerEnd);
   };
 
   return wrap;
