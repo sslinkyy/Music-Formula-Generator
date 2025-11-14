@@ -1086,6 +1086,65 @@ button:disabled { opacity: 0.6; cursor: default; }
   outline-offset: 3px;
 }
 
+.rhythm-hitline-overlay {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 76;
+  display: block;
+}
+
+.rhythm-hitline-bar {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0));
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
+}
+
+.rhythm-hitline-guide {
+  position: absolute;
+  bottom: 32px;
+  height: 78px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.7;
+}
+
+.rhythm-hitline-guide .lane-arrow-outline-svg {
+  width: 56px;
+  height: 56px;
+  stroke: var(--lane-color, rgba(255, 255, 255, 0.85));
+  stroke-width: 6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 12px var(--lane-color, rgba(255, 255, 255, 0.45)));
+}
+
+.rhythm-hitline-guide[data-direction="down"] .lane-arrow-outline-svg {
+  transform: rotate(180deg);
+}
+.rhythm-hitline-guide[data-direction="left"] .lane-arrow-outline-svg {
+  transform: rotate(-90deg);
+}
+.rhythm-hitline-guide[data-direction="right"] .lane-arrow-outline-svg {
+  transform: rotate(90deg);
+}
+
+.rhythm-hitline-ready {
+  opacity: 1;
+  transform: translateY(-4px);
+}
+
 .rhythm-settings-overlay {
   position: fixed;
   inset: 0;
