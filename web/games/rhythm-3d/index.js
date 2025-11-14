@@ -688,8 +688,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   scene.fog = new THREE.Fog(0x0f1115, 10, 50);
 
   const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-  camera.position.set(0, 8, 12);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(0, 10, 10);
+  camera.lookAt(0, 0, 2);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
