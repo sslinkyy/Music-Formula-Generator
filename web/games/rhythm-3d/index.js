@@ -983,6 +983,13 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       const scale = ready ? 2.3 : 2.0;
       marker.marker.scale.set(scale, scale, 1);
     });
+
+    laneHitZones.forEach((zone, idx) => {
+      if (!zone) return;
+      const ready = Boolean(laneReady[idx]);
+      zone.material.opacity = ready ? 0.45 : 0.25;
+      zone.scale.set(1, 1, ready ? 1.2 : 1);
+    });
   }
 
 
