@@ -688,8 +688,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   scene.fog = new THREE.Fog(0x0f1115, 10, 50);
 
   const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-  camera.position.set(0, 10, 10);
-  camera.lookAt(0, 0, 2);
+  camera.position.set(0, 12, 8);
+  camera.lookAt(0, 0, 4);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
@@ -710,8 +710,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   scene.add(backLight);
 
   // Create lanes
-  const laneWidth = 2;
-  const laneSpacing = 0.2;
+  const laneWidth = 1.6;
+  const laneSpacing = 0.15;
   const totalWidth = (laneWidth + laneSpacing) * lanes.length - laneSpacing;
   const laneObjects = [];
   const laneGeometry = new THREE.BoxGeometry(laneWidth, 0.1, 40);
