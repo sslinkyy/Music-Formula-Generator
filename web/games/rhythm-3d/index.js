@@ -112,8 +112,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     good: 135,      // ±135ms - acceptable
     miss: 180       // ±180ms - outside this is a miss
   };
-  const NOTE_START_Z = -30;
-  const NOTE_TARGET_Z = 9;
+  const NOTE_START_Y = -9;
+  const NOTE_TARGET_Y = 9;
+  const NOTE_PLANE_Z = 0.6;
   const NOTE_TRAVEL_TIME = 3;
   const MAX_NOTE_POINTS = 160;
   const NOTE_READY_WINDOW = 0.28;
@@ -141,17 +142,13 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   fullscreenBtn.className = 'rhythm-header-btn';
   fullscreenBtn.textContent = 'Fullscreen';
 
-  const settingsBtn = document.createElement('button');
-  settingsBtn.type = 'button';
-  settingsBtn.className = 'rhythm-header-btn';
-  settingsBtn.textContent = 'Settings';
-
-  headerActions.append(fullscreenBtn, settingsBtn);
+  headerActions.append(fullscreenBtn);
   headerRow.append(hud, headerActions);
   wrap.appendChild(headerRow);
 
   const controls = document.createElement('div');
   controls.className = 'rhythm-settings-grid';
+  wrap.appendChild(controls);
 
   // Helper function to style select elements for mobile-friendliness
   function styleSelectElement(selectElement) {
@@ -275,8 +272,11 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       lanes.forEach((lane, i) => {
         if (laneObjects[i]) {
           laneObjects[i].color = lane.color;
-          laneObjects[i].mesh.material.color.set(lane.color);
-          laneObjects[i].mesh.material.emissive.set(lane.color);
+          const laneColor = new THREE.Color(lane.color);
+          laneObjects[i].mesh.material.color.copy(laneColor).multiplyScalar(0.35);
+          if (laneObjects[i].mesh.material.emissive) {
+            laneObjects[i].mesh.material.emissive.copy(laneColor).multiplyScalar(0.25);
+          }
         }
       });
     }
@@ -611,126 +611,81 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   wrap.appendChild(vuWrap);
   wrap.appendChild(playControlsRow);
 
-  const settingsOverlay = document.createElement('div');
-  settingsOverlay.className = 'rhythm-settings-overlay';
-  settingsOverlay.hidden = true;
-  settingsOverlay.tabIndex = -1;
+  const controlsHint = document.createElement('p');
+  controlsHint.className = 'rhythm-settings-note';
+  controlsHint.textContent = 'Touch buttons auto-appear on mobiles and match the lane art below.';
 
-  const settingsCard = document.createElement('div');
-  settingsCard.className = 'rhythm-settings-card';
-
-  const settingsHeader = document.createElement('div');
-  settingsHeader.className = 'rhythm-settings-card-header';
-
-  const settingsTitle = document.createElement('h3');
-  settingsTitle.textContent = 'Settings';
-
-  const closeSettingsBtn = document.createElement('button');
-  closeSettingsBtn.type = 'button';
-  closeSettingsBtn.className = 'rhythm-settings-close';
-  closeSettingsBtn.textContent = 'Done';
-
-  settingsHeader.append(settingsTitle, closeSettingsBtn);
-  settingsCard.append(settingsHeader);
-
-  const settingsScroll = document.createElement('div');
-  settingsScroll.className = 'rhythm-settings-scroll';
-
-  const stageSection = document.createElement('div');
-  stageSection.className = 'rhythm-settings-section';
-
-  const stageLabelRow = document.createElement('div');
-  stageLabelRow.className = 'rhythm-settings-row';
+  const stageControlsRow = document.createElement('div');
+  stageControlsRow.className = 'rhythm-stage-controls';
 
   const stageLabelText = document.createElement('span');
   stageLabelText.className = 'rhythm-settings-label';
   stageLabelText.textContent = 'Stage height';
-  stageLabelRow.append(stageLabelText, stageSizeValue);
 
-  stageSection.append(stageLabelRow, stageSizeSlider);
+  const stageSliderWrap = document.createElement('div');
+  stageSliderWrap.className = 'rhythm-stage-slider-wrap';
+  stageSliderWrap.appendChild(stageSizeSlider);
 
-  const settingsNote = document.createElement('p');
-  settingsNote.className = 'rhythm-settings-note';
-  settingsNote.textContent = 'Touch buttons auto-appear on mobiles and match the lane art below.';
-  settingsScroll.append(stageSection, settingsNote, controls);
+  stageControlsRow.append(stageLabelText, stageSliderWrap, stageSizeValue);
 
-  settingsCard.append(settingsScroll);
-  settingsOverlay.append(settingsCard);
-  wrap.append(settingsOverlay);
-
-  let settingsOpen = false;
-  function toggleSettingsMenu(show) {
-    settingsOpen = show;
-    settingsOverlay.hidden = !show;
-    settingsBtn.textContent = show ? 'Close' : 'Settings';
-    settingsBtn.setAttribute('aria-expanded', String(show));
-    wrap.classList.toggle('rhythm-settings-open', show);
-    if (show) {
-      settingsOverlay.focus({ preventScroll: true });
-    }
-  }
-
-  settingsBtn.addEventListener('click', () => toggleSettingsMenu(!settingsOpen));
-  closeSettingsBtn.addEventListener('click', () => toggleSettingsMenu(false));
-  settingsOverlay.addEventListener('click', (event) => {
-    if (event.target === settingsOverlay) toggleSettingsMenu(false);
-  });
-
-  const handleSettingsKey = (event) => {
-    if (event.key === 'Escape' && settingsOpen) {
-      toggleSettingsMenu(false);
-    }
-  };
-  document.addEventListener('keydown', handleSettingsKey);
+  wrap.insertBefore(stageControlsRow, container);
+  wrap.insertBefore(controlsHint, stageControlsRow);
 
   // Setup Three.js scene
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0f1115, 10, 50);
+  scene.fog = new THREE.Fog(0x05070b, 18, 60);
 
-  const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-  camera.position.set(0, 12, 8);
-  camera.lookAt(0, 0, 4);
+  const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(0, 0, 28);
+  camera.lookAt(0, 0, 0);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x0f1115);
+  renderer.setClearColor(0x04060a);
   container.appendChild(renderer.domElement);
 
 
   // Lighting
-  const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+  const ambientLight = new THREE.AmbientLight(0x6f7bff, 0.6);
   scene.add(ambientLight);
 
   const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-  mainLight.position.set(5, 10, 5);
+  mainLight.position.set(0, 0, 40);
   scene.add(mainLight);
 
-  const backLight = new THREE.DirectionalLight(0x4D96FF, 0.5);
-  backLight.position.set(-5, 5, -5);
+  const backLight = new THREE.DirectionalLight(0x4D96FF, 0.6);
+  backLight.position.set(-6, 6, -20);
   scene.add(backLight);
 
   // Create lanes
   const laneWidth = 1.6;
-  const laneSpacing = 0.15;
+  const laneSpacing = 0.2;
   const totalWidth = (laneWidth + laneSpacing) * lanes.length - laneSpacing;
   const laneObjects = [];
-  const laneGeometry = new THREE.BoxGeometry(laneWidth, 0.1, 40);
+  const laneHeight = Math.abs(NOTE_TARGET_Y - NOTE_START_Y) + 4;
+  const laneGeometry = new THREE.PlaneGeometry(laneWidth, laneHeight);
   const overlayProjector = new THREE.Vector3();
   const laneDirections = ['left', 'down', 'up', 'right'];
+
+  const laneCenterY = (NOTE_TARGET_Y + NOTE_START_Y) / 2;
 
   lanes.forEach((lane, i) => {
     const x = (i - lanes.length / 2) * (laneWidth + laneSpacing) + laneWidth / 2;
 
-    const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(lane.color).multiplyScalar(0.3),
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(lane.color).clone().multiplyScalar(0.35),
       transparent: true,
-      opacity: 0.6,
-      emissive: new THREE.Color(lane.color),
-      emissiveIntensity: 0.2
+      opacity: 0.85,
+      emissive: new THREE.Color(lane.color).clone().multiplyScalar(0.25),
+      emissiveIntensity: 0.35,
+      roughness: 0.4,
+      metalness: 0.15,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
 
     const laneMesh = new THREE.Mesh(laneGeometry, material);
-    laneMesh.position.set(x, 0, -10);
+    laneMesh.position.set(x, laneCenterY, 0);
     scene.add(laneMesh);
     laneObjects.push({ mesh: laneMesh, x, color: lane.color });
   });
@@ -811,34 +766,29 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     const laneObj = laneObjects[i];
     const direction = laneDirections[i];
 
-    // Create arrow outline (dark background for contrast)
-    const outlineGeometry = createArrowGeometry(direction);
-    const outlineMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      side: THREE.DoubleSide,
+    const receptorGeometry = createArrowGeometry(direction);
+    const outlineGeometry = new THREE.EdgesGeometry(receptorGeometry);
+    const outlineMaterial = new THREE.LineBasicMaterial({
+      color: new THREE.Color(lane.color),
       transparent: true,
-      opacity: 0.6
+      opacity: 0.85,
+      linewidth: 2
     });
-    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    const outlineMesh = new THREE.LineSegments(outlineGeometry, outlineMaterial);
     outlineMesh.scale.set(2.2, 2.2, 1);
-    outlineMesh.position.set(laneObj.x, 0.12, NOTE_TARGET_Z);
-    outlineMesh.rotation.x = -Math.PI / 2;
+    outlineMesh.position.set(laneObj.x, NOTE_TARGET_Y, NOTE_PLANE_Z + 0.05);
     scene.add(outlineMesh);
 
-    // Create main arrow marker (bright white with lane color glow)
-    const markerGeometry = createArrowGeometry(direction);
-    const markerMaterial = new THREE.MeshBasicMaterial({
+    const fillMaterial = new THREE.MeshBasicMaterial({
       color: new THREE.Color(lane.color),
-      side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.8,
-      emissive: new THREE.Color(lane.color),
-      emissiveIntensity: 0.5
+      opacity: 0.18,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
-    const markerMesh = new THREE.Mesh(markerGeometry, markerMaterial);
+    const markerMesh = new THREE.Mesh(receptorGeometry.clone(), fillMaterial);
     markerMesh.scale.set(2.0, 2.0, 1);
-    markerMesh.position.set(laneObj.x, 0.15, NOTE_TARGET_Z);
-    markerMesh.rotation.x = -Math.PI / 2;
+    markerMesh.position.set(laneObj.x, NOTE_TARGET_Y, NOTE_PLANE_Z);
     scene.add(markerMesh);
 
     hitLineMarkers.push({ outline: outlineMesh, marker: markerMesh });
@@ -854,7 +804,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     const clampX = (value) => Math.max(0, Math.min(value, stageWidth));
     const projectX = (worldX) => {
-      overlayProjector.set(worldX, 0, NOTE_TARGET_Z);
+      overlayProjector.set(worldX, NOTE_TARGET_Y, NOTE_PLANE_Z);
       overlayProjector.project(camera);
       return clampX((overlayProjector.x * 0.5 + 0.5) * stageWidth);
     };
@@ -960,16 +910,28 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
 
   touchControlsContainer.appendChild(buttonRow);
-  wrap.appendChild(touchControlsContainer);
+  touchControlsContainer.hidden = !isTouchDevice;
+  touchControlsContainer.classList.toggle('is-touch', isTouchDevice);
+  if (vuWrap.parentNode === wrap) {
+    wrap.insertBefore(touchControlsContainer, vuWrap);
+  } else {
+    wrap.appendChild(touchControlsContainer);
+  }
 
   function updateHitLineMarkers(laneReady) {
     hitLineMarkers.forEach((marker, idx) => {
       if (!marker) return;
       const ready = Boolean(laneReady[idx]);
-      marker.outline.material.opacity = ready ? 0.95 : 0.5;
-      marker.marker.material.opacity = ready ? 1 : 0.65;
-      const scale = ready ? 2.3 : 2.0;
-      marker.marker.scale.set(scale, scale, 1);
+      if (marker.outline?.material) {
+        marker.outline.material.opacity = ready ? 1 : 0.6;
+        const outlineScale = ready ? 2.35 : 2.2;
+        marker.outline.scale.set(outlineScale, outlineScale, 1);
+      }
+      if (marker.marker?.material) {
+        marker.marker.material.opacity = ready ? 0.35 : 0.18;
+        const fillScale = ready ? 2.2 : 2.0;
+        marker.marker.scale.set(fillScale, fillScale, 1);
+      }
     });
 
     touchButtons.forEach((btn, idx) => {
@@ -983,61 +945,40 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // Note creation
   function createNote(lane, timeMs, type, lenMs) {
     const laneObj = laneObjects[lane];
-    const geometry = type === 'long'
-      ? new THREE.BoxGeometry(laneWidth * 0.7, 0.5, 1.5)
-      : new THREE.BoxGeometry(laneWidth * 0.7, 0.5, 0.5);
-
-    let color;
-    if (type === 'hazard') color = 0xff4d4d;
-    else if (type === 'chip') color = 0xffd93d;
-    else color = laneObj.color;
-
-    const material = new THREE.MeshPhongMaterial({
-      color: color,
-      emissive: color,
-      emissiveIntensity: 0.5,
-      transparent: true,
-      opacity: 0.9
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(laneObj.x, 0.5, NOTE_START_Z);
-    scene.add(mesh);
-
-    // Add directional arrow on top of note
     const direction = laneDirections[lane] || 'up';
+    const arrowGeometry = createArrowGeometry(direction);
 
-    // Create arrow outline (dark background for contrast)
-    const outlineGeometry = createArrowGeometry(direction);
-    const outlineMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000, // Black outline
-      side: THREE.DoubleSide,
+    let color = new THREE.Color(laneObj.color);
+    if (type === 'hazard') color = new THREE.Color(0xff4d4d);
+    else if (type === 'chip') color = new THREE.Color(0xffd93d);
+
+    const material = new THREE.MeshBasicMaterial({
+      color,
       transparent: true,
-      opacity: 0.8
+      opacity: type === 'long' ? 0.92 : 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
-    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
-    outlineMesh.scale.set(1.15, 1.15, 1); // Slightly larger for outline effect
-    outlineMesh.position.set(0, 0.29, 0); // Slightly below main arrow
-    outlineMesh.rotation.x = -Math.PI / 2;
+
+    const mesh = new THREE.Mesh(arrowGeometry, material);
+    const scale = type === 'long' ? 2.0 : 1.8;
+    mesh.scale.set(scale, scale, 1);
+    mesh.position.set(laneObj.x, NOTE_START_Y, NOTE_PLANE_Z);
+    mesh.renderOrder = 2;
+
+    const outlineMaterial = new THREE.LineBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.65,
+      linewidth: 1
+    });
+    const outlineEdges = new THREE.EdgesGeometry(arrowGeometry);
+    const outlineMesh = new THREE.LineSegments(outlineEdges, outlineMaterial);
+    outlineMesh.scale.set(1.05, 1.05, 1);
+    outlineMesh.position.z = 0.02;
     mesh.add(outlineMesh);
 
-    // Create main arrow (bright white)
-    const arrowGeometry = createArrowGeometry(direction);
-    const arrowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 1.0,
-      emissive: 0xffffff,
-      emissiveIntensity: 0.3 // Add glow
-    });
-    const arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
-
-    // Position arrow on top of the note box
-    arrowMesh.position.set(0, 0.3, 0); // Relative to parent mesh
-    arrowMesh.rotation.x = -Math.PI / 2; // Rotate to face up (horizontal)
-
-    mesh.add(arrowMesh); // Add as child so it moves with the note
+    scene.add(mesh);
 
     return {
       mesh,
@@ -1315,8 +1256,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     // Log every 60 frames
     if (frameCount++ % 60 === 0) {
       const sampleNote = noteObjects.length > 0 ? noteObjects[0] : null;
-      const noteZ = sampleNote ? sampleNote.mesh.position.z.toFixed(1) : 'N/A';
-      console.log('Frame', frameCount, '- Elapsed:', elapsed.toFixed(0), 'ms, Notes pending:', notes.length, ', Active notes:', noteObjects.length, ', Sample note Z:', noteZ);
+      const noteY = sampleNote ? sampleNote.mesh.position.y.toFixed(1) : 'N/A';
+      console.log('Frame', frameCount, '- Elapsed:', elapsed.toFixed(0), 'ms, Notes pending:', notes.length, ', Active notes:', noteObjects.length, ', Sample note Y:', noteY);
     }
 
     // Spawn notes from the pre-generated notes array
@@ -1347,8 +1288,8 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       // Calculate progress: 0 at spawn, 1 as it reaches the button line
       const progress = 1 - (timeUntilHit / NOTE_TRAVEL_TIME);
       const clampedProgress = Math.min(Math.max(progress, 0), 1);
-      const z = NOTE_START_Z + (NOTE_TARGET_Z - NOTE_START_Z) * clampedProgress;
-      note.mesh.position.z = z;
+      const y = NOTE_START_Y + (NOTE_TARGET_Y - NOTE_START_Y) * clampedProgress;
+      note.mesh.position.y = y;
 
       // Remove missed notes (past the miss window)
       if (elapsed - note.timeMs > judgement.miss && !note.judged) {
@@ -2105,8 +2046,6 @@ Next Note: ${nextNote}ms
     stopPlayback();
     window.removeEventListener('resize', onWindowResize);
     document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    document.removeEventListener('keydown', handleSettingsKey);
-    toggleSettingsMenu(false);
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     }
