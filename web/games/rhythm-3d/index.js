@@ -738,40 +738,56 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   // Hit line visual (baked into scene)
   const hitLineLength = totalWidth + laneWidth * 1.2;
   const hitLineMaterial = new THREE.MeshStandardMaterial({
-    color: 0xfafafa,
+    color: 0xffffff,
     transparent: true,
     opacity: 0.95,
-    emissive: 0xfff7d6,
-    emissiveIntensity: 1.5,
+    emissive: 0xffffee,
+    emissiveIntensity: 1.3,
     side: THREE.DoubleSide,
     depthWrite: true
   });
-  const hitLineGeometry = new THREE.BoxGeometry(hitLineLength, 0.05, 0.5);
+  const hitLineGeometry = new THREE.BoxGeometry(hitLineLength, 0.06, 0.35);
   const hitLineMesh = new THREE.Mesh(hitLineGeometry, hitLineMaterial);
-  hitLineMesh.position.set(0, 0.06, NOTE_TARGET_Z);
+  hitLineMesh.position.set(0, 0.05, NOTE_TARGET_Z);
   scene.add(hitLineMesh);
 
   const glowMaterial = new THREE.MeshBasicMaterial({
-    color: 0xfff2c7,
+    color: 0xf2f8ff,
     transparent: true,
-    opacity: 0.6,
+    opacity: 0.45,
     depthWrite: false,
     blending: THREE.AdditiveBlending
   });
-  const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.9, 0.2, 0.25);
+  const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.9, 0.2, 0.15);
   const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z);
+  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z + 0.1);
   scene.add(glowMesh);
 
   const highlightMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.8
+    opacity: 0.85
   });
-  const highlightGeometry = new THREE.BoxGeometry(hitLineLength * 0.75, 0.01, 0.6);
+  const highlightGeometry = new THREE.BoxGeometry(hitLineLength * 0.6, 0.02, 0.5);
   const highlightMesh = new THREE.Mesh(highlightGeometry, highlightMaterial);
-  highlightMesh.position.set(0, 0.03, NOTE_TARGET_Z);
+  highlightMesh.position.set(0, 0.04, NOTE_TARGET_Z + 0.1);
   scene.add(highlightMesh);
+
+  const laneHitZones = [];
+  laneObjects.forEach((laneObj, idx) => {
+    const laneZoneMaterial = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(lanes[idx].color),
+      emissive: new THREE.Color(lanes[idx].color),
+      emissiveIntensity: 0.4,
+      transparent: true,
+      opacity: 0.25
+    });
+    const laneZoneGeometry = new THREE.BoxGeometry(laneWidth * 0.9, 0.02, 0.55);
+    const laneZoneMesh = new THREE.Mesh(laneZoneGeometry, laneZoneMaterial);
+    laneZoneMesh.position.set(laneObj.x, 0.03, NOTE_TARGET_Z);
+    scene.add(laneZoneMesh);
+    laneHitZones.push(laneZoneMesh);
+  });
 
 
   // Initial render to make scene visible immediately
