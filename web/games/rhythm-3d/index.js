@@ -735,6 +735,30 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     laneObjects.push({ mesh: laneMesh, x, color: lane.color });
   });
 
+  // Hit line visual (baked into scene)
+  const hitLineLength = totalWidth + laneWidth;
+  const hitLineMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.8,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.9
+  });
+  const hitLineGeometry = new THREE.BoxGeometry(hitLineLength, 0.05, 0.5);
+  const hitLineMesh = new THREE.Mesh(hitLineGeometry, hitLineMaterial);
+  hitLineMesh.position.set(0, 0.05, NOTE_TARGET_Z + 0.3);
+  scene.add(hitLineMesh);
+
+  const glowMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.35
+  });
+  const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.95, 0.12, 0.2);
+  const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z + 0.15);
+  scene.add(glowMesh);
+
 
   // Initial render to make scene visible immediately
   // Use requestAnimationFrame to ensure container has proper dimensions
