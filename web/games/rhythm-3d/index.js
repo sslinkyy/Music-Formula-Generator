@@ -736,28 +736,42 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
 
   // Hit line visual (baked into scene)
-  const hitLineLength = totalWidth + laneWidth;
+  const hitLineLength = totalWidth + laneWidth * 1.2;
   const hitLineMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
+    color: 0xfafafa,
     transparent: true,
-    opacity: 0.8,
-    emissive: 0xffffff,
-    emissiveIntensity: 0.9
+    opacity: 0.95,
+    emissive: 0xfff7d6,
+    emissiveIntensity: 1.5,
+    side: THREE.DoubleSide,
+    depthWrite: true
   });
   const hitLineGeometry = new THREE.BoxGeometry(hitLineLength, 0.05, 0.5);
   const hitLineMesh = new THREE.Mesh(hitLineGeometry, hitLineMaterial);
-  hitLineMesh.position.set(0, 0.05, NOTE_TARGET_Z + 0.3);
+  hitLineMesh.position.set(0, 0.06, NOTE_TARGET_Z + 0.25);
   scene.add(hitLineMesh);
 
   const glowMaterial = new THREE.MeshBasicMaterial({
+    color: 0xfff2c7,
+    transparent: true,
+    opacity: 0.6,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.9, 0.2, 0.25);
+  const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z + 0.05);
+  scene.add(glowMesh);
+
+  const highlightMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.35
+    opacity: 0.8
   });
-  const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.95, 0.12, 0.2);
-  const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z + 0.15);
-  scene.add(glowMesh);
+  const highlightGeometry = new THREE.BoxGeometry(hitLineLength * 0.75, 0.01, 0.6);
+  const highlightMesh = new THREE.Mesh(highlightGeometry, highlightMaterial);
+  highlightMesh.position.set(0, 0.03, NOTE_TARGET_Z + 0.3);
+  scene.add(highlightMesh);
 
 
   // Initial render to make scene visible immediately
