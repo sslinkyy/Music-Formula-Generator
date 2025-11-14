@@ -920,6 +920,49 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   updateLaneProjection();
 
+  const laneLabels = ['D', 'F', 'J', 'K'];
+  const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+  const laneDirections = ['left', 'down', 'up', 'right'];
+  const touchButtons = [];
+
+  const touchControlsContainer = document.createElement('div');
+  touchControlsContainer.className = 'rhythm-touch-controls';
+  touchControlsContainer.setAttribute('role', 'region');
+  touchControlsContainer.setAttribute('aria-label', 'Touch lane controls');
+
+  const buttonRow = document.createElement('div');
+  buttonRow.className = 'rhythm-touch-row';
+
+  laneLabels.forEach((label, idx) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'rhythm-touch-btn';
+    button.dataset.lane = idx;
+    button.dataset.direction = laneDirections[idx];
+    button.setAttribute('aria-label', `Hit lane ${idx + 1}`);
+    button.style.setProperty('--lane-color', laneColors[idx]);
+    button.innerHTML = `
+      <svg class="lane-arrow-svg" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M50 12 L25 50 L40 50 L40 88 L60 88 L60 50 L75 50 Z"></path>
+      </svg>
+      <span class="lane-label">${label}</span>
+    `;
+
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      onPress(idx);
+      button.classList.add('rhythm-touch-active');
+    });
+    button.addEventListener('pointerup', () => button.classList.remove('rhythm-touch-active'));
+    button.addEventListener('pointerleave', () => button.classList.remove('rhythm-touch-active'));
+
+    touchButtons.push(button);
+    buttonRow.appendChild(button);
+  });
+
+  touchControlsContainer.appendChild(buttonRow);
+  wrap.appendChild(touchControlsContainer);
+
   function updateHitLineMarkers(laneReady) {
     hitLineMarkers.forEach((marker, idx) => {
       if (!marker) return;
@@ -928,6 +971,11 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
       marker.marker.material.opacity = ready ? 1 : 0.65;
       const scale = ready ? 2.3 : 2.0;
       marker.marker.scale.set(scale, scale, 1);
+    });
+
+    touchButtons.forEach((btn, idx) => {
+      if (!btn) return;
+      btn.classList.toggle('rhythm-touch-ready', laneReady[idx]);
     });
 
   }

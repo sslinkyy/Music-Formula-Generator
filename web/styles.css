@@ -1014,6 +1014,71 @@ button:disabled { opacity: 0.6; cursor: default; }
   margin-bottom: clamp(1rem, 2vw, 1.5rem);
 }
 
+.rhythm-touch-controls {
+  position: fixed;
+  top: env(safe-area-inset-top, 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(8, 10, 15, 0.75);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.55);
+  z-index: 220;
+  pointer-events: auto;
+}
+
+.rhythm-touch-row {
+  display: flex;
+  gap: 8px;
+}
+
+.rhythm-touch-btn {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  width: 54px;
+  height: 54px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rhythm-touch-btn .lane-arrow-svg {
+  width: 72%;
+  height: 72%;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+.rhythm-touch-btn .lane-label {
+  position: absolute;
+  bottom: 6px;
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.rhythm-touch-btn:hover,
+.rhythm-touch-btn:focus-visible,
+.rhythm-touch-btn.rhythm-touch-ready {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.rhythm-touch-btn.rhythm-touch-active {
+  transform: scale(0.95);
+}
+
 .rhythm-settings-overlay {
   position: fixed;
   inset: 0;
