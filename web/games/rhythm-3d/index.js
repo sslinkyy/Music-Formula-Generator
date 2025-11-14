@@ -922,7 +922,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
   const laneLabels = ['D', 'F', 'J', 'K'];
   const laneColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
-  const laneDirections = ['left', 'down', 'up', 'right'];
   const touchButtons = [];
 
   const touchControlsContainer = document.createElement('div');
