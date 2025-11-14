@@ -748,7 +748,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   const hitLineGeometry = new THREE.BoxGeometry(hitLineLength, 0.05, 0.5);
   const hitLineMesh = new THREE.Mesh(hitLineGeometry, hitLineMaterial);
-  hitLineMesh.position.set(0, 0.06, NOTE_TARGET_Z + 0.25);
+  hitLineMesh.position.set(0, 0.06, NOTE_TARGET_Z);
   scene.add(hitLineMesh);
 
   const glowMaterial = new THREE.MeshBasicMaterial({
@@ -760,7 +760,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.9, 0.2, 0.25);
   const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z + 0.05);
+  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z);
   scene.add(glowMesh);
 
   const highlightMaterial = new THREE.MeshBasicMaterial({
@@ -770,7 +770,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   const highlightGeometry = new THREE.BoxGeometry(hitLineLength * 0.75, 0.01, 0.6);
   const highlightMesh = new THREE.Mesh(highlightGeometry, highlightMaterial);
-  highlightMesh.position.set(0, 0.03, NOTE_TARGET_Z + 0.3);
+  highlightMesh.position.set(0, 0.03, NOTE_TARGET_Z);
   scene.add(highlightMesh);
 
 
