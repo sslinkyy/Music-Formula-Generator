@@ -868,30 +868,6 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     laneObjects.push({ mesh: laneMesh, x, color: lane.color });
   });
 
-  const hitLineOverlay = document.createElement('div');
-  hitLineOverlay.className = 'rhythm-hitline-overlay';
-  hitLineOverlay.setAttribute('aria-hidden', 'true');
-  container.appendChild(hitLineOverlay);
-
-  const hitLineDivider = document.createElement('div');
-  hitLineDivider.className = 'rhythm-hitline-bar';
-  hitLineOverlay.appendChild(hitLineDivider);
-
-  const hitLineGuides = [];
-  lanes.forEach((lane, idx) => {
-    const guide = document.createElement('div');
-    guide.className = 'rhythm-hitline-guide';
-    guide.dataset.direction = laneDirections[idx] || 'up';
-    guide.style.setProperty('--lane-color', lane.color);
-    guide.innerHTML = `
-      <svg class="lane-arrow-outline-svg" viewBox="0 0 100 100" aria-hidden="true">
-        <path d="M50 12 L20 50 L35 50 L35 90 L65 90 L65 50 L80 50 Z"></path>
-      </svg>
-    `;
-    hitLineOverlay.appendChild(guide);
-    hitLineGuides.push(guide);
-  });
-
   function alignTouchControlsWithTrack() {
     if (!touchControlsContainer || laneObjects.length === 0) return;
     const stageWidth = renderer.domElement.clientWidth;
@@ -915,34 +891,9 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
 
     touchControlsContainer.style.left = `${leftPx}px`;
     touchControlsContainer.style.width = `${Math.min(overlayWidth, maxWidth)}px`;
-    alignHitLineGuides(stageWidth);
   }
 
     alignTouchControlsWithTrack();
-
-  function alignHitLineGuides(stageWidth = renderer.domElement.clientWidth) {
-    if (!hitLineOverlay || laneObjects.length === 0 || stageWidth <= 0) return;
-    const clampValue = (value) => Math.max(0, Math.min(value, stageWidth));
-    const projectX = (worldX) => {
-      overlayProjector.set(worldX, 0, NOTE_TARGET_Z);
-      overlayProjector.project(camera);
-      return clampValue((overlayProjector.x * 0.5 + 0.5) * stageWidth);
-    };
-
-    hitLineOverlay.style.width = `${stageWidth}px`;
-
-    laneObjects.forEach((laneObj, idx) => {
-      const guide = hitLineGuides[idx];
-      if (!guide) return;
-      const leftWorld = laneObj.x - (laneWidth / 2);
-      const rightWorld = laneObj.x + (laneWidth / 2);
-      const leftPx = projectX(leftWorld);
-      const rightPx = projectX(rightWorld);
-      const width = Math.max(rightPx - leftPx, 24);
-      guide.style.left = `${clampValue(leftPx)}px`;
-      guide.style.width = `${Math.min(Math.max(width, 24), Math.max(stageWidth - leftPx, 0))}px`;
-    });
-  }
 
   // Initial render to make scene visible immediately
   // Use requestAnimationFrame to ensure container has proper dimensions
