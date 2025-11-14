@@ -748,7 +748,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   const hitLineGeometry = new THREE.BoxGeometry(hitLineLength, 0.06, 0.35);
   const hitLineMesh = new THREE.Mesh(hitLineGeometry, hitLineMaterial);
-  hitLineMesh.position.set(0, 0.05, NOTE_TARGET_Z);
+  hitLineMesh.position.set(0, 0.45, NOTE_TARGET_Z);
   scene.add(hitLineMesh);
 
   const glowMaterial = new THREE.MeshBasicMaterial({
@@ -760,7 +760,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   const glowGeometry = new THREE.BoxGeometry(hitLineLength * 0.9, 0.2, 0.15);
   const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-  glowMesh.position.set(0, 0.08, NOTE_TARGET_Z + 0.1);
+  glowMesh.position.set(0, 0.55, NOTE_TARGET_Z + 0.1);
   scene.add(glowMesh);
 
   const highlightMaterial = new THREE.MeshBasicMaterial({
@@ -770,7 +770,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
   });
   const highlightGeometry = new THREE.BoxGeometry(hitLineLength * 0.6, 0.02, 0.5);
   const highlightMesh = new THREE.Mesh(highlightGeometry, highlightMaterial);
-  highlightMesh.position.set(0, 0.04, NOTE_TARGET_Z + 0.1);
+  highlightMesh.position.set(0, 0.55, NOTE_TARGET_Z + 0.1);
   scene.add(highlightMesh);
 
   const laneHitZones = [];
@@ -784,7 +784,7 @@ export async function buildRhythm3DGameDialog(onFinish, options = {}) {
     });
     const laneZoneGeometry = new THREE.BoxGeometry(laneWidth * 0.9, 0.02, 0.55);
     const laneZoneMesh = new THREE.Mesh(laneZoneGeometry, laneZoneMaterial);
-    laneZoneMesh.position.set(laneObj.x, 0.03, NOTE_TARGET_Z);
+    laneZoneMesh.position.set(laneObj.x, 0.55, NOTE_TARGET_Z);
     scene.add(laneZoneMesh);
     laneHitZones.push(laneZoneMesh);
   });
